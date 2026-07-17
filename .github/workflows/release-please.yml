@@ -20,6 +20,8 @@ permissions:
   actions: write
   security-events: write
   packages: read
+  pages: write
+  id-token: write
 
 jobs:
   ci-checks:
@@ -37,3 +39,11 @@ jobs:
       - name: Release Please
         uses: googleapis/release-please-action@v5
         id: release
+
+  # Publish catalog data right after the push-to-main flow (change-detected —
+  # deploys only when the generated data differs from what is live). The 2h
+  # cron remains the backstop for new releases in admitted repos.
+  generate-catalog-data:
+    name: Generate Catalog Data
+    needs: release-please
+    uses: ./.github/workflows/generate-catalog-data.yml

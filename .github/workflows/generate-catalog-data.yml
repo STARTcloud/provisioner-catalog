@@ -1,10 +1,12 @@
 name: Generate Catalog Data
 
 # The data job (the HACS generate-hacs-data pattern): admission is human (PRs
-# to sources.yml), data is scheduled. Every 2 hours — or on manual dispatch —
-# this rebuilds catalog.json from the admitted repositories' GitHub releases
-# and deploys it to GitHub Pages, ONLY when the generated data differs from
-# what is live (or forceRepositoryUpdate is set).
+# to sources.yml), data is scheduled. Every 2 hours — on manual dispatch — or
+# chained from release-please.yml after every successful push-to-main flow
+# (our deviation from HACS's schedule-only trigger, so merges publish
+# immediately) — this rebuilds catalog.json from the admitted repositories'
+# GitHub releases and deploys it to GitHub Pages, ONLY when the generated
+# data differs from what is live (or forceRepositoryUpdate is set).
 #
 # This job can never admit a repository: it only reads sources.yml and
 # removed.yml from main. The immutability tripwire fails the run loudly if an
@@ -14,6 +16,7 @@ name: Generate Catalog Data
 on:
   schedule:
     - cron: '0 */2 * * *'
+  workflow_call:
   workflow_dispatch:
     inputs:
       forceRepositoryUpdate:

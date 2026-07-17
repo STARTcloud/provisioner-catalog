@@ -1,0 +1,45 @@
+name: 'CodeQL Advanced'
+
+# Reusable CodeQL scan, chained from ci.yml (needs schema validation +
+# actionlint) and run weekly on a schedule. Mirrors the
+# startcloud_generic_provisioner / hyperweaver-ui layout. First-party code
+# here = the GitHub Actions workflows and the catalog's Python scripts.
+
+on:
+  schedule:
+    - cron: '17 5 * * 4'
+  workflow_call:
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:${{matrix.language}}'

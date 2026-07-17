@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.2...provisioner-catalog-v0.0.3) (2026-07-17)
+
+
+### Bug Fixes
+
+* chain catalog data publish after the release flow ([cb46229](https://github.com/STARTcloud/provisioner-catalog/commit/cb46229a07da5db5c892e664d6647ef74e4ba42a))
+
 ## [0.0.2](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.1...provisioner-catalog-v0.0.2) (2026-07-17)
 
 

@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload Pages artifact
         if: ${{ steps.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 

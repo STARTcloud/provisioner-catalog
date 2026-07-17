@@ -1,0 +1,81 @@
+name: Generate Catalog Data
+
+# The data job (the HACS generate-hacs-data pattern): admission is human (PRs
+# to sources.yml), data is scheduled. Every 2 hours — or on manual dispatch —
+# this rebuilds catalog.json from the admitted repositories' GitHub releases
+# and deploys it to GitHub Pages, ONLY when the generated data differs from
+# what is live (or forceRepositoryUpdate is set).
+#
+# This job can never admit a repository: it only reads sources.yml and
+# removed.yml from main. The immutability tripwire fails the run loudly if an
+# already-published version's asset hashes differently — published versions
+# never change; rebuilds ship as new versions.
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      forceRepositoryUpdate:
+        description: 'Publish even when the generated data is unchanged'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: catalog-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build catalog.json
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Build and validate catalog.json
+        id: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          python3 -m scripts.build_catalog
+          --out dist/catalog.json
+          --published-url https://provisioner-catalog.startcloud.com/catalog.json
+
+      - name: Upload Pages artifact
+        if: ${{ steps.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: ${{ needs.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        id: deployment

@@ -1,0 +1,16 @@
+# STARTcloud Provisioner Catalog — admission list.
+#
+# One entry per provisioner repository. Adding a repo here is the ONLY way into
+# the catalog: open a pull request adding your line, with the checklist in the
+# PR template completed. See CONTRIBUTING.md for the full onboarding flow.
+#
+# The data job (.github/workflows/generate-catalog-data.yml) regenerates
+# catalog.json from each admitted repo's GitHub releases every ~2 hours.
+# Version data never lives in this file — authors manage their own releases.
+#
+# Keep entries alphabetized by repo. Comment each entry with owner attribution.
+
+sources:
+  # STARTcloud — the generic provisioner, reference implementation of the
+  # artifact contract (registry-shaped archives, release-please versioning)
+  - repo: STARTcloud/startcloud_generic_provisioner

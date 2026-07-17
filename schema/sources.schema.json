@@ -1,0 +1,27 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://provisioner-catalog.startcloud.com/schema/sources.schema.json",
+    "title": "Provisioner catalog admission list (sources.yml)",
+    "description": "The hand-edited list of admitted provisioner repositories. One repo per entry; admission happens only through pull requests to this file.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["sources"],
+    "properties": {
+        "sources": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["repo"],
+                "properties": {
+                    "repo": {
+                        "type": "string",
+                        "description": "GitHub repository as owner/name",
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$"
+                    }
+                }
+            }
+        }
+    }
+}

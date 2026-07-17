@@ -1,0 +1,15 @@
+# STARTcloud Provisioner Catalog — removal blacklist (the HACS "removed" analog).
+#
+# Repositories ejected from the catalog after admission (malicious, broken, or
+# abandoned). A repo listed here is excluded from generated catalog data even if
+# it still appears in sources.yml. Each entry carries a human-readable reason.
+#
+# Removal is a maintainer action, made via pull request like admission.
+# To appeal a removal, open an issue.
+#
+# Entry shape:
+#   removed:
+#     - repo: owner/name
+#       reason: "Why this repository was removed"
+
+removed: []

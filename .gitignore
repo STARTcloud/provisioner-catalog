@@ -1,0 +1,17 @@
+# Generated catalog data — a build artifact published to GitHub Pages by the
+# data job. NEVER committed.
+catalog.json
+dist/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors / OS
+.vscode/
+.settings/
+.DS_Store
+*.swp
+
+# AI working files
+.claude

@@ -1,0 +1,217 @@
+name: Check
+
+# The admission gate — the hacs/default checks.yml pattern: preflight extracts
+# THE ONE repository the PR adds to sources.yml (diff against a clone of
+# origin), and every check job targets only that candidate. Tooling/doc PRs
+# add no repository, so the candidate-scoped jobs skip. One admission per PR.
+#
+# Merging is admission only. Publishing happens on the data job's next
+# scheduled run (~2 hours).
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - main
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    name: Preflight
+    outputs:
+      repository: ${{ steps.repository.outputs.repository }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Clone origin
+        run: git clone --depth 1 https://github.com/STARTcloud/provisioner-catalog /tmp/repositories/default
+
+      - name: Set repository
+        id: repository
+        run: echo "repository=$(python3 -m scripts.changed.repo)" >> $GITHUB_OUTPUT
+
+  editable:
+    runs-on: ubuntu-latest
+    name: Editable PR
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Run the check
+        run: python3 -m scripts.check.edits
+
+  owner:
+    runs-on: ubuntu-latest
+    name: Owner
+    needs: preflight
+    if: needs.preflight.outputs.repository != ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Run the check
+        run: python3 -m scripts.check.owner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{needs.preflight.outputs.repository}}
+
+  releases:
+    runs-on: ubuntu-latest
+    name: Releases
+    needs: preflight
+    if: needs.preflight.outputs.repository != ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Run the check
+        run: python3 -m scripts.check.releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{needs.preflight.outputs.repository}}
+
+  removed:
+    runs-on: ubuntu-latest
+    name: Removed repository
+    needs: preflight
+    if: needs.preflight.outputs.repository != ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Run the check
+        run: python3 -m scripts.check.removed
+        env:
+          REPOSITORY: ${{needs.preflight.outputs.repository}}
+
+  existing:
+    runs-on: ubuntu-latest
+    name: Existing repository
+    needs: preflight
+    if: needs.preflight.outputs.repository != ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Run the check
+        run: python3 -m scripts.check.existing
+        env:
+          REPOSITORY: ${{needs.preflight.outputs.repository}}
+
+  catalog:
+    runs-on: ubuntu-latest
+    name: Catalog action
+    needs: preflight
+    if: needs.preflight.outputs.repository != ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Catalog action
+        uses: ./
+        with:
+          repository: ${{needs.preflight.outputs.repository}}
+
+  completed:
+    runs-on: ubuntu-latest
+    name: Action checks completed
+    needs:
+      - preflight
+      - editable
+      - owner
+      - releases
+      - removed
+      - existing
+      - catalog
+    if: always()
+    steps:
+      - name: Fail if any dependency failed or was cancelled
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            exit 1
+          fi
+          exit 0

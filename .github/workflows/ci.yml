@@ -1,0 +1,81 @@
+name: CI
+
+# Reusable CI — the hacs/default lint.yml role: validate the hand-edited lists
+# against their JSON Schemas, enforce sortedness, lint the workflows, then
+# chain CodeQL. Called by release-please.yml on push to main, and run directly
+# on every PR (the admission gate itself lives in checks.yml).
+
+on:
+  workflow_call:
+  pull_request:
+    branches: ['main']
+
+permissions:
+  contents: read
+  security-events: write
+  packages: read
+  actions: read
+
+jobs:
+  jsonschema:
+    name: JSON schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Validate sources.yml and removed.yml
+        run: python3 -m scripts.validate_schemas
+
+  sorted:
+    name: Sorted
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Check lists
+        run: python3 -m scripts.is_sorted
+
+  actionlint:
+    name: Workflow Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:1.7.7
+        with:
+          args: -color
+
+  codeql-analysis:
+    name: CodeQL
+    needs: [jsonschema, sorted, actionlint]
+    uses: ./.github/workflows/codeql.yml

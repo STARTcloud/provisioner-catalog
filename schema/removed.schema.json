@@ -1,0 +1,32 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://provisioner-catalog.startcloud.com/schema/removed.schema.json",
+    "title": "Provisioner catalog removal blacklist (removed.yml)",
+    "description": "Repositories ejected from the catalog after admission. Listed repos are excluded from generated catalog data even when still present in sources.yml.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["removed"],
+    "properties": {
+        "removed": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["repo", "reason"],
+                "properties": {
+                    "repo": {
+                        "type": "string",
+                        "description": "GitHub repository as owner/name",
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Human-readable reason for the removal",
+                        "minLength": 1
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,42 @@
+name: 'Provisioner Repository Validation'
+description: >-
+  Validates a provisioner repository's GitHub releases against the STARTcloud
+  provisioner-catalog artifact contract: versioned registry-shaped tar.gz
+  assets, a parseable provisioner.yml with matching name/version, the required
+  templates/Hosts.template.yml, sha256 sidecars, and an archive-content safety
+  scan. Add this to your provisioner repo's CI and get it green before opening
+  an admission PR to sources.yml.
+author: 'STARTcloud'
+
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  repository:
+    description: >-
+      GitHub repository to validate (owner/name). Defaults to the repository
+      running the action.
+    required: false
+    default: ''
+  github-token:
+    description: >-
+      Token for GitHub API calls (release listing). Defaults to the workflow
+      token.
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install validator dependencies
+      shell: bash
+      run: pip install --quiet --disable-pip-version-check -r "${{ github.action_path }}/requirements.txt"
+
+    - name: Validate provisioner releases
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token != '' && inputs.github-token || github.token }}
+        TARGET_REPOSITORY: ${{ inputs.repository != '' && inputs.repository || github.repository }}
+      run: python3 -m scripts.validate_repo --repo "$TARGET_REPOSITORY"

@@ -1,0 +1,102 @@
+# Copy-paste release build for a NEW provisioner repository.
+# Copy this file into your repo as .github/workflows/build-provisioner.yml.
+#
+# Contract (inherited from STARTcloud/startcloud_generic_provisioner, the
+# reference implementation):
+#
+#   - The version source of truth is your provisioner.yml `version:` — in the
+#     reference repo it is managed by release-please. This build REFUSES to run
+#     when the requested version does not match provisioner.yml.
+#   - The archive is REGISTRY-SHAPED: the tar contains <name>/<version>/...
+#     (name/version parsed from provisioner.yml) — never package files at top
+#     level.
+#   - Two archives per release: <name>-<version>.tar.gz (immutable — the one
+#     the catalog records) and <name>.tar.gz (a mutable "latest" alias).
+#   - Every asset gets a <asset>.sha256 sidecar (catalog requirement).
+#     NOTE: startcloud_generic_provisioner itself does not attach sidecars yet —
+#     its maintainer is adding them. New repositories must ship them from the
+#     start; the catalog's validation action warns/fails without them.
+#
+# No secrets beyond the default GITHUB_TOKEN, no dispatch into other repos.
+# Wire it to release-please the way the reference repo does: a release-please
+# workflow on push to main calls this one (workflow_call) when a release is
+# created — see STARTcloud/startcloud_generic_provisioner's release-please.yml.
+
+name: Build Provisioner Artifact
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to build (must match provisioner.yml)'
+        required: true
+        type: string
+      tag_name:
+        description: 'GitHub release tag'
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (must match provisioner.yml)'
+        required: true
+        type: string
+      tag_name:
+        description: 'GitHub release tag'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    name: Build & Upload
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code with submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Stage registry-shaped tree and build seed archive
+        id: stage
+        run: |
+          # Quote-agnostic: a release-please version stamp may rewrite the line
+          # with or without quotes.
+          NAME="$(sed -nE 's/^name:[[:space:]]*"?([A-Za-z0-9._-]+)"?.*/\1/p' provisioner.yml | head -n1)"
+          VERSION="$(sed -nE 's/^version:[[:space:]]*"?([0-9]+\.[0-9]+\.[0-9]+[0-9A-Za-z.+-]*)"?.*/\1/p' provisioner.yml | head -n1)"
+          echo "Parsed name=$NAME version=$VERSION"
+          if [ "$VERSION" != "${{ inputs.version }}" ]; then
+            echo "provisioner.yml version ($VERSION) does not match requested version (${{ inputs.version }})" >&2
+            exit 1
+          fi
+          STAGE="$RUNNER_TEMP/seed/$NAME/$VERSION"
+          mkdir -p "$STAGE"
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitmodules' \
+            --exclude='.gitattributes' \
+            --exclude='release-please-config.json' \
+            --exclude='.release-please-manifest.json' \
+            ./ "$STAGE/"
+          tar -czf "$NAME-$VERSION.tar.gz" -C "$RUNNER_TEMP/seed" "$NAME"
+          cp "$NAME-$VERSION.tar.gz" "$NAME.tar.gz"
+          sha256sum "$NAME-$VERSION.tar.gz" > "$NAME-$VERSION.tar.gz.sha256"
+          sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256"
+          echo "artifact=$NAME-$VERSION.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "latest_artifact=$NAME.tar.gz" >> "$GITHUB_OUTPUT"
+
+      # Four assets per release: the immutable versioned archive (what the
+      # catalog records), the mutable "latest" alias, and a .sha256 sidecar for
+      # each. Consumers and the catalog data job verify sidecars after download.
+      - name: Upload seed archives to the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ inputs.tag_name }}" \
+            "${{ steps.stage.outputs.artifact }}" \
+            "${{ steps.stage.outputs.artifact }}.sha256" \
+            "${{ steps.stage.outputs.latest_artifact }}" \
+            "${{ steps.stage.outputs.latest_artifact }}.sha256" --clobber

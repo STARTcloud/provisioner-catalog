@@ -1,0 +1,32 @@
+# Author-side validation (the HACS pattern, as used by integrations like
+# ha_easgen): run the catalog's validation action in YOUR provisioner repo's
+# CI. Copy this file into your repo as .github/workflows/validate.yml.
+#
+# Green runs of this workflow are part of the admission checklist — link them
+# in your sources.yml pull request. The same validation re-runs as a required
+# PR check on the catalog side.
+#
+# No checkout needed: the action validates your repository's PUBLISHED
+# releases through the GitHub API, exactly as the catalog's data job sees them.
+
+name: Validate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    name: Provisioner Catalog Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run provisioner-catalog validation
+        uses: STARTcloud/provisioner-catalog@main

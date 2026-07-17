@@ -1,0 +1,39 @@
+name: Release Please
+
+# Single entry point on push to main: run CI (which chains CodeQL), then
+# release-please to maintain this repository's own version and CHANGELOG —
+# same orchestration as startcloud_generic_provisioner / hyperweaver-ui.
+#
+# NOTE: catalog DATA does not ride releases. The data job
+# (generate-catalog-data.yml) rebuilds and publishes catalog.json on its own
+# schedule; releases here version the catalog's tooling and documentation.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+  security-events: write
+  packages: read
+
+jobs:
+  ci-checks:
+    name: CI Checks
+    uses: ./.github/workflows/ci.yml
+
+  release-please:
+    name: Release Please
+    needs: ci-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Release Please
+        uses: googleapis/release-please-action@v5
+        id: release

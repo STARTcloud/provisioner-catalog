@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload Pages artifact
         if: ${{ steps.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -77,5 +77,5 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         id: deployment

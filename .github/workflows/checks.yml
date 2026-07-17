@@ -50,7 +50,7 @@ jobs:
 
       - name: Set repository
         id: repository
-        run: echo "repository=$(python3 -m scripts.changed.repo)" >> $GITHUB_OUTPUT
+        run: echo "repository=$(python3 -m scripts.changed.repo)" >> "$GITHUB_OUTPUT"
 
   editable:
     runs-on: ubuntu-latest

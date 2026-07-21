@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.5](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.4...provisioner-catalog-v0.0.5) (2026-07-21)
+
+
+### Bug Fixes
+
+* magic-link sign-in and favicon ([4d9ab66](https://github.com/STARTcloud/provisioner-catalog/commit/4d9ab667a0a7f488f07ff058a17c7383a9ffe2aa))
+
 ## [0.0.4](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.3...provisioner-catalog-v0.0.4) (2026-07-21)
 
 

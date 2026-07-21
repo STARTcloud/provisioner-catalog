@@ -2,7 +2,6 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import react from '@vitejs/plugin-react';
-import { NodePackageImporter } from 'sass';
 import { defineConfig } from 'vite';
 import YAML from 'yaml';
 
@@ -33,14 +32,6 @@ export default defineConfig({
     // Replaced at build time from this package's own package.json
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_NAME__: JSON.stringify(pkg.name),
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        api: 'modern',
-        importers: [new NodePackageImporter()],
-      },
-    },
   },
   plugins: [react()],
   base: '/',

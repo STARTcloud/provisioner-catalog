@@ -1,0 +1,4 @@
+# Build output — never format artifacts
+dist/
+# Lockfile is machine-managed
+package-lock.json

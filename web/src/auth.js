@@ -85,8 +85,11 @@ const tokenRequest = async params => {
 export const beginLogin = async () => {
   const verifier = randomUrlSafe(48);
   const state = randomUrlSafe(24);
-  sessionStorage.setItem(STORE.verifier, verifier);
-  sessionStorage.setItem(STORE.state, state);
+  // localStorage, NOT sessionStorage: magic-link sign-ins complete in a NEW
+  // tab (opened from the email client), and sessionStorage is per-tab — the
+  // callback would never see the state/verifier stored here.
+  localStorage.setItem(STORE.verifier, verifier);
+  localStorage.setItem(STORE.state, state);
   const [{ authorization_endpoint }, challenge] = await Promise.all([discover(), s256(verifier)]);
   const query = new URLSearchParams({
     response_type: 'code',
@@ -109,10 +112,10 @@ export const completeLogin = async () => {
   }
   const code = params.get('code');
   const state = params.get('state');
-  const expectedState = sessionStorage.getItem(STORE.state);
-  const verifier = sessionStorage.getItem(STORE.verifier);
-  sessionStorage.removeItem(STORE.state);
-  sessionStorage.removeItem(STORE.verifier);
+  const expectedState = localStorage.getItem(STORE.state);
+  const verifier = localStorage.getItem(STORE.verifier);
+  localStorage.removeItem(STORE.state);
+  localStorage.removeItem(STORE.verifier);
   if (!code) {
     throw new Error('no authorization code in callback');
   }

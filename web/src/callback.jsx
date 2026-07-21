@@ -1,10 +1,11 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { useEffect, useState } from 'react';
 import { Alert, Container, Spinner } from 'react-bootstrap';
 import { createRoot } from 'react-dom/client';
 
 import { completeLogin } from './auth';
 
-import './styles.scss';
+import './styles.css';
 
 // Module-level guard: the exchange must run exactly once even if the effect
 // re-fires (React StrictMode double-invoke, HMR) — the PKCE verifier and

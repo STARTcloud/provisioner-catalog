@@ -7,7 +7,10 @@ The public catalog of **provisioner packages** — versioned directories
 [hyperweaver-agent](https://github.com/Makr91/hyperweaver-agent) (Go) and
 zoneweaver-agent (Node) to provision VMs and zones.
 
-Static JSON + GitHub Actions only. No server code, ever.
+The public catalog is static JSON + GitHub Actions — no server in that path,
+ever. The same domain also serves a browser UI, and an edge Worker gates
+per-organization **private catalogs** (see below); neither touches the public
+contract.
 
 ## The catalog URL
 
@@ -20,6 +23,10 @@ https://provisioner-catalog.startcloud.com/catalog.json
 It regenerates every ~2 hours from the admitted repositories' GitHub releases.
 Package archives themselves are downloaded from each repository's own release
 assets — this catalog serves metadata, never bytes.
+
+The same URL's root serves the catalog **web UI** ([web/](web/), React + Vite,
+built into the Pages payload by the data job) — a human view of the same
+public data, plus OIDC sign-in for private catalogs.
 
 ## How it works (the HACS model, adapted)
 
@@ -95,6 +102,36 @@ checksums and **fails loudly (the immutability tripwire)** if an
 already-published version's asset ever hashes differently — a mutated artifact
 is never silently accepted. Rebuilt artifacts must ship as a **new version**.
 
+## Private per-organization catalogs
+
+Organizations on the STARTcloud IdP can share **private provisioners** with
+their members through the same page. Same contract, same builder pattern —
+different visibility:
+
+- The org→repos mapping (`sources-orgs.yml`) lives in a **private store
+  repository** (`STARTcloud/provisioner-catalogs-private`), keyed by the IdP
+  organization uuid — private repo names never appear in this public repo.
+- The data job's `build-private` job reads each org's source repositories with
+  a **GitHub App installation token** (the *STARTcloud Provisioner Catalog*
+  App, Contents: read-only, installed by the owning org on just the selected
+  repos), builds `orgs/<org-uuid>/catalog.json` with
+  [scripts/build_org_catalogs.py](scripts/build_org_catalogs.py) — including
+  the same sidecar verification and immutability tripwire — and commits the
+  results back to the store.
+- A **Cloudflare Worker** routed on `/private/*` serves those catalogs: it
+  verifies the caller's Bearer JWT against the IdP's JWKS (issuer, audience,
+  expiry) and requires the requested org uuid in the token's `organizations`
+  claim. Membership = read access; everyone else gets 403. The Worker holds
+  one read-only token scoped to the store repo, in Cloudflare secrets.
+- The web UI signs users in with authorization-code + PKCE (public client, no
+  secret), then fetches `/private/<org-uuid>/catalog.json` for each org in the
+  token and renders them alongside the public catalog. Multi-org users see all
+  their orgs — that is the cross-sharing mechanism.
+
+Artifact URLs in private catalogs point at private release assets; consumers
+need their own GitHub access to download them, exactly as they need it to
+clone the repos.
+
 ## Publishing your provisioner (door one)
 
 Full walkthrough: [CONTRIBUTING.md](CONTRIBUTING.md). Short version:
@@ -140,9 +177,14 @@ issue.
 | [removed.yml](removed.yml) | Hand-edited post-admission blacklist |
 | [action.yml](action.yml) | Reusable validation action for authors' CI |
 | [schema/](schema/) | JSON Schemas for catalog.json, sources.yml, removed.yml |
-| [scripts/](scripts/) | The validator and the catalog builder (Python, stdlib + PyYAML + jsonschema) |
+| [scripts/](scripts/) | The validator and the catalog builders — public + per-org (Python) |
+| [web/](web/) | The catalog web UI (React + Vite), built into the Pages payload |
 | [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data |
 | [examples/](examples/) | Copy-paste publisher kit for new provisioner repos |
+
+The Cloudflare Worker gating `/private/*` is deliberately **not tracked
+here** — it is deployed by hand with wrangler and its one secret lives only
+in Cloudflare.
 
 ## This repository's own releases
 

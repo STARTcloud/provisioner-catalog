@@ -1,0 +1,10 @@
+# Local dev-server settings for the catalog SPA (mirrors the hyperweaver-ui
+# pattern). Only the Vite dev server reads this; the built SPA is static.
+#
+# port MUST stay 8080 — the IdP registers http://localhost:8080/callback
+# exact-match. api_target is where /catalog.json and /private/* proxy to in
+# dev (the production catalog host).
+
+server:
+  port: 8080
+  api_target: https://provisioner-catalog.startcloud.com

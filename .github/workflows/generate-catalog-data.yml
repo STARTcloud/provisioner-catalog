@@ -5,13 +5,22 @@ name: Generate Catalog Data
 # chained from release-please.yml after every successful push-to-main flow
 # (our deviation from HACS's schedule-only trigger, so merges publish
 # immediately) — this rebuilds catalog.json from the admitted repositories'
-# GitHub releases and deploys it to GitHub Pages, ONLY when the generated
-# data differs from what is live (or forceRepositoryUpdate is set).
+# GitHub releases and deploys it to GitHub Pages together with the SPA,
+# when the data changed, on any push-to-main chain (so SPA changes ship), or
+# when forceRepositoryUpdate is set.
 #
 # This job can never admit a repository: it only reads sources.yml and
 # removed.yml from main. The immutability tripwire fails the run loudly if an
 # already-published version's asset hashes differently — published versions
 # never change; rebuilds ship as new versions.
+#
+# The build-private job is the same pattern for the per-org PRIVATE catalogs:
+# sources-orgs.yml lives in the private store repo
+# (STARTcloud/provisioner-catalogs-private), source repos are read with a
+# GitHub App installation token, and the built orgs/{uuid}/catalog.json files
+# are committed back to the store. The Cloudflare Worker serves them to org
+# members; they never touch Pages. A failure there never blocks the public
+# publish (independent jobs).
 
 on:
   schedule:
@@ -35,7 +44,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build catalog.json
+    name: Build catalog.json + SPA
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.build.outputs.changed }}
@@ -64,8 +73,26 @@ jobs:
           --out dist/catalog.json
           --published-url https://provisioner-catalog.startcloud.com/catalog.json
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'web/package-lock.json'
+
+      - name: Install SPA dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Build SPA
+        working-directory: web
+        run: npm run build
+
+      - name: Merge SPA into the Pages payload
+        run: cp -r web/dist/. dist/
+
       - name: Upload Pages artifact
-        if: ${{ steps.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
+        if: ${{ steps.build.outputs.changed == 'true' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
@@ -73,7 +100,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: ${{ needs.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
+    if: ${{ needs.build.outputs.changed == 'true' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -82,3 +109,49 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v5
         id: deployment
+
+  build-private:
+    name: Build private org catalogs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check out the private store
+        uses: actions/checkout@v7.0.0
+        with:
+          repository: STARTcloud/provisioner-catalogs-private
+          token: ${{ secrets.PRIVATE_CATALOG_PAT }}
+          path: store
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Build org catalogs
+        id: build
+        if: ${{ hashFiles('store/sources-orgs.yml') != '' }}
+        env:
+          CATALOG_APP_ID: ${{ secrets.CATALOG_APP_ID }}
+          CATALOG_APP_PRIVATE_KEY: ${{ secrets.CATALOG_APP_PRIVATE_KEY }}
+        run: >-
+          python3 -m scripts.build_org_catalogs
+          --config store/sources-orgs.yml
+          --store store
+
+      - name: Commit and push changed catalogs
+        if: ${{ steps.build.outputs.changed == 'true' }}
+        run: |
+          git -C store config user.name "github-actions[bot]"
+          git -C store config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C store add orgs
+          git -C store commit -m "chore: regenerate org catalogs"
+          git -C store push

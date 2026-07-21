@@ -3,6 +3,13 @@
 catalog.json
 dist/
 
+# Cloudflare Worker (the /private/* gate) — kept local by choice, deployed by
+# hand with wrangler. See the plan: code never committed here.
+worker/
+
+# Node (web/ SPA)
+node_modules/
+
 # Python
 __pycache__/
 *.pyc

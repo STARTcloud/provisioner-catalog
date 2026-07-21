@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.4](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.3...provisioner-catalog-v0.0.4) (2026-07-21)
+
+
+### Features
+
+* SPA with OIDC login and per-org private catalogs ([8060a4b](https://github.com/STARTcloud/provisioner-catalog/commit/8060a4bb0fa22f990c3c7e1ffb0279e99dc550b5))
+
 ## [0.0.3](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.2...provisioner-catalog-v0.0.3) (2026-07-17)
 
 

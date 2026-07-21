@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.6](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.5...provisioner-catalog-v0.0.6) (2026-07-21)
+
+
+### Bug Fixes
+
+* magic-link sign-in, favicon, drop sass for precompiled bootstrap ([d369be7](https://github.com/STARTcloud/provisioner-catalog/commit/d369be7b366d0c0684d8d6747fe59d9ac68614d9))
+
 ## [0.0.5](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.4...provisioner-catalog-v0.0.5) (2026-07-21)
 
 

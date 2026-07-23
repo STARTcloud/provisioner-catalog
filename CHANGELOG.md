@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.8](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.7...provisioner-catalog-v0.0.8) (2026-07-23)
+
+
+### Features
+
+* catalog UI pizazz — icons, search, version paging, hover polish ([73652db](https://github.com/STARTcloud/provisioner-catalog/commit/73652dbe4a276ae16d7bcaffecee587260add8ab))
+
 ## [0.0.7](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.6...provisioner-catalog-v0.0.7) (2026-07-23)
 
 

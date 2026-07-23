@@ -155,6 +155,9 @@ never read it — the wire contract stays catalog.json alone.
   the grades themselves.
 - Live health rides along: last-release age, artifact/sidecar status from the
   current run.
+- Presentation extras ride too: optional `label:`, `icon:` (URL) and
+  `homepage:` (URL) in provisioner.yml surface on the web UI's cards — parsed
+  from the packaged manifest like everything else, never from repo metadata.
 
 The validation action reports the measured tier on every run, and its new
 `--tree` mode checks a working tree's manifest before a release ever exists.

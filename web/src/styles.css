@@ -3,6 +3,40 @@
   color: var(--bs-secondary-color);
 }
 
+.catalog-card {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.catalog-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.prov-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.prov-icon-fallback {
+  padding: 6px;
+  color: var(--bs-secondary-color);
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+.version-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.catalog-search {
+  max-width: 560px;
+}
+
 /* Measured quality tiers — metal colors, dark text where the metal is light */
 .tier-badge {
   border: 1px solid rgba(0, 0, 0, 0.2);

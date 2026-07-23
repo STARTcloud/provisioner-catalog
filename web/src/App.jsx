@@ -9,14 +9,18 @@ import {
   Card,
   Col,
   Container,
+  Form,
+  InputGroup,
   ListGroup,
   Navbar,
   Row,
   Spinner,
 } from 'react-bootstrap';
-import { FaBuilding, FaGithub, FaGlobe } from 'react-icons/fa';
+import { FaBuilding, FaCube, FaGithub, FaGlobe, FaHome, FaSearch } from 'react-icons/fa';
 
 import { beginLogin, getAccessToken, getClaims, signOut } from './auth';
+
+const VISIBLE_VERSIONS = 10;
 
 const provisionerShape = PropTypes.shape({
   name: PropTypes.string.isRequired,
@@ -38,6 +42,11 @@ const provisionerShape = PropTypes.shape({
 
 const healthEntryShape = PropTypes.shape({
   tier: PropTypes.string.isRequired,
+  presentation: PropTypes.shape({
+    label: PropTypes.string,
+    icon: PropTypes.string,
+    homepage: PropTypes.string,
+  }),
   failed_rules: PropTypes.arrayOf(PropTypes.string).isRequired,
   health: PropTypes.shape({
     latest_version: PropTypes.string,
@@ -149,19 +158,52 @@ QualityBreakdown.propTypes = {
   entry: healthEntryShape,
 };
 
+const ProvisionerIcon = ({ entry }) => {
+  const icon = entry?.presentation?.icon;
+  if (icon) {
+    return (
+      <img
+        src={icon}
+        alt=""
+        className="prov-icon"
+        loading="lazy"
+        onError={event => {
+          event.currentTarget.style.display = 'none';
+        }}
+      />
+    );
+  }
+  return <FaCube className="prov-icon prov-icon-fallback" aria-hidden />;
+};
+
+ProvisionerIcon.propTypes = {
+  entry: healthEntryShape,
+};
+
 const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
   const [latest] = provisioner.versions;
+  const [showAllVersions, setShowAllVersions] = useState(false);
+  const label = healthEntry?.presentation?.label || '';
+  const homepage = healthEntry?.presentation?.homepage || '';
+  const versions = showAllVersions
+    ? provisioner.versions
+    : provisioner.versions.slice(0, VISIBLE_VERSIONS);
+  const hiddenCount = provisioner.versions.length - versions.length;
   return (
-    <Card className="h-100 shadow-sm">
+    <Card className="h-100 shadow-sm catalog-card">
       <Card.Body>
-        <Card.Title className="d-flex justify-content-between align-items-start gap-2">
-          <span className="text-break">{provisioner.name}</span>
-          <span className="d-flex gap-1">
+        <div className="d-flex align-items-start gap-2 mb-2">
+          <ProvisionerIcon entry={healthEntry} />
+          <div className="flex-grow-1 min-width-0">
+            <Card.Title className="mb-0 text-break">{label || provisioner.name}</Card.Title>
+            {label ? <code className="checksum">{provisioner.name}</code> : null}
+          </div>
+          <span className="d-flex flex-column align-items-end gap-1">
             <TierBadge entry={healthEntry} />
             <Badge bg="primary">v{latest.version}</Badge>
           </span>
-        </Card.Title>
-        <Card.Subtitle className="mb-2">
+        </div>
+        <Card.Subtitle className="mb-2 d-flex flex-wrap gap-3">
           <a
             className="text-decoration-none"
             href={`https://github.com/${provisioner.repo}`}
@@ -171,6 +213,12 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
             <FaGithub className="me-1" />
             {provisioner.repo}
           </a>
+          {homepage ? (
+            <a className="text-decoration-none" href={homepage} target="_blank" rel="noreferrer">
+              <FaHome className="me-1" />
+              homepage
+            </a>
+          ) : null}
         </Card.Subtitle>
         <HealthChips entry={healthEntry} />
         <Card.Text>{provisioner.description || 'No description provided.'}</Card.Text>
@@ -181,8 +229,8 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
               {provisioner.versions.length === 1 ? ' version' : ' versions'}
             </Accordion.Header>
             <Accordion.Body className="p-0">
-              <ListGroup variant="flush">
-                {provisioner.versions.map(entry => (
+              <ListGroup variant="flush" className="version-list">
+                {versions.map(entry => (
                   <ListGroup.Item key={entry.version}>
                     <div className="d-flex justify-content-between align-items-center gap-2">
                       <strong>{entry.version}</strong>
@@ -201,6 +249,20 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
                     ))}
                   </ListGroup.Item>
                 ))}
+                {hiddenCount > 0 || showAllVersions ? (
+                  <ListGroup.Item className="text-center">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="p-0"
+                      onClick={() => setShowAllVersions(current => !current)}
+                    >
+                      {showAllVersions
+                        ? 'Show fewer versions'
+                        : `Show all ${provisioner.versions.length} versions`}
+                    </Button>
+                  </ListGroup.Item>
+                ) : null}
               </ListGroup>
             </Accordion.Body>
           </Accordion.Item>
@@ -216,36 +278,56 @@ ProvisionerCard.propTypes = {
   healthEntry: healthEntryShape,
 };
 
+const matchesQuery = (provisioner, health, query) => {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return true;
+  }
+  const label = health?.provisioners?.[provisioner.name]?.presentation?.label || '';
+  return [provisioner.name, provisioner.description || '', provisioner.repo, label].some(text =>
+    text.toLowerCase().includes(needle)
+  );
+};
+
 const CatalogSection = ({
   title,
   icon = null,
   subtitle = '',
   provisioners,
   health = null,
+  query = '',
   emptyNote = 'Nothing published yet.',
-}) => (
-  <section className="mb-5">
-    <h2 className="h4 d-flex align-items-center gap-2">
-      {icon}
-      {title}
-    </h2>
-    {subtitle ? <p className="text-body-secondary mb-3">{subtitle}</p> : null}
-    {provisioners.length === 0 ? (
-      <Alert variant="light">{emptyNote}</Alert>
-    ) : (
-      <Row xs={1} md={2} xl={3} className="g-3">
-        {provisioners.map(provisioner => (
-          <Col key={provisioner.name}>
-            <ProvisionerCard
-              provisioner={provisioner}
-              healthEntry={health?.provisioners?.[provisioner.name] || null}
-            />
-          </Col>
-        ))}
-      </Row>
-    )}
-  </section>
-);
+}) => {
+  const filtered = provisioners.filter(provisioner => matchesQuery(provisioner, health, query));
+  return (
+    <section className="mb-5">
+      <h2 className="h4 d-flex align-items-center gap-2">
+        {icon}
+        {title}
+        {query.trim() ? (
+          <Badge bg="secondary" pill>
+            {filtered.length}/{provisioners.length}
+          </Badge>
+        ) : null}
+      </h2>
+      {subtitle ? <p className="text-body-secondary mb-3">{subtitle}</p> : null}
+      {filtered.length === 0 ? (
+        <Alert variant="light">{query.trim() ? 'No provisioners match.' : emptyNote}</Alert>
+      ) : (
+        <Row xs={1} md={2} xl={3} className="g-3">
+          {filtered.map(provisioner => (
+            <Col key={provisioner.name}>
+              <ProvisionerCard
+                provisioner={provisioner}
+                healthEntry={health?.provisioners?.[provisioner.name] || null}
+              />
+            </Col>
+          ))}
+        </Row>
+      )}
+    </section>
+  );
+};
 
 CatalogSection.propTypes = {
   title: PropTypes.string.isRequired,
@@ -253,6 +335,7 @@ CatalogSection.propTypes = {
   subtitle: PropTypes.string,
   provisioners: PropTypes.arrayOf(provisionerShape).isRequired,
   health: PropTypes.shape({ provisioners: PropTypes.object }),
+  query: PropTypes.string,
   emptyNote: PropTypes.string,
 };
 
@@ -274,6 +357,7 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [orgResults, setOrgResults] = useState([]);
   const [loadingPrivate, setLoadingPrivate] = useState(false);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     axios
@@ -334,7 +418,10 @@ const App = () => {
     <>
       <Navbar bg="dark" data-bs-theme="dark" sticky="top" className="shadow-sm">
         <Container>
-          <Navbar.Brand>STARTcloud Provisioner Catalog</Navbar.Brand>
+          <Navbar.Brand className="d-flex align-items-center gap-2">
+            <img src="/startcloud.svg" alt="" height="28" width="28" />
+            STARTcloud Provisioner Catalog
+          </Navbar.Brand>
           <div className="d-flex align-items-center gap-2">
             {user ? (
               <>
@@ -362,6 +449,19 @@ const App = () => {
           organizations&rsquo; private provisioners.
         </p>
 
+        <InputGroup className="mb-4 catalog-search">
+          <InputGroup.Text>
+            <FaSearch aria-hidden />
+          </InputGroup.Text>
+          <Form.Control
+            type="search"
+            placeholder="Search provisioners by name, description, or repository…"
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            aria-label="Search provisioners"
+          />
+        </InputGroup>
+
         {publicError ? (
           <Alert variant="danger">Could not load the public catalog: {publicError}</Alert>
         ) : null}
@@ -373,6 +473,7 @@ const App = () => {
             subtitle={`Updated ${publicCatalog.updated} — regenerates every ~2 hours from admitted repositories.`}
             provisioners={publicCatalog.provisioners}
             health={publicHealth}
+            query={query}
             emptyNote="The public catalog is empty."
           />
         ) : null}
@@ -395,6 +496,7 @@ const App = () => {
                 subtitle={`Private catalog — visible to ${org.name} members only.`}
                 provisioners={org.catalog.provisioners}
                 health={org.health}
+                query={query}
                 emptyNote="This organization has no published provisioners yet."
               />
             ) : (

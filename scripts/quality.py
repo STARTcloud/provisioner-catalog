@@ -201,6 +201,7 @@ def failed_rules(rules: dict[str, dict[str, bool]]) -> list[str]:
 def health_entry(
     repo: str,
     rules: dict[str, dict[str, bool]],
+    manifest: dict | None,
     latest_version: str,
     releases: list[dict],
     artifacts_ok: bool,
@@ -208,9 +209,15 @@ def health_entry(
 ) -> dict:
     release_times = [t for t in (_parse_time(r.get("published_at")) for r in releases) if t]
     latest_release_at = max(release_times) if release_times else None
+    manifest = manifest if isinstance(manifest, dict) else {}
     return {
         "repo": repo,
         "tier": measured_tier(rules),
+        "presentation": {
+            "label": str(manifest.get("label") or "").strip(),
+            "icon": str(manifest.get("icon") or "").strip(),
+            "homepage": str(manifest.get("homepage") or "").strip(),
+        },
         "rules": rules,
         "failed_rules": failed_rules(rules),
         "health": {

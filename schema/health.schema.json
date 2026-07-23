@@ -25,7 +25,7 @@
                 "^[A-Za-z0-9._-]+$": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": ["repo", "tier", "rules", "failed_rules", "health"],
+                    "required": ["repo", "tier", "presentation", "rules", "failed_rules", "health"],
                     "properties": {
                         "repo": {
                             "type": "string",
@@ -34,6 +34,17 @@
                         "tier": {
                             "description": "Measured tier — recomputed every data run",
                             "enum": ["unrated", "bronze", "silver", "gold", "platinum"]
+                        },
+                        "presentation": {
+                            "description": "UI extras parsed from the packaged provisioner.yml (label, icon URL, homepage URL) — empty strings when the manifest omits them",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["label", "icon", "homepage"],
+                            "properties": {
+                                "label": { "type": "string" },
+                                "icon": { "type": "string" },
+                                "homepage": { "type": "string" }
+                            }
                         },
                         "rules": {
                             "type": "object",

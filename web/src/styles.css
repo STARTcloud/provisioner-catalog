@@ -3,6 +3,31 @@
   color: var(--bs-secondary-color);
 }
 
+/* Measured quality tiers — metal colors, dark text where the metal is light */
+.tier-badge {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.tier-unrated {
+  background-color: var(--bs-secondary) !important;
+  color: #fff;
+}
+.tier-bronze {
+  background-color: #cd7f32 !important;
+  color: #fff;
+}
+.tier-silver {
+  background-color: #c0c0c0 !important;
+  color: #212529;
+}
+.tier-gold {
+  background-color: #d4af37 !important;
+  color: #212529;
+}
+.tier-platinum {
+  background-color: #e5e4e2 !important;
+  color: #212529;
+}
+
 footer {
   margin-top: auto;
 }

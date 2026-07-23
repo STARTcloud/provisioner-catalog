@@ -3,19 +3,19 @@
 
 Run by the data job next to scripts.build_catalog. Reads sources-orgs.yml from
 the private store checkout (STARTcloud/provisioner-catalogs-private), builds
-one catalog.json per org uuid into that same checkout, and the workflow
-commits the result back. The Cloudflare Worker serves these files to org
-members; nothing here ever lands on GitHub Pages.
+one catalog.json per org uuid into that same checkout — plus a companion
+health.json with measured quality tiers (scripts/quality.py) — and the
+workflow commits the result back. The
+Cloudflare Worker serves these files to org members; nothing here ever lands
+on GitHub Pages.
 
 Differences from the public builder, and nothing else:
 
   - source repos are private: releases are listed and assets downloaded with
     a GitHub App installation token minted per repo owner (the App only needs
     Contents: read and must be installed on the owning org)
-  - private release assets can't use browser_download_url anonymously — they
-    are fetched through the API asset endpoint. GitHub redirects that to a
-    signed CDN URL which REJECTS an Authorization header, so redirects are
-    caught manually and followed bare
+  - private release assets are fetched through the API asset endpoint
+    (validate_repo.download_release_asset handles the signed-CDN redirect)
   - the published baseline for change detection and the immutability tripwire
     is the file already sitting in the store checkout
 
@@ -37,6 +37,7 @@ from datetime import datetime, timezone
 import jwt
 import yaml
 
+from scripts import quality
 from scripts.build_catalog import (
     extract_manifest_lenient,
     normalized,
@@ -46,12 +47,12 @@ from scripts.build_catalog import (
 )
 from scripts.validate_repo import (
     API_ROOT,
-    MAX_ARCHIVE_BYTES,
     MAX_SIDECAR_BYTES,
     REPO_RE,
     Reporter,
     USER_AGENT,
     collect_assets,
+    download_release_asset,
     list_releases,
     parse_sidecar,
     semver_key,
@@ -61,54 +62,6 @@ from scripts.validate_repo import (
 UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 )
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: N802
-        return None
-
-
-def _read_capped(response, cap: int) -> bytes:
-    import io
-
-    buffer = io.BytesIO()
-    while True:
-        chunk = response.read(1024 * 1024)
-        if not chunk:
-            break
-        buffer.write(chunk)
-        if buffer.tell() > cap:
-            raise RuntimeError(f"download exceeds {cap} bytes")
-    return buffer.getvalue()
-
-
-def download_private_asset(api_url: str, token: str, cap: int = MAX_ARCHIVE_BYTES) -> bytes:
-    """Download a private release asset via the API asset endpoint.
-
-    The authenticated request 302s to a signed CDN URL that rejects an
-    Authorization header — so the redirect is caught and followed bare.
-    """
-    request = urllib.request.Request(
-        api_url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/octet-stream",
-        },
-    )
-    opener = urllib.request.build_opener(_NoRedirect)
-    try:
-        with opener.open(request, timeout=60) as response:
-            return _read_capped(response, cap)
-    except urllib.error.HTTPError as exc:
-        if exc.code in (301, 302, 303, 307, 308):
-            location = exc.headers.get("Location")
-            if not location:
-                raise RuntimeError(f"redirect without Location from {api_url}") from exc
-            bare = urllib.request.Request(location, headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(bare, timeout=60) as response:
-                return _read_capped(response, cap)
-        raise
 
 
 def app_installation_tokens(app_id: str, private_key: str, rep: Reporter) -> dict[str, str]:
@@ -184,9 +137,12 @@ def load_org_config(path: str, rep: Reporter) -> list[dict]:
 
 
 def build_org_provisioners(
-    repos: list[str], tokens: dict[str, str], rep: Reporter
-) -> list[dict]:
+    repos: list[str],
+    tokens: dict[str, str],
+    rep: Reporter,
+) -> tuple[list[dict], dict[str, dict]]:
     provisioners: list[dict] = []
+    health_map: dict[str, dict] = {}
     seen_families: dict[str, str] = {}
 
     for repo in repos:
@@ -207,6 +163,7 @@ def build_org_provisioners(
         if not families:
             rep.warning(f"{repo}: no versioned release assets — omitted from catalog data")
             continue
+        workflows_text = quality.fetch_workflows_text(repo, token)
 
         for family in sorted(families):
             if family in seen_families:
@@ -221,18 +178,24 @@ def build_org_provisioners(
             latest = max(versions, key=semver_key)
             description = ""
             version_entries: list[dict] = []
+            manifest = None
+            members: list[str] = []
+            artifacts_ok = True
+            sidecars_ok = True
 
             for version in sorted(versions, key=semver_key, reverse=True):
                 entry = versions[version]
                 asset = entry["asset"]
                 ctx = f"{repo} {family}-{version}"
                 try:
-                    data = download_private_asset(asset["url"], token)
+                    data = download_release_asset(asset, token)
                 except (urllib.error.URLError, RuntimeError, OSError) as exc:
                     rep.error(f"{ctx}: asset download failed ({exc})")
+                    artifacts_ok = False
                     continue
                 digest = sha256_hex(data)
                 if version == latest:
+                    members = quality.archive_member_names(data)
                     manifest = extract_manifest_lenient(data, family, version)
                     if manifest is None:
                         rep.warning(f"{ctx}: provisioner.yml not readable — empty description")
@@ -242,23 +205,27 @@ def build_org_provisioners(
                 sidecar = entry["sidecar"]
                 if sidecar is None:
                     rep.warning(f"{ctx}: no .sha256 sidecar asset")
+                    sidecars_ok = False
                 else:
                     try:
-                        text = download_private_asset(
-                            sidecar["url"], token, cap=MAX_SIDECAR_BYTES
+                        text = download_release_asset(
+                            sidecar, token, cap=MAX_SIDECAR_BYTES
                         ).decode("utf-8", errors="replace")
                         expected = parse_sidecar(text)
                         if expected is None:
                             rep.error(f"{ctx}: sidecar contains no sha256")
+                            sidecars_ok = False
                             continue
                         if expected != digest:
                             rep.error(
                                 f"{ctx}: sidecar sha256 mismatch (sidecar {expected}, "
                                 f"asset {digest}) — refusing to record this artifact"
                             )
+                            sidecars_ok = False
                             continue
                     except (urllib.error.URLError, RuntimeError, OSError) as exc:
                         rep.error(f"{ctx}: sidecar download failed ({exc})")
+                        sidecars_ok = False
                         continue
 
                 version_entries.append(
@@ -283,11 +250,17 @@ def build_org_provisioners(
                         "versions": version_entries,
                     }
                 )
+                rules = quality.evaluate_rules(
+                    family, manifest, members, list(versions), releases, workflows_text, latest
+                )
+                health_map[family] = quality.health_entry(
+                    repo, rules, latest, releases, artifacts_ok, sidecars_ok
+                )
             else:
                 rep.warning(f"{repo} {family}: no recordable versions — family omitted")
 
     provisioners.sort(key=lambda p: p["name"])
-    return provisioners
+    return provisioners, health_map
 
 
 def read_existing(path: str, rep: Reporter) -> dict | None:
@@ -301,6 +274,13 @@ def read_existing(path: str, rep: Reporter) -> dict | None:
         return None
 
 
+def write_json(path: str, document: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        json.dump(document, handle, indent=2)
+        handle.write("\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, help="path to sources-orgs.yml")
@@ -308,6 +288,7 @@ def main() -> int:
         "--store", required=True, help="checkout of the private store repo (output root)"
     )
     parser.add_argument("--schema", default="schema/catalog.schema.json")
+    parser.add_argument("--health-schema", default="schema/health.schema.json")
     parser.add_argument("--app-id", default=os.environ.get("CATALOG_APP_ID", ""))
     parser.add_argument(
         "--private-key",
@@ -329,35 +310,52 @@ def main() -> int:
 
     for org in orgs:
         rep.info(f"— org {org['name']} ({org['uuid']}): {len(org['repos'])} repo(s)")
-        provisioners = build_org_provisioners(org["repos"], tokens, rep)
+        provisioners, health_map = build_org_provisioners(org["repos"], tokens, rep)
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        doc_name = f"{org['name']} Private Provisioner Catalog"
         catalog = {
-            "name": f"{org['name']} Private Provisioner Catalog",
+            "name": doc_name,
             "format_version": 1,
-            "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated": now,
             "provisioners": provisioners,
+        }
+        health = {
+            "name": doc_name,
+            "format_version": 1,
+            "updated": now,
+            "provisioners": health_map,
         }
         if not validate_against_schema(catalog, args.schema, rep):
             continue
+        if not validate_against_schema(health, args.health_schema, rep):
+            continue
 
-        out_path = os.path.join(args.store, "orgs", org["uuid"], "catalog.json")
-        existing = read_existing(out_path, rep)
-        if run_tripwire(existing, catalog, rep):
+        org_dir = os.path.join(args.store, "orgs", org["uuid"])
+        catalog_path = os.path.join(org_dir, "catalog.json")
+        health_path = os.path.join(org_dir, "health.json")
+        existing_catalog = read_existing(catalog_path, rep)
+        existing_health = read_existing(health_path, rep)
+        if run_tripwire(existing_catalog, catalog, rep):
             tripwired = True
             continue
 
-        if normalized(existing) == normalized(catalog):
+        catalog_changed = normalized(existing_catalog) != normalized(catalog)
+        health_changed = normalized(existing_health) != normalized(health)
+        if not catalog_changed and not health_changed:
             rep.info(f"{org['uuid']}: unchanged")
             continue
 
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "w", encoding="utf-8", newline="\n") as handle:
-            json.dump(catalog, handle, indent=2)
-            handle.write("\n")
+        if catalog_changed:
+            write_json(catalog_path, catalog)
+        if health_changed:
+            write_json(health_path, health)
         any_changed = True
         total = sum(len(p["versions"]) for p in provisioners)
+        tiers = ", ".join(f"{n}={e['tier']}" for n, e in sorted(health_map.items()))
         rep.info(
             f"{org['uuid']}: wrote {len(provisioners)} famil"
             f"{'y' if len(provisioners) == 1 else 'ies'}, {total} version(s)"
+            f"{f'; tiers: {tiers}' if tiers else ''}"
         )
 
     write_github_output(any_changed)

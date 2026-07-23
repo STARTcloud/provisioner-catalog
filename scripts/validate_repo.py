@@ -111,18 +111,59 @@ def list_releases(repo: str, token: str | None) -> list[dict]:
     return [r for r in releases if not r.get("draft") and not r.get("prerelease")]
 
 
+def _read_capped(response, cap: int, url: str) -> bytes:
+    buffer = io.BytesIO()
+    while True:
+        chunk = response.read(1024 * 1024)
+        if not chunk:
+            break
+        buffer.write(chunk)
+        if buffer.tell() > cap:
+            raise RuntimeError(f"download exceeds {cap} bytes: {url}")
+    return buffer.getvalue()
+
+
 def download_bytes(url: str, cap: int = MAX_ARCHIVE_BYTES) -> bytes:
     """Download a release asset fully into memory, enforcing the size cap."""
-    buffer = io.BytesIO()
     with _open_url(url) as response:
-        while True:
-            chunk = response.read(1024 * 1024)
-            if not chunk:
-                break
-            buffer.write(chunk)
-            if buffer.tell() > cap:
-                raise RuntimeError(f"download exceeds {cap} bytes: {url}")
-    return buffer.getvalue()
+        return _read_capped(response, cap, url)
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: N802
+        return None
+
+
+def download_release_asset(asset: dict, token: str | None, cap: int = MAX_ARCHIVE_BYTES) -> bytes:
+    """Download a release asset, private-repo aware.
+
+    Anonymous, the browser_download_url works. With a token, go through the
+    API asset endpoint instead — GitHub 302s that to a signed CDN URL which
+    REJECTS an Authorization header, so the redirect is caught manually and
+    followed bare. This is what lets private provisioner repos run the
+    validation action with their own workflow token.
+    """
+    if not token:
+        return download_bytes(asset["browser_download_url"], cap=cap)
+    request = urllib.request.Request(
+        asset["url"],
+        headers={
+            "User-Agent": USER_AGENT,
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/octet-stream",
+        },
+    )
+    opener = urllib.request.build_opener(_NoRedirect)
+    try:
+        with opener.open(request, timeout=60) as response:
+            return _read_capped(response, cap, asset["url"])
+    except urllib.error.HTTPError as exc:
+        if exc.code in (301, 302, 303, 307, 308):
+            location = exc.headers.get("Location")
+            if not location:
+                raise RuntimeError(f"redirect without Location from {asset['url']}") from exc
+            return download_bytes(location, cap=cap)
+        raise
 
 
 def stream_sha256(url: str, cap: int = MAX_ARCHIVE_BYTES) -> str:
@@ -284,7 +325,7 @@ def scan_archive(data: bytes, family: str, version: str, rep: Reporter, ctx: str
     return None if failed else manifest
 
 
-def verify_sidecar(entry: dict, digest: str, rep: Reporter, ctx: str) -> None:
+def verify_sidecar(entry: dict, digest: str, rep: Reporter, ctx: str, token: str | None) -> None:
     """ERROR on a wrong sidecar, WARNING on a missing one (see module docstring)."""
     asset_name = entry["asset"]["name"]
     sidecar = entry["sidecar"]
@@ -294,7 +335,7 @@ def verify_sidecar(entry: dict, digest: str, rep: Reporter, ctx: str) -> None:
         )
         return
     try:
-        text = download_bytes(sidecar["browser_download_url"], cap=MAX_SIDECAR_BYTES).decode(
+        text = download_release_asset(sidecar, token, cap=MAX_SIDECAR_BYTES).decode(
             "utf-8", errors="replace"
         )
     except (urllib.error.URLError, RuntimeError, OSError) as exc:
@@ -330,6 +371,11 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
         rep.error(f"{repo}: no versioned '<name>-<version>.tar.gz' release assets found")
         return
 
+    # Lazy import: scripts.quality imports helpers from this module.
+    from scripts import quality
+
+    workflows_text = quality.fetch_workflows_text(repo, token)
+
     for family in sorted(families):
         versions = families[family]
         latest = max(versions, key=semver_key)
@@ -337,19 +383,98 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
         ctx = f"{repo} {family}-{latest}"
         rep.info(f"{repo}: family '{family}' has {len(versions)} version(s); deep-validating {latest}")
         try:
-            data = download_bytes(entry["asset"]["browser_download_url"])
+            data = download_release_asset(entry["asset"], token)
         except (urllib.error.URLError, RuntimeError, OSError) as exc:
             rep.error(f"{ctx}: asset download failed ({exc})")
             continue
         digest = sha256_hex(data)
-        verify_sidecar(entry, digest, rep, ctx)
-        scan_archive(data, family, latest, rep, ctx)
+        verify_sidecar(entry, digest, rep, ctx, token)
+        manifest = scan_archive(data, family, latest, rep, ctx)
+
+        # Informational: the measured quality tier this family would show in
+        # the catalog. Grading never gates admission — the checks above do.
+        rules = quality.evaluate_rules(
+            family,
+            manifest,
+            quality.archive_member_names(data),
+            list(versions),
+            releases,
+            workflows_text,
+            latest,
+        )
+        tier = quality.measured_tier(rules)
+        failed = quality.failed_rules(rules)
+        rep.info(f"{ctx}: measured quality tier: {tier}")
+        if failed:
+            rep.info(f"{ctx}: unmet quality rules: {', '.join(failed)}")
+
+
+def validate_tree(path: str, rep: Reporter) -> None:
+    """Validate a WORKING TREE against the manifest side of the contract.
+
+    The hassfest-style pre-release check: catches a malformed manifest in the
+    PR, before a bad release ever exists. Archive shape, sidecars and
+    checksums can only be checked against published releases (--repo).
+    """
+    from scripts import quality
+
+    manifest_path = os.path.join(path, "provisioner.yml")
+    if not os.path.isfile(manifest_path):
+        rep.error(f"{manifest_path}: not found — --tree expects the package root")
+        return
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = yaml.safe_load(handle)
+    except (OSError, yaml.YAMLError) as exc:
+        rep.error(f"{manifest_path}: not parseable YAML ({exc})")
+        return
+    if not isinstance(manifest, dict):
+        rep.error(f"{manifest_path}: not a mapping")
+        return
+
+    name = str(manifest.get("name", ""))
+    version = str(manifest.get("version", ""))
+    if not re.match(r"^[A-Za-z0-9._-]+$", name):
+        rep.error(
+            f"{manifest_path}: name '{name}' is not a family slug — the display "
+            "string belongs in 'label:', the slug in 'name:'"
+        )
+    if not SEMVER_RE.match(version):
+        rep.error(f"{manifest_path}: version '{version}' is not semver-shaped")
+    if not str(manifest.get("description") or "").strip():
+        rep.warning(f"{manifest_path}: no description (bronze rule)")
+    if not str(manifest.get("label") or "").strip():
+        rep.warning(f"{manifest_path}: no label (bronze rule)")
+    if not os.path.isfile(os.path.join(path, "templates", "Hosts.template.yml")):
+        rep.error(f"{path}: required template missing at templates/Hosts.template.yml")
+
+    fields = quality.collect_config_fields(manifest)
+    undocumented = [
+        str(f.get("name"))
+        for f in fields
+        if not (str(f.get("label") or "").strip() and str(f.get("tooltip") or "").strip())
+    ]
+    roles = [r for r in (manifest.get("roles") or []) if isinstance(r, dict)]
+    undocumented_roles = [
+        str(r.get("name"))
+        for r in roles
+        if not (str(r.get("label") or "").strip() and str(r.get("description") or "").strip())
+    ]
+    rep.info(f"{path}: {len(fields)} config field(s), {len(undocumented)} missing label/tooltip (gold rule)")
+    rep.info(f"{path}: {len(roles)} role(s), {len(undocumented_roles)} missing label/description (gold rule)")
+    if undocumented:
+        rep.info(f"{path}: undocumented fields: {', '.join(undocumented)}")
+    if undocumented_roles:
+        rep.info(f"{path}: undocumented roles: {', '.join(undocumented_roles)}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", default="", help="repository to validate (owner/name)")
     parser.add_argument(
-        "--repo", required=True, help="repository to validate (owner/name)"
+        "--tree",
+        default="",
+        help="working-tree package root to validate instead of (or as well as) releases",
     )
     parser.add_argument(
         "--token",
@@ -357,9 +482,14 @@ def main() -> int:
         help="GitHub API token (defaults to $GITHUB_TOKEN)",
     )
     args = parser.parse_args()
+    if not args.repo and not args.tree:
+        parser.error("provide --repo, --tree, or both")
 
     rep = Reporter()
-    validate_repository(args.repo, args.token or None, rep)
+    if args.tree:
+        validate_tree(args.tree, rep)
+    if args.repo:
+        validate_repository(args.repo, args.token or None, rep)
 
     rep.info(
         f"Validation finished: {len(rep.errors)} error(s), "

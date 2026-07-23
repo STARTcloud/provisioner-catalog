@@ -36,14 +36,130 @@ const provisionerShape = PropTypes.shape({
   ).isRequired,
 });
 
-const ProvisionerCard = ({ provisioner }) => {
+const healthEntryShape = PropTypes.shape({
+  tier: PropTypes.string.isRequired,
+  failed_rules: PropTypes.arrayOf(PropTypes.string).isRequired,
+  health: PropTypes.shape({
+    latest_version: PropTypes.string,
+    latest_release_at: PropTypes.string,
+    artifacts_ok: PropTypes.bool.isRequired,
+    sidecars_ok: PropTypes.bool.isRequired,
+  }).isRequired,
+});
+
+const TIER_LABELS = {
+  unrated: 'Unrated',
+  bronze: 'Bronze',
+  silver: 'Silver',
+  gold: 'Gold',
+  platinum: 'Platinum',
+};
+
+const TierBadge = ({ entry }) => {
+  if (!entry) {
+    return null;
+  }
+  return (
+    <Badge
+      className={`tier-badge tier-${entry.tier}`}
+      title="Measured quality tier — recomputed every data run"
+    >
+      {TIER_LABELS[entry.tier] || entry.tier}
+    </Badge>
+  );
+};
+
+TierBadge.propTypes = {
+  entry: healthEntryShape,
+};
+
+const staleDaysOf = entry => {
+  const releasedAt = entry?.health?.latest_release_at;
+  if (!releasedAt) {
+    return null;
+  }
+  return Math.floor((Date.now() - new Date(releasedAt).getTime()) / 86400000);
+};
+
+const HealthChips = ({ entry }) => {
+  if (!entry) {
+    return null;
+  }
+  const chips = [];
+  const staleDays = staleDaysOf(entry);
+  if (staleDays !== null && staleDays > 365) {
+    chips.push({ key: 'stale', bg: 'warning', text: `stale — last release ${staleDays}d ago` });
+  }
+  if (!entry.health.artifacts_ok) {
+    chips.push({ key: 'artifacts', bg: 'danger', text: 'artifact errors this run' });
+  }
+  if (!entry.health.sidecars_ok) {
+    chips.push({ key: 'sidecars', bg: 'warning', text: 'checksum sidecars incomplete' });
+  }
+  if (chips.length === 0) {
+    return null;
+  }
+  return (
+    <div className="d-flex flex-wrap gap-1 mb-2">
+      {chips.map(chip => (
+        <Badge key={chip.key} bg={chip.bg} text={chip.bg === 'warning' ? 'dark' : undefined}>
+          {chip.text}
+        </Badge>
+      ))}
+    </div>
+  );
+};
+
+HealthChips.propTypes = {
+  entry: healthEntryShape,
+};
+
+const QualityBreakdown = ({ entry }) => {
+  if (!entry) {
+    return null;
+  }
+  return (
+    <Accordion.Item eventKey="quality">
+      <Accordion.Header>Quality: {TIER_LABELS[entry.tier] || entry.tier}</Accordion.Header>
+      <Accordion.Body>
+        <p className="mb-1">
+          Measured tier: <strong>{TIER_LABELS[entry.tier]}</strong> — every rule is machine-checked
+          each data run; nothing is self-declared.
+        </p>
+        {entry.failed_rules.length === 0 ? (
+          <p className="mb-0">All quality rules pass.</p>
+        ) : (
+          <>
+            <p className="mb-1">Unmet rules:</p>
+            <ul className="mb-0">
+              {entry.failed_rules.map(rule => (
+                <li key={rule}>
+                  <code>{rule}</code>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Accordion.Body>
+    </Accordion.Item>
+  );
+};
+
+QualityBreakdown.propTypes = {
+  entry: healthEntryShape,
+};
+
+const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
   const [latest] = provisioner.versions;
   return (
     <Card className="h-100 shadow-sm">
       <Card.Body>
         <Card.Title className="d-flex justify-content-between align-items-start gap-2">
           <span className="text-break">{provisioner.name}</span>
-          <Badge bg="primary">v{latest.version}</Badge>
+          <span className="d-flex gap-1">
+            <TierBadge entry={healthEntry} />
+            <Badge bg="primary">v{latest.version}</Badge>
+          </span>
         </Card.Title>
         <Card.Subtitle className="mb-2">
           <a
@@ -56,6 +172,7 @@ const ProvisionerCard = ({ provisioner }) => {
             {provisioner.repo}
           </a>
         </Card.Subtitle>
+        <HealthChips entry={healthEntry} />
         <Card.Text>{provisioner.description || 'No description provided.'}</Card.Text>
         <Accordion flush>
           <Accordion.Item eventKey="versions">
@@ -87,6 +204,7 @@ const ProvisionerCard = ({ provisioner }) => {
               </ListGroup>
             </Accordion.Body>
           </Accordion.Item>
+          <QualityBreakdown entry={healthEntry} />
         </Accordion>
       </Card.Body>
     </Card>
@@ -95,6 +213,7 @@ const ProvisionerCard = ({ provisioner }) => {
 
 ProvisionerCard.propTypes = {
   provisioner: provisionerShape.isRequired,
+  healthEntry: healthEntryShape,
 };
 
 const CatalogSection = ({
@@ -102,6 +221,7 @@ const CatalogSection = ({
   icon = null,
   subtitle = '',
   provisioners,
+  health = null,
   emptyNote = 'Nothing published yet.',
 }) => (
   <section className="mb-5">
@@ -116,7 +236,10 @@ const CatalogSection = ({
       <Row xs={1} md={2} xl={3} className="g-3">
         {provisioners.map(provisioner => (
           <Col key={provisioner.name}>
-            <ProvisionerCard provisioner={provisioner} />
+            <ProvisionerCard
+              provisioner={provisioner}
+              healthEntry={health?.provisioners?.[provisioner.name] || null}
+            />
           </Col>
         ))}
       </Row>
@@ -129,6 +252,7 @@ CatalogSection.propTypes = {
   icon: PropTypes.node,
   subtitle: PropTypes.string,
   provisioners: PropTypes.arrayOf(provisionerShape).isRequired,
+  health: PropTypes.shape({ provisioners: PropTypes.object }),
   emptyNote: PropTypes.string,
 };
 
@@ -145,6 +269,7 @@ const privateErrorMessage = requestError => {
 
 const App = () => {
   const [publicCatalog, setPublicCatalog] = useState(null);
+  const [publicHealth, setPublicHealth] = useState(null);
   const [publicError, setPublicError] = useState('');
   const [user, setUser] = useState(null);
   const [orgResults, setOrgResults] = useState([]);
@@ -155,6 +280,10 @@ const App = () => {
       .get('/catalog.json')
       .then(({ data }) => setPublicCatalog(data))
       .catch(fetchError => setPublicError(fetchError.message));
+    axios
+      .get('/health.json')
+      .then(({ data }) => setPublicHealth(data))
+      .catch(() => setPublicHealth(null));
   }, []);
 
   useEffect(() => {
@@ -170,15 +299,22 @@ const App = () => {
         return;
       }
       setLoadingPrivate(true);
+      const auth = { headers: { Authorization: `Bearer ${token}` } };
       const results = await Promise.all(
         organizations.map(async org => {
           try {
-            const { data } = await axios.get(`/private/${org.uuid}/catalog.json`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            return { ...org, catalog: data, error: '' };
+            const [catalogRes, healthRes] = await Promise.all([
+              axios.get(`/private/${org.uuid}/catalog.json`, auth),
+              axios.get(`/private/${org.uuid}/health.json`, auth).catch(() => null),
+            ]);
+            return { ...org, catalog: catalogRes.data, health: healthRes?.data || null, error: '' };
           } catch (requestError) {
-            return { ...org, catalog: null, error: privateErrorMessage(requestError) };
+            return {
+              ...org,
+              catalog: null,
+              health: null,
+              error: privateErrorMessage(requestError),
+            };
           }
         })
       );
@@ -236,6 +372,7 @@ const App = () => {
             icon={<FaGlobe aria-hidden />}
             subtitle={`Updated ${publicCatalog.updated} — regenerates every ~2 hours from admitted repositories.`}
             provisioners={publicCatalog.provisioners}
+            health={publicHealth}
             emptyNote="The public catalog is empty."
           />
         ) : null}
@@ -257,6 +394,7 @@ const App = () => {
                 icon={<FaBuilding aria-hidden />}
                 subtitle={`Private catalog — visible to ${org.name} members only.`}
                 provisioners={org.catalog.provisioners}
+                health={org.health}
                 emptyNote="This organization has no published provisioners yet."
               />
             ) : (

@@ -1,0 +1,94 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://provisioner-catalog.startcloud.com/schema/health.schema.json",
+    "title": "Provisioner catalog quality + health data (health.json)",
+    "description": "UI-facing companion document generated beside each catalog.json by the data job. Quality tiers are fully machine-measured — never author-declared, never manually adjusted. Agents never read this file — catalog.json remains the only wire contract.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name", "format_version", "updated", "provisioners"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "format_version": {
+            "const": 1
+        },
+        "updated": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "provisioners": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^[A-Za-z0-9._-]+$": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["repo", "tier", "rules", "failed_rules", "health"],
+                    "properties": {
+                        "repo": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$"
+                        },
+                        "tier": {
+                            "description": "Measured tier — recomputed every data run",
+                            "enum": ["unrated", "bronze", "silver", "gold", "platinum"]
+                        },
+                        "rules": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["bronze", "silver", "gold", "platinum"],
+                            "properties": {
+                                "bronze": { "$ref": "#/$defs/ruleset" },
+                                "silver": { "$ref": "#/$defs/ruleset" },
+                                "gold": { "$ref": "#/$defs/ruleset" },
+                                "platinum": { "$ref": "#/$defs/ruleset" }
+                            }
+                        },
+                        "failed_rules": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "pattern": "^(bronze|silver|gold|platinum)\\.[a-z0-9_]+$"
+                            }
+                        },
+                        "health": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "latest_version",
+                                "latest_release_at",
+                                "artifacts_ok",
+                                "sidecars_ok"
+                            ],
+                            "properties": {
+                                "latest_version": {
+                                    "type": "string"
+                                },
+                                "latest_release_at": {
+                                    "type": ["string", "null"],
+                                    "format": "date-time"
+                                },
+                                "artifacts_ok": {
+                                    "type": "boolean"
+                                },
+                                "sidecars_ok": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "ruleset": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "boolean"
+            }
+        }
+    }
+}

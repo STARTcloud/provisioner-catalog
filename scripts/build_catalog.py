@@ -3,7 +3,9 @@
 
 Run by the data job (generate-catalog-data.yml, cron every 2h + manual
 dispatch). catalog.json is a BUILD ARTIFACT: it is deployed to GitHub Pages
-and never committed to the repository.
+and never committed to the repository. A companion health.json (measured
+quality tiers + live health, scripts/quality.py, capped by overrides.yml) is
+built beside it for the web UI — agents never read it.
 
 For every repository in sources.yml (minus removed.yml):
 
@@ -40,6 +42,7 @@ from datetime import datetime, timezone
 
 import yaml
 
+from scripts import quality
 from scripts.validate_repo import (
     Reporter,
     _open_url,
@@ -122,8 +125,12 @@ def extract_manifest_lenient(data: bytes, family: str, version: str) -> dict | N
         return None
 
 
-def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> list[dict]:
+def build_provisioners(
+    repos: list[str], token: str | None, rep: Reporter
+) -> tuple[list[dict], dict[str, dict]]:
+    """Catalog provisioner entries plus the per-family health/quality map."""
     provisioners: list[dict] = []
+    health_map: dict[str, dict] = {}
     seen_families: dict[str, str] = {}
 
     for repo in repos:
@@ -136,6 +143,7 @@ def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> li
         if not families:
             rep.warning(f"{repo}: no versioned release assets — omitted from catalog data")
             continue
+        workflows_text = quality.fetch_workflows_text(repo, token)
 
         for family in sorted(families):
             if family in seen_families:
@@ -150,6 +158,10 @@ def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> li
             latest = max(versions, key=semver_key)
             description = ""
             version_entries: list[dict] = []
+            manifest = None
+            members: list[str] = []
+            artifacts_ok = True
+            sidecars_ok = True
 
             for version in sorted(versions, key=semver_key, reverse=True):
                 entry = versions[version]
@@ -160,6 +172,7 @@ def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> li
                     if version == latest:
                         data = download_bytes(url)
                         digest = sha256_hex(data)
+                        members = quality.archive_member_names(data)
                         manifest = extract_manifest_lenient(data, family, version)
                         if manifest is None:
                             rep.warning(f"{ctx}: provisioner.yml not readable — empty description")
@@ -169,11 +182,13 @@ def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> li
                         digest = stream_sha256(url)
                 except (urllib.error.URLError, RuntimeError, OSError) as exc:
                     rep.error(f"{ctx}: asset download failed ({exc})")
+                    artifacts_ok = False
                     continue
 
                 sidecar = entry["sidecar"]
                 if sidecar is None:
                     rep.warning(f"{ctx}: no .sha256 sidecar asset")
+                    sidecars_ok = False
                 else:
                     try:
                         text = download_bytes(
@@ -182,15 +197,18 @@ def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> li
                         expected = parse_sidecar(text)
                         if expected is None:
                             rep.error(f"{ctx}: sidecar contains no sha256")
+                            sidecars_ok = False
                             continue
                         if expected != digest:
                             rep.error(
                                 f"{ctx}: sidecar sha256 mismatch (sidecar {expected}, "
                                 f"asset {digest}) — refusing to record this artifact"
                             )
+                            sidecars_ok = False
                             continue
                     except (urllib.error.URLError, RuntimeError, OSError) as exc:
                         rep.error(f"{ctx}: sidecar download failed ({exc})")
+                        sidecars_ok = False
                         continue
 
                 version_entries.append(
@@ -211,11 +229,17 @@ def build_provisioners(repos: list[str], token: str | None, rep: Reporter) -> li
                         "versions": version_entries,
                     }
                 )
+                rules = quality.evaluate_rules(
+                    family, manifest, members, list(versions), releases, workflows_text, latest
+                )
+                health_map[family] = quality.health_entry(
+                    repo, rules, latest, releases, artifacts_ok, sidecars_ok
+                )
             else:
                 rep.warning(f"{repo} {family}: no recordable versions — family omitted")
 
     provisioners.sort(key=lambda p: p["name"])
-    return provisioners
+    return provisioners, health_map
 
 
 def run_tripwire(published: dict | None, new: dict, rep: Reporter) -> int:
@@ -298,21 +322,31 @@ def main() -> int:
     parser.add_argument("--sources", default="sources.yml")
     parser.add_argument("--removed", default="removed.yml")
     parser.add_argument("--schema", default="schema/catalog.schema.json")
+    parser.add_argument("--health-schema", default="schema/health.schema.json")
     parser.add_argument("--token", default=os.environ.get("GITHUB_TOKEN", ""))
     args = parser.parse_args()
 
     rep = Reporter()
     repos = active_repos(args.sources, args.removed, rep)
-    provisioners = build_provisioners(repos, args.token or None, rep)
+    provisioners, health_map = build_provisioners(repos, args.token or None, rep)
 
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     catalog = {
         "name": CATALOG_NAME,
         "format_version": FORMAT_VERSION,
-        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "updated": now,
         "provisioners": provisioners,
+    }
+    health = {
+        "name": CATALOG_NAME,
+        "format_version": FORMAT_VERSION,
+        "updated": now,
+        "provisioners": health_map,
     }
 
     if not validate_against_schema(catalog, args.schema, rep):
+        return 1
+    if not validate_against_schema(health, args.health_schema, rep):
         return 1
     if rep.errors:
         rep.info("Build finished with errors — nothing will be published")
@@ -323,19 +357,31 @@ def main() -> int:
         rep.info("IMMUTABILITY TRIPWIRE tripped — failing loudly, nothing will be published")
         return 2
 
-    changed = normalized(published) != normalized(catalog)
+    published_health_url = f"{args.published_url.rsplit('/', 1)[0]}/health.json"
+    published_health = fetch_published(published_health_url, rep)
+
+    changed = normalized(published) != normalized(catalog) or normalized(
+        published_health
+    ) != normalized(health)
     write_github_output(changed)
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    out_dir = os.path.dirname(os.path.abspath(args.out))
+    os.makedirs(out_dir, exist_ok=True)
     with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
         json.dump(catalog, handle, indent=2)
         handle.write("\n")
+    health_out = os.path.join(out_dir, "health.json")
+    with open(health_out, "w", encoding="utf-8", newline="\n") as handle:
+        json.dump(health, handle, indent=2)
+        handle.write("\n")
 
     total_versions = sum(len(p["versions"]) for p in provisioners)
+    tiers = ", ".join(f"{name}={entry['tier']}" for name, entry in sorted(health_map.items()))
     rep.info(
-        f"Built {args.out}: {len(provisioners)} famil{'y' if len(provisioners) == 1 else 'ies'}, "
+        f"Built {args.out} + {health_out}: "
+        f"{len(provisioners)} famil{'y' if len(provisioners) == 1 else 'ies'}, "
         f"{total_versions} version(s), changed={str(changed).lower()}, "
-        f"{len(rep.warnings)} warning(s)"
+        f"{len(rep.warnings)} warning(s){f'; tiers: {tiers}' if tiers else ''}"
     )
     return 0
 

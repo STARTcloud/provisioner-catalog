@@ -132,6 +132,33 @@ Artifact URLs in private catalogs point at private release assets; consumers
 need their own GitHub access to download them, exactly as they need it to
 clone the repos.
 
+## Quality tiers + health (health.json)
+
+Beside every catalog.json the data job publishes a **health.json**
+([schema](schema/health.schema.json)) the web UI renders as badges. Agents
+never read it — the wire contract stays catalog.json alone.
+
+- **Tiers are machine-measured, never author-declared** (deliberately unlike
+  Home Assistant's scale): every rule is checked against the released
+  artifact, the packaged provisioner.yml, the repository's releases and its
+  workflow files on every data run. The only way to a better badge is a
+  better package. Rules live in [scripts/quality.py](scripts/quality.py).
+- Ladder: **Unrated** → **Bronze** (filled description/label, semver, latest
+  alias) → **Silver** (CHANGELOG + README in the archive, release in the last
+  12 months, ansible-lint in CI) → **Gold** (every config field labeled +
+  tooltipped, every role documented, example Hosts) → **Platinum** (automated
+  tests, multi-provider, release cadence).
+- **Security is never graded** — the safety scan, sidecar verification and
+  the immutability tripwire are hard gates; a package that violates them
+  never appears in the data at all. Ejecting a bad actor entirely is
+  [removed.yml](removed.yml)'s job — there is deliberately no human knob on
+  the grades themselves.
+- Live health rides along: last-release age, artifact/sidecar status from the
+  current run.
+
+The validation action reports the measured tier on every run, and its new
+`--tree` mode checks a working tree's manifest before a release ever exists.
+
 ## Publishing your provisioner (door one)
 
 Full walkthrough: [CONTRIBUTING.md](CONTRIBUTING.md). Short version:

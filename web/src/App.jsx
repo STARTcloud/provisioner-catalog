@@ -12,11 +12,19 @@ import {
   Form,
   InputGroup,
   ListGroup,
-  Navbar,
   Row,
   Spinner,
 } from 'react-bootstrap';
-import { FaBuilding, FaCube, FaGithub, FaGlobe, FaHome, FaSearch } from 'react-icons/fa';
+import {
+  FaBuilding,
+  FaCube,
+  FaGithub,
+  FaGlobe,
+  FaHome,
+  FaMoon,
+  FaSearch,
+  FaSun,
+} from 'react-icons/fa';
 
 import { beginLogin, getAccessToken, getClaims, signOut } from './auth';
 
@@ -301,7 +309,7 @@ const CatalogSection = ({
   const filtered = provisioners.filter(provisioner => matchesQuery(provisioner, health, query));
   return (
     <section className="mb-5">
-      <h2 className="h4 d-flex align-items-center gap-2">
+      <h2 className="h4 d-flex align-items-center gap-2 section-title">
         {icon}
         {title}
         {query.trim() ? (
@@ -350,6 +358,14 @@ const privateErrorMessage = requestError => {
   return requestError.message;
 };
 
+const initialTheme = () => {
+  const stored = localStorage.getItem('catalog.theme');
+  if (stored) {
+    return stored;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
 const App = () => {
   const [publicCatalog, setPublicCatalog] = useState(null);
   const [publicHealth, setPublicHealth] = useState(null);
@@ -358,6 +374,12 @@ const App = () => {
   const [orgResults, setOrgResults] = useState([]);
   const [loadingPrivate, setLoadingPrivate] = useState(false);
   const [query, setQuery] = useState('');
+  const [theme, setTheme] = useState(initialTheme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('catalog.theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     axios
@@ -416,28 +438,78 @@ const App = () => {
 
   return (
     <>
-      <Navbar bg="dark" data-bs-theme="dark" sticky="top" className="shadow-sm">
+      <header className="p-3 sticky-top sc-header shadow-sm">
         <Container>
-          <Navbar.Brand className="d-flex align-items-center gap-2">
-            <img src="/startcloud.svg" alt="" height="28" width="28" />
-            STARTcloud Provisioner Catalog
-          </Navbar.Brand>
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+            <a
+              className="navbar-brand p-0 me-0 me-lg-2"
+              href="https://startcloud.com/"
+              aria-label="STARTcloud"
+            >
+              <img src="/startcloud.svg" width="40" height="40" alt="" />
+            </a>
+            <ul className="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+              <li>
+                <span className="nav-link px-2 fw-semibold">Provisioner Catalog</span>
+              </li>
+              <li>
+                <a href="https://startcloud.com/" className="nav-link px-2">
+                  STARTcloud
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/STARTcloud/provisioner-catalog"
+                  className="nav-link px-2"
+                >
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <a href="https://startcloud.com/#contact" className="nav-link px-2">
+                  Contact
+                </a>
+              </li>
+            </ul>
+            <button
+              type="button"
+              className="theme-toggle btn btn-link p-0 text-decoration-none me-3"
+              aria-label="Toggle theme"
+              onClick={() => setTheme(current => (current === 'dark' ? 'light' : 'dark'))}
+            >
+              {theme === 'dark' ? <FaSun className="fs-5" /> : <FaMoon className="fs-5" />}
+            </button>
             {user ? (
-              <>
-                <span className="navbar-text">{user.name || user.email || 'Signed in'}</span>
-                <Button variant="outline-light" size="sm" onClick={handleSignOut}>
+              <span className="d-flex align-items-center gap-2">
+                <span className="text-body-secondary">
+                  {user.name || user.email || 'Signed in'}
+                </span>
+                <Button variant="outline-secondary" size="sm" onClick={handleSignOut}>
                   Sign out
                 </Button>
-              </>
+              </span>
             ) : (
-              <Button variant="light" size="sm" onClick={() => beginLogin()}>
+              <Button variant="primary" size="sm" onClick={() => beginLogin()}>
                 Sign in
               </Button>
             )}
           </div>
         </Container>
-      </Navbar>
+      </header>
+
+      <section className="hero">
+        <Container>
+          <img
+            src="https://startcloud.com/assets/images/logos/startCloud-logo-big.svg"
+            className="img-fluid"
+            alt="STARTcloud logo"
+          />
+          <p className="lead">
+            The STARTcloud Provisioner Catalog — public packages plus your organizations&rsquo;
+            private provisioners.
+          </p>
+        </Container>
+      </section>
 
       <Container className="py-4">
         <p className="text-body-secondary">
@@ -501,7 +573,7 @@ const App = () => {
               />
             ) : (
               <section className="mb-5">
-                <h2 className="h4 d-flex align-items-center gap-2">
+                <h2 className="h4 d-flex align-items-center gap-2 section-title">
                   <FaBuilding aria-hidden />
                   {org.name}
                 </h2>
@@ -513,7 +585,10 @@ const App = () => {
       </Container>
 
       <footer className="border-top py-3">
-        <Container className="d-flex flex-wrap gap-2 justify-content-between text-body-secondary">
+        <Container className="text-center">
+          <span>&copy; 2026 STARTCloud, Inc</span>
+        </Container>
+        <Container className="mt-2 d-flex flex-wrap gap-3 justify-content-center text-body-secondary small">
           <a
             className="text-decoration-none"
             href="https://github.com/STARTcloud/provisioner-catalog"

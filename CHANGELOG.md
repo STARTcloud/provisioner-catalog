@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.7](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.6...provisioner-catalog-v0.0.7) (2026-07-23)
+
+
+### Features
+
+* machine-measured quality tiers and health data ([768fcb2](https://github.com/STARTcloud/provisioner-catalog/commit/768fcb229c84f68bdd7d9ff64da064216b656d33))
+
 ## [0.0.6](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.5...provisioner-catalog-v0.0.6) (2026-07-21)
 
 

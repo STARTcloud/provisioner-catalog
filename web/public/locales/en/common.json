@@ -19,7 +19,6 @@
     "signOut": "Sign out",
     "signedIn": "Signed in",
     "theme": "Theme",
-    "reportIssue": "Report an issue",
     "helpSupport": "Help & Support",
     "favorites": "Favorites",
     "organizations": "Organizations"
@@ -43,6 +42,7 @@
     "version_other": "{{count}} versions",
     "download": "download",
     "homepage": "homepage",
+    "reportIssue": "Report an issue",
     "noDescription": "No description provided.",
     "showAll": "Show all {{count}} versions",
     "showFewer": "Show fewer versions",

@@ -4,7 +4,6 @@ import { Dropdown, Modal } from 'react-bootstrap';
 import CountryFlag from 'react-country-flag';
 import { useTranslation } from 'react-i18next';
 import {
-  FaBug,
   FaBuilding,
   FaPalette,
   FaSignInAlt,
@@ -152,27 +151,20 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
             </>
           ) : null}
 
-          <Dropdown.Divider />
           {user ? (
-            <Dropdown.Item
-              href={buildTicketUrl(user, userInfo)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="d-flex align-items-center gap-2"
-            >
-              <FaTicketAlt aria-hidden />
-              <span>{t('header.helpSupport')}</span>
-            </Dropdown.Item>
+            <>
+              <Dropdown.Divider />
+              <Dropdown.Item
+                href={buildTicketUrl(user, userInfo)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="d-flex align-items-center gap-2"
+              >
+                <FaTicketAlt aria-hidden />
+                <span>{t('header.helpSupport')}</span>
+              </Dropdown.Item>
+            </>
           ) : null}
-          <Dropdown.Item
-            href="https://github.com/STARTcloud/provisioner-catalog/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="d-flex align-items-center gap-2"
-          >
-            <FaBug aria-hidden />
-            <span>{t('header.reportIssue')}</span>
-          </Dropdown.Item>
 
           <Dropdown.Divider />
           {user ? (

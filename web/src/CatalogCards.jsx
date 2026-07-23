@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Accordion, Alert, Badge, Button, Card, Col, ListGroup, Row } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaCube, FaGithub, FaHome } from 'react-icons/fa';
+import { FaBug, FaCube, FaGithub, FaHome } from 'react-icons/fa';
 
 const VISIBLE_VERSIONS = 10;
 
@@ -196,6 +196,15 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
               {t('card.homepage')}
             </a>
           ) : null}
+          <a
+            className="text-decoration-none"
+            href={`https://github.com/${provisioner.repo}/issues/new`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <FaBug className="me-1" />
+            {t('card.reportIssue')}
+          </a>
         </Card.Subtitle>
         <HealthChips entry={healthEntry} />
         <Card.Text>{provisioner.description || t('card.noDescription')}</Card.Text>

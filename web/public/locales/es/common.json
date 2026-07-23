@@ -19,7 +19,6 @@
     "signOut": "Cerrar sesión",
     "signedIn": "Sesión iniciada",
     "theme": "Tema",
-    "reportIssue": "Informar de un problema",
     "helpSupport": "Ayuda y soporte",
     "favorites": "Favoritos",
     "organizations": "Organizaciones"
@@ -43,6 +42,7 @@
     "version_other": "{{count}} versiones",
     "download": "descargar",
     "homepage": "página web",
+    "reportIssue": "Informar de un problema",
     "noDescription": "Sin descripción.",
     "showAll": "Mostrar las {{count}} versiones",
     "showFewer": "Mostrar menos versiones",

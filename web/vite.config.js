@@ -21,17 +21,22 @@ const loadDevConfig = () => {
 };
 
 const devConfig = loadDevConfig();
-// The IdP registers http://localhost:8080/callback exactly — keep 8080.
 const devPort = devConfig.server?.port || 8080;
-// Public catalog.json and the /private/* Worker both live on the prod host;
-// the dev server proxies them so the SPA always fetches same-origin paths.
 const apiTarget = devConfig.server?.api_target || 'https://provisioner-catalog.startcloud.com';
+
+const localeDirs = fs.existsSync('./public/locales')
+  ? fs
+      .readdirSync('./public/locales', { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+  : [];
+const supportedLocales = localeDirs.length ? localeDirs : ['en'];
 
 export default defineConfig({
   define: {
-    // Replaced at build time from this package's own package.json
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_NAME__: JSON.stringify(pkg.name),
+    __SUPPORTED_LOCALES__: JSON.stringify(supportedLocales),
   },
   plugins: [react()],
   base: '/',

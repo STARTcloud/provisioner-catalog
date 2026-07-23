@@ -1,0 +1,85 @@
+{
+  "app": {
+    "title": "STARTcloud Provisioner Catalog",
+    "heroLead": "The STARTcloud Provisioner Catalog — public packages plus your organizations' private provisioners.",
+    "introBefore": "Provisioner packages consumed by hyperweaver-agent and zoneweaver-agent. Agents fetch",
+    "introLink": "catalog.json",
+    "introAfter": "directly — this page is a human view of the same data. Sign in to also see your organizations' private provisioners.",
+    "themeContext": {
+      "autoStatus": "Auto ({{mode}})"
+    }
+  },
+  "header": {
+    "brand": "Provisioner Catalog",
+    "startcloud": "STARTcloud",
+    "github": "GitHub",
+    "contact": "Contact",
+    "menuAria": "User menu",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signedIn": "Signed in",
+    "theme": "Theme",
+    "reportIssue": "Report an issue",
+    "helpSupport": "Help & Support",
+    "favorites": "Favorites",
+    "organizations": "Organizations"
+  },
+  "search": {
+    "placeholder": "Search provisioners by name, description, or repository…",
+    "aria": "Search provisioners"
+  },
+  "sections": {
+    "publicTitle": "Public catalog",
+    "publicSubtitle": "Updated {{updated}} — regenerates every ~2 hours from admitted repositories.",
+    "publicEmpty": "The public catalog is empty.",
+    "privateSubtitle": "Private catalog — visible to {{org}} members only.",
+    "orgEmpty": "This organization has no published provisioners yet.",
+    "noMatches": "No provisioners match.",
+    "publicLoadFailed": "Could not load the public catalog: {{message}}",
+    "signInPrompt": "Sign in with your STARTcloud account to see the private provisioners your organizations publish."
+  },
+  "card": {
+    "version_one": "{{count}} version",
+    "version_other": "{{count}} versions",
+    "download": "download",
+    "homepage": "homepage",
+    "noDescription": "No description provided.",
+    "showAll": "Show all {{count}} versions",
+    "showFewer": "Show fewer versions",
+    "quality": "Quality: {{tier}}",
+    "measuredTier": "Measured tier:",
+    "measuredExplainer": "every rule is machine-checked each data run; nothing is self-declared.",
+    "allRulesPass": "All quality rules pass.",
+    "unmetRules": "Unmet rules:",
+    "tierTooltip": "Measured quality tier — recomputed every data run"
+  },
+  "tiers": {
+    "unrated": "Unrated",
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "platinum": "Platinum"
+  },
+  "health": {
+    "stale": "stale — last release {{count}}d ago",
+    "artifactErrors": "artifact errors this run",
+    "sidecarGaps": "checksum sidecars incomplete"
+  },
+  "errors": {
+    "noPrivateCatalog": "No private catalog published for this organization yet.",
+    "accessDenied": "Access denied by the catalog gate."
+  },
+  "footer": {
+    "copyright": "© 2026 STARTCloud, Inc",
+    "source": "Source on GitHub"
+  },
+  "languageModal": {
+    "title": "Select Language"
+  },
+  "callback": {
+    "completing": "Completing sign-in…",
+    "failed": "Sign-in failed: {{message}} —",
+    "returnLink": "return to the catalog",
+    "tryAgain": "and try again."
+  }
+}

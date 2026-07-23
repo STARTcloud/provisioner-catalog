@@ -12,11 +12,13 @@
       rel="stylesheet"
     />
     <script>
-      document.documentElement.setAttribute(
-        'data-bs-theme',
-        localStorage.getItem('catalog.theme') ||
-          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      );
+      (function () {
+        var theme = localStorage.getItem('catalog.theme');
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-bs-theme', theme);
+      })();
     </script>
   </head>
   <body>

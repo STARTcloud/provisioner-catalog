@@ -1,0 +1,85 @@
+{
+  "app": {
+    "title": "Catálogo de Provisioners de STARTcloud",
+    "heroLead": "El Catálogo de Provisioners de STARTcloud — paquetes públicos más los provisioners privados de sus organizaciones.",
+    "introBefore": "Paquetes de provisioners consumidos por hyperweaver-agent y zoneweaver-agent. Los agentes obtienen",
+    "introLink": "catalog.json",
+    "introAfter": "directamente — esta página es una vista humana de los mismos datos. Inicie sesión para ver también los provisioners privados de sus organizaciones.",
+    "themeContext": {
+      "autoStatus": "Automático ({{mode}})"
+    }
+  },
+  "header": {
+    "brand": "Catálogo de Provisioners",
+    "startcloud": "STARTcloud",
+    "github": "GitHub",
+    "contact": "Contacto",
+    "menuAria": "Menú de usuario",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "signedIn": "Sesión iniciada",
+    "theme": "Tema",
+    "reportIssue": "Informar de un problema",
+    "helpSupport": "Ayuda y soporte",
+    "favorites": "Favoritos",
+    "organizations": "Organizaciones"
+  },
+  "search": {
+    "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",
+    "aria": "Buscar provisioners"
+  },
+  "sections": {
+    "publicTitle": "Catálogo público",
+    "publicSubtitle": "Actualizado {{updated}} — se regenera cada ~2 horas a partir de los repositorios admitidos.",
+    "publicEmpty": "El catálogo público está vacío.",
+    "privateSubtitle": "Catálogo privado — visible solo para los miembros de {{org}}.",
+    "orgEmpty": "Esta organización aún no tiene provisioners publicados.",
+    "noMatches": "Ningún provisioner coincide.",
+    "publicLoadFailed": "No se pudo cargar el catálogo público: {{message}}",
+    "signInPrompt": "Inicie sesión con su cuenta de STARTcloud para ver los provisioners privados que publican sus organizaciones."
+  },
+  "card": {
+    "version_one": "{{count}} versión",
+    "version_other": "{{count}} versiones",
+    "download": "descargar",
+    "homepage": "página web",
+    "noDescription": "Sin descripción.",
+    "showAll": "Mostrar las {{count}} versiones",
+    "showFewer": "Mostrar menos versiones",
+    "quality": "Calidad: {{tier}}",
+    "measuredTier": "Nivel medido:",
+    "measuredExplainer": "cada regla se comprueba automáticamente en cada ejecución de datos; nada es autodeclarado.",
+    "allRulesPass": "Todas las reglas de calidad se cumplen.",
+    "unmetRules": "Reglas incumplidas:",
+    "tierTooltip": "Nivel de calidad medido — recalculado en cada ejecución de datos"
+  },
+  "tiers": {
+    "unrated": "Sin calificar",
+    "bronze": "Bronce",
+    "silver": "Plata",
+    "gold": "Oro",
+    "platinum": "Platino"
+  },
+  "health": {
+    "stale": "obsoleto — última versión hace {{count}} días",
+    "artifactErrors": "errores de artefactos en esta ejecución",
+    "sidecarGaps": "sumas de verificación incompletas"
+  },
+  "errors": {
+    "noPrivateCatalog": "Aún no se ha publicado un catálogo privado para esta organización.",
+    "accessDenied": "Acceso denegado por la puerta del catálogo."
+  },
+  "footer": {
+    "copyright": "© 2026 STARTCloud, Inc",
+    "source": "Código fuente en GitHub"
+  },
+  "languageModal": {
+    "title": "Seleccionar idioma"
+  },
+  "callback": {
+    "completing": "Completando el inicio de sesión…",
+    "failed": "Error al iniciar sesión: {{message}} —",
+    "returnLink": "vuelva al catálogo",
+    "tryAgain": "e inténtelo de nuevo."
+  }
+}

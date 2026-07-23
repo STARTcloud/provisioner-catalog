@@ -178,4 +178,18 @@ export const getClaims = () => {
   }
 };
 
+/* Live claims from the IdP userinfo endpoint (favorite_apps, customer_id, …)
+ * or null. */
+export const fetchUserInfo = async token => {
+  try {
+    const { userinfo_endpoint } = await discover();
+    const { data } = await axios.get(userinfo_endpoint, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  } catch {
+    return null;
+  }
+};
+
 export const signOut = clearTokens;

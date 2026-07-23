@@ -217,10 +217,12 @@ h6,
   color: var(--bs-link-color);
 }
 
-.theme-toggle {
-  color: var(--bs-body-color);
-  display: inline-flex;
-  align-items: center;
+.user-menu-name {
+  max-width: 180px;
+}
+
+.section-anchor {
+  scroll-margin-top: 90px;
 }
 
 .tier-badge {

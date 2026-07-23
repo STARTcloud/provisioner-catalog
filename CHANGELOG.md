@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.9](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.8...provisioner-catalog-v0.0.9) (2026-07-23)
+
+
+### Bug Fixes
+
+* STARTcloud site look for the SPA; pass secrets into the called data job ([b63f3fd](https://github.com/STARTcloud/provisioner-catalog/commit/b63f3fdfdc5ff7ac2d382ac8f4db6c70d8036d16))
+* user menu parity with hyperweaver-ui — i18n es locale, ticket link, favorites, org jump ([2f2c5ad](https://github.com/STARTcloud/provisioner-catalog/commit/2f2c5ad423e9bf4efe620bacbfaaa3ec50af9eee))
+
 ## [0.0.8](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.7...provisioner-catalog-v0.0.8) (2026-07-23)
 
 

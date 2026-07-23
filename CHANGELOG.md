@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.10](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.9...provisioner-catalog-v0.0.10) (2026-07-23)
+
+
+### Bug Fixes
+
+* move report-an-issue onto provisioner cards ([3badc8e](https://github.com/STARTcloud/provisioner-catalog/commit/3badc8ec902a229be4ae4e0e768a032a9e124ef2))
+
 ## [0.0.9](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.8...provisioner-catalog-v0.0.9) (2026-07-23)
 
 

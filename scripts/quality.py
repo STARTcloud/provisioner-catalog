@@ -20,6 +20,7 @@ job — there is deliberately no human knob on the grades themselves.
 from __future__ import annotations
 
 import io
+import math
 import tarfile
 import urllib.error
 from datetime import datetime, timedelta, timezone
@@ -31,6 +32,27 @@ TIERS = ["bronze", "silver", "gold", "platinum"]
 MAX_WORKFLOW_FILES = 20
 MAX_WORKFLOW_BYTES = 256 * 1024
 MAX_MEMBER_SCAN = 200_000
+
+# Provider values that count for platinum.multi_provider — arbitrary strings
+# in a VAGRANT_PROVIDER dropdown must not.
+KNOWN_PROVIDERS = {
+    "virtualbox",
+    "utm",
+    "kvm",
+    "qemu",
+    "libvirt",
+    "bhyve",
+    "zones",
+    "vmware",
+    "vmware_fusion",
+    "vmware_desktop",
+    "hyperv",
+    "proxmox",
+    "aws",
+}
+
+# At least half the declared roles must carry a substantive molecule scenario.
+TESTED_ROLES_RATIO = 0.5
 
 
 def archive_member_names(data: bytes) -> list[str]:
@@ -106,6 +128,50 @@ def _filled(value) -> bool:
     return bool(str(value or "").strip())
 
 
+def tested_declared_roles(members: list[str], roles: list[dict]) -> int:
+    """Declared roles carrying a SUBSTANTIVE molecule scenario in the archive.
+
+    Anchored on the manifest's own role list, so vendored upstream
+    collections' test trees count for nothing: a role only scores when a
+    member path `…/roles/<name>/molecule/…` holds a molecule.yml AND a
+    converge.yml or verify.yml. An empty `tests/.keep` scores zero.
+    """
+    tested = 0
+    for role in roles:
+        name = str(role.get("name", "")).strip()
+        if not name:
+            continue
+        marker = f"/roles/{name}/molecule/"
+        scenario = [m for m in members if marker in f"/{m}"]
+        has_config = any(m.endswith("/molecule.yml") for m in scenario)
+        has_plays = any(m.endswith(("/converge.yml", "/verify.yml")) for m in scenario)
+        if has_config and has_plays:
+            tested += 1
+    return tested
+
+
+def known_provider_values(fields: list[dict]) -> set[str]:
+    """Distinct KNOWN provider values offered by VAGRANT_PROVIDER dropdowns —
+    two bogus option strings no longer pass multi_provider."""
+    values: set[str] = set()
+    for field in fields:
+        if str(field.get("name", "")).upper() != "VAGRANT_PROVIDER":
+            continue
+        for option in field.get("options") or []:
+            if isinstance(option, dict):
+                values.add(str(option.get("value", "")).strip().lower())
+    return values & KNOWN_PROVIDERS
+
+
+def spaced_releases_within_year(release_times: list, year_ago) -> bool:
+    """≥2 releases in the last year, spanning ≥30 days — two same-day
+    trivial releases no longer pass release_cadence."""
+    recent = sorted(t for t in release_times if t >= year_ago)
+    if len(recent) < 2:
+        return False
+    return (recent[-1] - recent[0]) >= timedelta(days=30)
+
+
 def _parse_time(value: str):
     try:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
@@ -139,10 +205,8 @@ def evaluate_rules(
     fields = collect_config_fields(manifest)
     roles = [r for r in (manifest.get("roles") or []) if isinstance(r, dict)]
 
-    provider_options = 0
-    for field in fields:
-        if str(field.get("name", "")).upper() == "VAGRANT_PROVIDER":
-            provider_options = max(provider_options, len(field.get("options") or []))
+    tested_roles = tested_declared_roles(members, roles)
+    tests_required = max(1, math.ceil(len(roles) * TESTED_ROLES_RATIO)) if roles else 0
 
     return {
         "bronze": {
@@ -169,11 +233,14 @@ def evaluate_rules(
             or f"{root}/examples/Hosts.yml" in member_set,
         },
         "platinum": {
-            "automated_tests": any(
-                "/molecule/" in f"/{name}/" or "/tests/" in f"/{name}/" for name in member_set
-            ),
-            "multi_provider": provider_options >= 2,
-            "release_cadence": sum(1 for t in release_times if t >= year_ago) >= 2,
+            # Coverage of the manifest's OWN roles + CI evidence the tests
+            # run — vendored collections' test trees and empty tests/ dirs
+            # count for nothing.
+            "automated_tests": bool(roles)
+            and tested_roles >= tests_required
+            and "molecule" in workflows_text,
+            "multi_provider": len(known_provider_values(fields)) >= 2,
+            "release_cadence": spaced_releases_within_year(release_times, year_ago),
         },
     }
 

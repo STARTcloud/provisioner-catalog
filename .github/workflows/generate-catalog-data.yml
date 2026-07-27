@@ -74,7 +74,7 @@ jobs:
           --published-url https://provisioner-catalog.startcloud.com/catalog.json
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'

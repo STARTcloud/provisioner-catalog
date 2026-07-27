@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.11](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.10...provisioner-catalog-v0.0.11) (2026-07-27)
+
+
+### Bug Fixes
+
+* fixing roles and validation ([8eb02d9](https://github.com/STARTcloud/provisioner-catalog/commit/8eb02d936b9e8f072f200871b03f1053463294f5))
+* harden gameable platinum quality rules ([c85f048](https://github.com/STARTcloud/provisioner-catalog/commit/c85f04820fd9817ef4aa0a37973b5e40fe6671ee))
+
 ## [0.0.10](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.9...provisioner-catalog-v0.0.10) (2026-07-23)
 
 

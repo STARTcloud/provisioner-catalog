@@ -454,7 +454,7 @@ def validate_tree(path: str, rep: Reporter) -> None:
         for f in fields
         if not (str(f.get("label") or "").strip() and str(f.get("tooltip") or "").strip())
     ]
-    roles = [r for r in (manifest.get("roles") or []) if isinstance(r, dict)]
+    roles = quality.collect_roles(manifest)
     undocumented_roles = [
         str(r.get("name"))
         for r in roles

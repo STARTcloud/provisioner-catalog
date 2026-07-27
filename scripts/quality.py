@@ -128,6 +128,19 @@ def _filled(value) -> bool:
     return bool(str(value or "").strip())
 
 
+def collect_roles(manifest: dict) -> list[dict]:
+    """Declared roles, wherever the manifest puts them.
+
+    Real manifests (startcloud_generic_provisioner and descendants) declare
+    roles under ``metadata.roles``; the top-level ``roles:`` shape also exists.
+    Top level wins when both are present.
+    """
+    raw = manifest.get("roles")
+    if not raw:
+        raw = (manifest.get("metadata") or {}).get("roles")
+    return [r for r in (raw or []) if isinstance(r, dict)]
+
+
 def tested_declared_roles(members: list[str], roles: list[dict]) -> int:
     """Declared roles carrying a SUBSTANTIVE molecule scenario in the archive.
 
@@ -203,7 +216,7 @@ def evaluate_rules(
     }
 
     fields = collect_config_fields(manifest)
-    roles = [r for r in (manifest.get("roles") or []) if isinstance(r, dict)]
+    roles = collect_roles(manifest)
 
     tested_roles = tested_declared_roles(members, roles)
     tests_required = max(1, math.ceil(len(roles) * TESTED_ROLES_RATIO)) if roles else 0

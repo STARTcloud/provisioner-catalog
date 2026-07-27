@@ -11,6 +11,9 @@
 # Keep entries alphabetized by repo. Comment each entry with owner attribution.
 
 sources:
+  # STARTcloud — additional HCL Domino server provisioner (joins an existing
+  # Domino domain; optional Leap, Nomad Web, Traveler, Verse, REST API)
+  - repo: STARTcloud/hcl_domino_additional_provisioner
   # STARTcloud — the generic provisioner, reference implementation of the
   # artifact contract (registry-shaped archives, release-please versioning)
   - repo: STARTcloud/startcloud_generic_provisioner

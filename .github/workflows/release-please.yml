@@ -36,9 +36,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Mint App token
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
       - name: Release Please
         uses: googleapis/release-please-action@v5
         id: release
+        with:
+          token: ${{ steps.app.outputs.token }}
 
   # Publish catalog data right after the push-to-main flow (change-detected —
   # deploys only when the generated data differs from what is live). The 2h

@@ -1,7 +1,6 @@
 {
   "app": {
     "title": "Catálogo de Provisioners de STARTcloud",
-    "heroLead": "El Catálogo de Provisioners de STARTcloud",
     "themeContext": {
       "autoStatus": "Automático ({{mode}})"
     }
@@ -41,7 +40,8 @@
     "downloads_one": "{{count}} descarga",
     "downloads_other": "{{count}} descargas",
     "download": "descargar",
-    "homepage": "página web",
+    "homepage": "Página web",
+    "viewOnGithub": "Ver en GitHub",
     "reportIssue": "Informar de un problema",
     "noDescription": "Sin descripción.",
     "showAll": "Mostrar las {{count}} versiones",

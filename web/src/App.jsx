@@ -189,7 +189,6 @@ const App = () => {
             className="img-fluid"
             alt="STARTcloud logo"
           />
-          <p className="lead">{t('app.heroLead')}</p>
         </Container>
       </section>
 

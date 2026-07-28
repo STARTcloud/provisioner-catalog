@@ -1,7 +1,6 @@
 {
   "app": {
     "title": "STARTcloud Provisioner Catalog",
-    "heroLead": "The STARTcloud Provisioner Catalog",
     "themeContext": {
       "autoStatus": "Auto ({{mode}})"
     }
@@ -41,7 +40,8 @@
     "downloads_one": "{{count}} download",
     "downloads_other": "{{count}} downloads",
     "download": "download",
-    "homepage": "homepage",
+    "homepage": "Homepage",
+    "viewOnGithub": "View on GitHub",
     "reportIssue": "Report an issue",
     "noDescription": "No description provided.",
     "showAll": "Show all {{count}} versions",

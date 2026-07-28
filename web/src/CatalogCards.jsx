@@ -105,7 +105,7 @@ const CardMeta = ({ entry }) => {
   if (!entry) {
     return null;
   }
-  const { downloads, providers = [] } = entry.health;
+  const { downloads } = entry.health;
   const releasedDays = staleDaysOf(entry);
   return (
     <div className="d-flex flex-wrap align-items-center gap-2 mb-2 small text-body-secondary">
@@ -113,6 +113,24 @@ const CardMeta = ({ entry }) => {
       {typeof downloads === 'number' ? (
         <span>{t('card.downloads', { count: downloads })}</span>
       ) : null}
+    </div>
+  );
+};
+
+CardMeta.propTypes = {
+  entry: healthEntryShape,
+};
+
+const ProviderChips = ({ entry }) => {
+  if (!entry) {
+    return null;
+  }
+  const { providers = [] } = entry.health;
+  if (providers.length === 0) {
+    return null;
+  }
+  return (
+    <div className="d-flex flex-wrap gap-1 mb-2">
       {providers.map(provider => (
         <Badge key={provider} bg="secondary">
           {provider}
@@ -122,7 +140,7 @@ const CardMeta = ({ entry }) => {
   );
 };
 
-CardMeta.propTypes = {
+ProviderChips.propTypes = {
   entry: healthEntryShape,
 };
 
@@ -198,6 +216,7 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
           <ProvisionerIcon entry={healthEntry} />
           <div className="flex-grow-1 min-width-0">
             <Card.Title className="mb-0 text-break">{label || provisioner.name}</Card.Title>
+            <div className="small text-body-secondary">{owner}</div>
             {label && provisioner.name !== repoName ? (
               <code className="checksum">{provisioner.name}</code>
             ) : null}
@@ -205,40 +224,47 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
           <span className="d-flex flex-column align-items-end gap-1">
             <TierBadge entry={healthEntry} />
             <Badge bg="primary">v{latest.version}</Badge>
+            <span className="d-flex gap-2">
+              <a
+                href={`https://github.com/${provisioner.repo}`}
+                target="_blank"
+                rel="noreferrer"
+                title={t('card.viewOnGithub')}
+                aria-label={t('card.viewOnGithub')}
+              >
+                <FaGithub />
+              </a>
+              {homepage ? (
+                <a
+                  href={homepage}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={t('card.homepage')}
+                  aria-label={t('card.homepage')}
+                >
+                  <FaHome />
+                </a>
+              ) : null}
+              <a
+                href={`https://github.com/${provisioner.repo}/issues/new`}
+                target="_blank"
+                rel="noreferrer"
+                title={t('card.reportIssue')}
+                aria-label={t('card.reportIssue')}
+              >
+                <FaBug />
+              </a>
+            </span>
           </span>
         </div>
-        <Card.Subtitle className="mb-2 d-flex flex-wrap gap-3">
-          <a
-            className="text-decoration-none"
-            href={`https://github.com/${provisioner.repo}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <FaGithub className="me-1" />
-            {owner}
-          </a>
-          {homepage ? (
-            <a className="text-decoration-none" href={homepage} target="_blank" rel="noreferrer">
-              <FaHome className="me-1" />
-              {t('card.homepage')}
-            </a>
-          ) : null}
-          <a
-            className="text-decoration-none"
-            href={`https://github.com/${provisioner.repo}/issues/new`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <FaBug className="me-1" />
-            {t('card.reportIssue')}
-          </a>
-        </Card.Subtitle>
         <CardMeta entry={healthEntry} />
         <HealthChips entry={healthEntry} />
         <Card.Text className="card-desc" title={provisioner.description || undefined}>
           {provisioner.description || t('card.noDescription')}
         </Card.Text>
-        <Accordion flush className="mt-auto">
+        <div className="mt-auto">
+          <ProviderChips entry={healthEntry} />
+          <Accordion flush>
           <Accordion.Item eventKey="versions">
             <Accordion.Header>
               {t('card.version', { count: provisioner.versions.length })}
@@ -281,8 +307,9 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
               </ListGroup>
             </Accordion.Body>
           </Accordion.Item>
-          <QualityBreakdown entry={healthEntry} />
-        </Accordion>
+            <QualityBreakdown entry={healthEntry} />
+          </Accordion>
+        </div>
       </Card.Body>
     </Card>
   );

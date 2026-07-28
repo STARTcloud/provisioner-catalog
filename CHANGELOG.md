@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.14](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.13...provisioner-catalog-v0.0.14) (2026-07-28)
+
+
+### Bug Fixes
+
+* more styling ([305d70e](https://github.com/STARTcloud/provisioner-catalog/commit/305d70e761c6859e9366b3324d021e4796bd54be))
+* more styling ([86e2874](https://github.com/STARTcloud/provisioner-catalog/commit/86e2874fb1c10a7b51b55d798c856bd5796a0aa8))
+
 ## [0.0.13](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.12...provisioner-catalog-v0.0.13) (2026-07-28)
 
 

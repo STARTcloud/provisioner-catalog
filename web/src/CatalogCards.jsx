@@ -265,48 +265,48 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
         <div className="mt-auto">
           <ProviderChips entry={healthEntry} />
           <Accordion flush>
-          <Accordion.Item eventKey="versions">
-            <Accordion.Header>
-              {t('card.version', { count: provisioner.versions.length })}
-            </Accordion.Header>
-            <Accordion.Body className="p-0">
-              <ListGroup variant="flush" className="version-list">
-                {versions.map(entry => (
-                  <ListGroup.Item key={entry.version}>
-                    <div className="d-flex justify-content-between align-items-center gap-2">
-                      <strong>{entry.version}</strong>
-                      <span>
-                        {entry.artifacts.map(artifact => (
-                          <a key={artifact.url} href={artifact.url}>
-                            {t('card.download')}
-                          </a>
-                        ))}
-                      </span>
-                    </div>
-                    {entry.artifacts.map(artifact => (
-                      <code key={artifact.checksum} className="checksum d-block text-break">
-                        {artifact.checksum_type}:{artifact.checksum}
-                      </code>
-                    ))}
-                  </ListGroup.Item>
-                ))}
-                {hiddenCount > 0 || showAllVersions ? (
-                  <ListGroup.Item className="text-center">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="p-0"
-                      onClick={() => setShowAllVersions(current => !current)}
-                    >
-                      {showAllVersions
-                        ? t('card.showFewer')
-                        : t('card.showAll', { count: provisioner.versions.length })}
-                    </Button>
-                  </ListGroup.Item>
-                ) : null}
-              </ListGroup>
-            </Accordion.Body>
-          </Accordion.Item>
+            <Accordion.Item eventKey="versions">
+              <Accordion.Header>
+                {t('card.version', { count: provisioner.versions.length })}
+              </Accordion.Header>
+              <Accordion.Body className="p-0">
+                <ListGroup variant="flush" className="version-list">
+                  {versions.map(entry => (
+                    <ListGroup.Item key={entry.version}>
+                      <div className="d-flex justify-content-between align-items-center gap-2">
+                        <strong>{entry.version}</strong>
+                        <span>
+                          {entry.artifacts.map(artifact => (
+                            <a key={artifact.url} href={artifact.url}>
+                              {t('card.download')}
+                            </a>
+                          ))}
+                        </span>
+                      </div>
+                      {entry.artifacts.map(artifact => (
+                        <code key={artifact.checksum} className="checksum d-block text-break">
+                          {artifact.checksum_type}:{artifact.checksum}
+                        </code>
+                      ))}
+                    </ListGroup.Item>
+                  ))}
+                  {hiddenCount > 0 || showAllVersions ? (
+                    <ListGroup.Item className="text-center">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0"
+                        onClick={() => setShowAllVersions(current => !current)}
+                      >
+                        {showAllVersions
+                          ? t('card.showFewer')
+                          : t('card.showAll', { count: provisioner.versions.length })}
+                      </Button>
+                    </ListGroup.Item>
+                  ) : null}
+                </ListGroup>
+              </Accordion.Body>
+            </Accordion.Item>
             <QualityBreakdown entry={healthEntry} />
           </Accordion>
         </div>

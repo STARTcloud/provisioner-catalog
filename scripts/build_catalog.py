@@ -233,7 +233,7 @@ def build_provisioners(
                     family, manifest, members, list(versions), releases, workflows_text, latest
                 )
                 health_map[family] = quality.health_entry(
-                    repo, rules, manifest, latest, releases, artifacts_ok, sidecars_ok
+                    family, repo, rules, manifest, latest, releases, artifacts_ok, sidecars_ok
                 )
             else:
                 rep.warning(f"{repo} {family}: no recordable versions — family omitted")

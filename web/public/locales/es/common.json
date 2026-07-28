@@ -37,6 +37,9 @@
   "card": {
     "version_one": "{{count}} versión",
     "version_other": "{{count}} versiones",
+    "released": "publicado hace {{count}} días",
+    "downloads_one": "{{count}} descarga",
+    "downloads_other": "{{count}} descargas",
     "download": "descargar",
     "homepage": "página web",
     "reportIssue": "Informar de un problema",

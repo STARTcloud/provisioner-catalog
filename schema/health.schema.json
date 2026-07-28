@@ -71,7 +71,9 @@
                                 "latest_version",
                                 "latest_release_at",
                                 "artifacts_ok",
-                                "sidecars_ok"
+                                "sidecars_ok",
+                                "providers",
+                                "downloads"
                             ],
                             "properties": {
                                 "latest_version": {
@@ -86,6 +88,18 @@
                                 },
                                 "sidecars_ok": {
                                     "type": "boolean"
+                                },
+                                "providers": {
+                                    "description": "Known virtualization providers offered by the manifest's VAGRANT_PROVIDER dropdowns",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "downloads": {
+                                    "description": "Total GitHub download count of the family's versioned assets",
+                                    "type": "integer",
+                                    "minimum": 0
                                 }
                             }
                         }

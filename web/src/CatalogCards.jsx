@@ -37,6 +37,8 @@ export const healthEntryShape = PropTypes.shape({
     latest_release_at: PropTypes.string,
     artifacts_ok: PropTypes.bool.isRequired,
     sidecars_ok: PropTypes.bool.isRequired,
+    providers: PropTypes.arrayOf(PropTypes.string),
+    downloads: PropTypes.number,
   }).isRequired,
 });
 
@@ -98,6 +100,32 @@ HealthChips.propTypes = {
   entry: healthEntryShape,
 };
 
+const CardMeta = ({ entry }) => {
+  const { t } = useTranslation();
+  if (!entry) {
+    return null;
+  }
+  const { downloads, providers = [] } = entry.health;
+  const releasedDays = staleDaysOf(entry);
+  return (
+    <div className="d-flex flex-wrap align-items-center gap-2 mb-2 small text-body-secondary">
+      {releasedDays !== null ? <span>{t('card.released', { count: releasedDays })}</span> : null}
+      {typeof downloads === 'number' ? (
+        <span>{t('card.downloads', { count: downloads })}</span>
+      ) : null}
+      {providers.map(provider => (
+        <Badge key={provider} bg="secondary">
+          {provider}
+        </Badge>
+      ))}
+    </div>
+  );
+};
+
+CardMeta.propTypes = {
+  entry: healthEntryShape,
+};
+
 const QualityBreakdown = ({ entry }) => {
   const { t } = useTranslation();
   if (!entry) {
@@ -156,6 +184,7 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
   const { t } = useTranslation();
   const [latest] = provisioner.versions;
   const [showAllVersions, setShowAllVersions] = useState(false);
+  const [owner, repoName] = provisioner.repo.split('/');
   const label = healthEntry?.presentation?.label || '';
   const homepage = healthEntry?.presentation?.homepage || '';
   const versions = showAllVersions
@@ -164,12 +193,14 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
   const hiddenCount = provisioner.versions.length - versions.length;
   return (
     <Card className="h-100 shadow-sm catalog-card">
-      <Card.Body>
+      <Card.Body className="d-flex flex-column">
         <div className="d-flex align-items-start gap-2 mb-2">
           <ProvisionerIcon entry={healthEntry} />
           <div className="flex-grow-1 min-width-0">
             <Card.Title className="mb-0 text-break">{label || provisioner.name}</Card.Title>
-            {label ? <code className="checksum">{provisioner.name}</code> : null}
+            {label && provisioner.name !== repoName ? (
+              <code className="checksum">{provisioner.name}</code>
+            ) : null}
           </div>
           <span className="d-flex flex-column align-items-end gap-1">
             <TierBadge entry={healthEntry} />
@@ -184,7 +215,7 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
             rel="noreferrer"
           >
             <FaGithub className="me-1" />
-            {provisioner.repo}
+            {owner}
           </a>
           {homepage ? (
             <a className="text-decoration-none" href={homepage} target="_blank" rel="noreferrer">
@@ -202,9 +233,12 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
             {t('card.reportIssue')}
           </a>
         </Card.Subtitle>
+        <CardMeta entry={healthEntry} />
         <HealthChips entry={healthEntry} />
-        <Card.Text>{provisioner.description || t('card.noDescription')}</Card.Text>
-        <Accordion flush>
+        <Card.Text className="card-desc" title={provisioner.description || undefined}>
+          {provisioner.description || t('card.noDescription')}
+        </Card.Text>
+        <Accordion flush className="mt-auto">
           <Accordion.Item eventKey="versions">
             <Accordion.Header>
               {t('card.version', { count: provisioner.versions.length })}

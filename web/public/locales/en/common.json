@@ -37,6 +37,9 @@
   "card": {
     "version_one": "{{count}} version",
     "version_other": "{{count}} versions",
+    "released": "released {{count}}d ago",
+    "downloads_one": "{{count}} download",
+    "downloads_other": "{{count}} downloads",
     "download": "download",
     "homepage": "homepage",
     "reportIssue": "Report an issue",

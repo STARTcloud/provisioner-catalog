@@ -25,7 +25,7 @@ import tarfile
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-from scripts.validate_repo import SEMVER_RE, gh_api_json, _open_url, API_ROOT
+from scripts.validate_repo import ASSET_RE, SEMVER_RE, gh_api_json, _open_url, API_ROOT
 
 TIERS = ["bronze", "silver", "gold", "platinum"]
 
@@ -278,7 +278,19 @@ def failed_rules(rules: dict[str, dict[str, bool]]) -> list[str]:
     ]
 
 
+def family_downloads(family: str, releases: list[dict]) -> int:
+    """Total GitHub download count of the family's versioned assets."""
+    total = 0
+    for release in releases:
+        for asset in release.get("assets", []):
+            match = ASSET_RE.match(asset.get("name", ""))
+            if match and match.group("name") == family:
+                total += asset.get("download_count") or 0
+    return total
+
+
 def health_entry(
+    family: str,
     repo: str,
     rules: dict[str, dict[str, bool]],
     manifest: dict | None,
@@ -307,5 +319,7 @@ def health_entry(
             else None,
             "artifacts_ok": artifacts_ok,
             "sidecars_ok": sidecars_ok,
+            "providers": sorted(known_provider_values(collect_config_fields(manifest))),
+            "downloads": family_downloads(family, releases),
         },
     }

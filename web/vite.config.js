@@ -5,9 +5,11 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import YAML from 'yaml';
 
-// Version/name come from THIS package's own package.json, so the UI builds
-// standalone.
+// Name comes from this package's package.json; the version comes from the
+// repository's release-please-managed version.txt so the footer always shows
+// the released catalog version.
 const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+const releaseVersion = fs.readFileSync('../version.txt', 'utf8').trim();
 
 // Dev-server settings come from this package's own config.yaml (not a dotfile,
 // not hardcoded). They only affect the local dev server; the built SPA is
@@ -34,7 +36,7 @@ const supportedLocales = localeDirs.length ? localeDirs : ['en'];
 
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_VERSION__: JSON.stringify(releaseVersion),
     __APP_NAME__: JSON.stringify(pkg.name),
     __SUPPORTED_LOCALES__: JSON.stringify(supportedLocales),
   },

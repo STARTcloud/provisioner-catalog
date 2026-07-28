@@ -107,10 +107,6 @@ const QualityBreakdown = ({ entry }) => {
     <Accordion.Item eventKey="quality">
       <Accordion.Header>{t('card.quality', { tier: t(`tiers.${entry.tier}`) })}</Accordion.Header>
       <Accordion.Body>
-        <p className="mb-1">
-          {t('card.measuredTier')} <strong>{t(`tiers.${entry.tier}`)}</strong> —{' '}
-          {t('card.measuredExplainer')}
-        </p>
         {entry.failed_rules.length === 0 ? (
           <p className="mb-0">{t('card.allRulesPass')}</p>
         ) : (
@@ -275,9 +271,10 @@ const matchesQuery = (provisioner, health, query) => {
 };
 
 const CatalogSection = ({
-  title,
+  title = '',
   icon = null,
   subtitle = '',
+  titleTooltip = '',
   provisioners,
   health = null,
   query = '',
@@ -287,15 +284,20 @@ const CatalogSection = ({
   const filtered = provisioners.filter(provisioner => matchesQuery(provisioner, health, query));
   return (
     <section className="mb-5">
-      <h2 className="h4 d-flex align-items-center gap-2 section-title">
-        {icon}
-        {title}
-        {query.trim() ? (
-          <Badge bg="secondary" pill>
-            {filtered.length}/{provisioners.length}
-          </Badge>
-        ) : null}
-      </h2>
+      {title ? (
+        <h2
+          className="h4 d-flex align-items-center gap-2 section-title"
+          title={titleTooltip || undefined}
+        >
+          {icon}
+          {title}
+          {query.trim() ? (
+            <Badge bg="secondary" pill>
+              {filtered.length}/{provisioners.length}
+            </Badge>
+          ) : null}
+        </h2>
+      ) : null}
       {subtitle ? <p className="text-body-secondary mb-3">{subtitle}</p> : null}
       {filtered.length === 0 ? (
         <Alert variant="light">{query.trim() ? t('sections.noMatches') : emptyNote}</Alert>
@@ -316,9 +318,10 @@ const CatalogSection = ({
 };
 
 CatalogSection.propTypes = {
-  title: PropTypes.string.isRequired,
+  title: PropTypes.string,
   icon: PropTypes.node,
   subtitle: PropTypes.string,
+  titleTooltip: PropTypes.string,
   provisioners: PropTypes.arrayOf(provisionerShape).isRequired,
   health: PropTypes.shape({ provisioners: PropTypes.object }),
   query: PropTypes.string,

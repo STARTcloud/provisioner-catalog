@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { Alert, Container, Form, InputGroup, Spinner } from 'react-bootstrap';
+import { Alert, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaBuilding, FaGithub, FaGlobe, FaSearch } from 'react-icons/fa';
 
@@ -94,6 +94,48 @@ const App = () => {
     setOrgResults([]);
   };
 
+  const updatedTooltip = publicCatalog
+    ? t('sections.publicSubtitle', { updated: publicCatalog.updated })
+    : '';
+
+  const publicTabTitle = (
+    <span className="d-inline-flex align-items-center gap-2" title={updatedTooltip || undefined}>
+      <FaGlobe aria-hidden />
+      {t('sections.publicTitle')}
+    </span>
+  );
+
+  const privateTabTitle = (
+    <span className="d-inline-flex align-items-center gap-2">
+      <FaBuilding aria-hidden />
+      {t('sections.privateTitle')}
+    </span>
+  );
+
+  const orgSections = orgResults.map(org => (
+    <div key={org.uuid} id={`org-${org.uuid}`} className="section-anchor">
+      {org.catalog ? (
+        <CatalogSection
+          title={org.name}
+          icon={<FaBuilding aria-hidden />}
+          subtitle={t('sections.privateSubtitle', { org: org.name })}
+          provisioners={org.catalog.provisioners}
+          health={org.health}
+          query={query}
+          emptyNote={t('sections.orgEmpty')}
+        />
+      ) : (
+        <section className="mb-5">
+          <h2 className="h4 d-flex align-items-center gap-2 section-title">
+            <FaBuilding aria-hidden />
+            {org.name}
+          </h2>
+          <Alert variant="secondary">{org.errorKey ? t(org.errorKey) : org.errorMessage}</Alert>
+        </section>
+      )}
+    </div>
+  ));
+
   return (
     <>
       <header className="p-3 sticky-top sc-header shadow-sm">
@@ -152,14 +194,6 @@ const App = () => {
       </section>
 
       <Container className="py-4">
-        <p className="text-body-secondary">
-          {t('app.introBefore')}{' '}
-          <a href="/catalog.json" className="font-monospace">
-            {t('app.introLink')}
-          </a>{' '}
-          {t('app.introAfter')}
-        </p>
-
         <InputGroup className="mb-4 catalog-search">
           <InputGroup.Text>
             <FaSearch aria-hidden />
@@ -177,11 +211,11 @@ const App = () => {
           <Alert variant="danger">{t('sections.publicLoadFailed', { message: publicError })}</Alert>
         ) : null}
         {!publicCatalog && !publicError ? <Spinner animation="border" role="status" /> : null}
-        {publicCatalog ? (
+        {publicCatalog && orgResults.length === 0 ? (
           <CatalogSection
             title={t('sections.publicTitle')}
             icon={<FaGlobe aria-hidden />}
-            subtitle={t('sections.publicSubtitle', { updated: publicCatalog.updated })}
+            titleTooltip={updatedTooltip}
             provisioners={publicCatalog.provisioners}
             health={publicHealth}
             query={query}
@@ -189,35 +223,25 @@ const App = () => {
           />
         ) : null}
 
-        {!user ? <Alert variant="info">{t('sections.signInPrompt')}</Alert> : null}
+        {orgResults.length > 0 ? (
+          <Tabs defaultActiveKey="public" className="mb-4 catalog-tabs">
+            <Tab eventKey="public" title={publicTabTitle}>
+              {publicCatalog ? (
+                <CatalogSection
+                  provisioners={publicCatalog.provisioners}
+                  health={publicHealth}
+                  query={query}
+                  emptyNote={t('sections.publicEmpty')}
+                />
+              ) : null}
+            </Tab>
+            <Tab eventKey="private" title={privateTabTitle}>
+              {orgSections}
+            </Tab>
+          </Tabs>
+        ) : null}
 
         {loadingPrivate ? <Spinner animation="border" role="status" /> : null}
-
-        {orgResults.map(org => (
-          <div key={org.uuid} id={`org-${org.uuid}`} className="section-anchor">
-            {org.catalog ? (
-              <CatalogSection
-                title={org.name}
-                icon={<FaBuilding aria-hidden />}
-                subtitle={t('sections.privateSubtitle', { org: org.name })}
-                provisioners={org.catalog.provisioners}
-                health={org.health}
-                query={query}
-                emptyNote={t('sections.orgEmpty')}
-              />
-            ) : (
-              <section className="mb-5">
-                <h2 className="h4 d-flex align-items-center gap-2 section-title">
-                  <FaBuilding aria-hidden />
-                  {org.name}
-                </h2>
-                <Alert variant="secondary">
-                  {org.errorKey ? t(org.errorKey) : org.errorMessage}
-                </Alert>
-              </section>
-            )}
-          </div>
-        ))}
       </Container>
 
       <footer className="border-top py-3">

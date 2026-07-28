@@ -1,10 +1,7 @@
 {
   "app": {
     "title": "STARTcloud Provisioner Catalog",
-    "heroLead": "The STARTcloud Provisioner Catalog — public packages plus your organizations' private provisioners.",
-    "introBefore": "Provisioner packages consumed by hyperweaver-agent and zoneweaver-agent. Agents fetch",
-    "introLink": "catalog.json",
-    "introAfter": "directly — this page is a human view of the same data. Sign in to also see your organizations' private provisioners.",
+    "heroLead": "The STARTcloud Provisioner Catalog",
     "themeContext": {
       "autoStatus": "Auto ({{mode}})"
     }
@@ -28,14 +25,14 @@
     "aria": "Search provisioners"
   },
   "sections": {
-    "publicTitle": "Public catalog",
+    "publicTitle": "Public Catalog",
+    "privateTitle": "Private Catalog",
     "publicSubtitle": "Updated {{updated}} — regenerates every ~2 hours from admitted repositories.",
     "publicEmpty": "The public catalog is empty.",
     "privateSubtitle": "Private catalog — visible to {{org}} members only.",
     "orgEmpty": "This organization has no published provisioners yet.",
     "noMatches": "No provisioners match.",
-    "publicLoadFailed": "Could not load the public catalog: {{message}}",
-    "signInPrompt": "Sign in with your STARTcloud account to see the private provisioners your organizations publish."
+    "publicLoadFailed": "Could not load the public catalog: {{message}}"
   },
   "card": {
     "version_one": "{{count}} version",
@@ -47,8 +44,6 @@
     "showAll": "Show all {{count}} versions",
     "showFewer": "Show fewer versions",
     "quality": "Quality: {{tier}}",
-    "measuredTier": "Measured tier:",
-    "measuredExplainer": "every rule is machine-checked each data run; nothing is self-declared.",
     "allRulesPass": "All quality rules pass.",
     "unmetRules": "Unmet rules:",
     "tierTooltip": "Measured quality tier — recomputed every data run"

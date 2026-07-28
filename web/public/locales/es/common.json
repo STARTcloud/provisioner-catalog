@@ -1,10 +1,7 @@
 {
   "app": {
     "title": "Catálogo de Provisioners de STARTcloud",
-    "heroLead": "El Catálogo de Provisioners de STARTcloud — paquetes públicos más los provisioners privados de sus organizaciones.",
-    "introBefore": "Paquetes de provisioners consumidos por hyperweaver-agent y zoneweaver-agent. Los agentes obtienen",
-    "introLink": "catalog.json",
-    "introAfter": "directamente — esta página es una vista humana de los mismos datos. Inicie sesión para ver también los provisioners privados de sus organizaciones.",
+    "heroLead": "El Catálogo de Provisioners de STARTcloud",
     "themeContext": {
       "autoStatus": "Automático ({{mode}})"
     }
@@ -29,13 +26,13 @@
   },
   "sections": {
     "publicTitle": "Catálogo público",
+    "privateTitle": "Catálogo privado",
     "publicSubtitle": "Actualizado {{updated}} — se regenera cada ~2 horas a partir de los repositorios admitidos.",
     "publicEmpty": "El catálogo público está vacío.",
     "privateSubtitle": "Catálogo privado — visible solo para los miembros de {{org}}.",
     "orgEmpty": "Esta organización aún no tiene provisioners publicados.",
     "noMatches": "Ningún provisioner coincide.",
-    "publicLoadFailed": "No se pudo cargar el catálogo público: {{message}}",
-    "signInPrompt": "Inicie sesión con su cuenta de STARTcloud para ver los provisioners privados que publican sus organizaciones."
+    "publicLoadFailed": "No se pudo cargar el catálogo público: {{message}}"
   },
   "card": {
     "version_one": "{{count}} versión",
@@ -47,8 +44,6 @@
     "showAll": "Mostrar las {{count}} versiones",
     "showFewer": "Mostrar menos versiones",
     "quality": "Calidad: {{tier}}",
-    "measuredTier": "Nivel medido:",
-    "measuredExplainer": "cada regla se comprueba automáticamente en cada ejecución de datos; nada es autodeclarado.",
     "allRulesPass": "Todas las reglas de calidad se cumplen.",
     "unmetRules": "Reglas incumplidas:",
     "tierTooltip": "Nivel de calidad medido — recalculado en cada ejecución de datos"

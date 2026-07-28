@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.12](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.11...provisioner-catalog-v0.0.12) (2026-07-28)
+
+
+### Bug Fixes
+
+* updating themeing ([362c23e](https://github.com/STARTcloud/provisioner-catalog/commit/362c23e472ef3c98ca6e40a3edd1efa7fdf538a2))
+
 ## [0.0.11](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.10...provisioner-catalog-v0.0.11) (2026-07-27)
 
 

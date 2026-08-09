@@ -11,7 +11,7 @@ import { jwtDecode } from 'jwt-decode';
 
 export const ISSUER = 'https://dev-auth.startcloud.com';
 const CLIENT_ID = 'provisioner-catalog';
-const SCOPES = 'openid profile email organizations';
+const SCOPES = 'openid profile email organizations notifications';
 const REDIRECT_URI = `${window.location.origin}/callback`;
 
 const STORE = {

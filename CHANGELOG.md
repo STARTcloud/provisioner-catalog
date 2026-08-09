@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.17](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.16...provisioner-catalog-v0.0.17) (2026-08-09)
+
+
+### Bug Fixes
+
+* ci/cd nags ([5863981](https://github.com/STARTcloud/provisioner-catalog/commit/58639812b071ac2b03b6b4f6aa763e76921bdc89))
+
 ## [0.0.16](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.15...provisioner-catalog-v0.0.16) (2026-08-09)
 
 

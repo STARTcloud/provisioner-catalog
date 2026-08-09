@@ -139,7 +139,9 @@ const App = () => {
       <FaBuilding aria-hidden />
     );
 
-  const orgSections = orgResults.map(org => (
+  const visibleOrgs = orgResults.filter(org => org.errorKey !== 'errors.noPrivateCatalog');
+
+  const orgSections = visibleOrgs.map(org => (
     <div key={org.uuid} id={`org-${org.uuid}`} className="section-anchor">
       {org.catalog ? (
         <CatalogSection
@@ -212,7 +214,12 @@ const App = () => {
               <UserMenu
                 user={user}
                 userInfo={userInfo}
-                organizations={user?.organizations || []}
+                organizations={(user?.organizations || []).map(org => ({
+                  ...org,
+                  hasCatalog: orgResults.some(
+                    result => result.uuid === org.uuid && Boolean(result.catalog)
+                  ),
+                }))}
                 onSignIn={() => beginLogin()}
                 onSignOut={handleSignOut}
               />
@@ -249,7 +256,7 @@ const App = () => {
           <Alert variant="danger">{t('sections.publicLoadFailed', { message: publicError })}</Alert>
         ) : null}
         {!publicCatalog && !publicError ? <Spinner animation="border" role="status" /> : null}
-        {publicCatalog && orgResults.length === 0 ? (
+        {publicCatalog && visibleOrgs.length === 0 ? (
           <CatalogSection
             title={t('sections.publicTitle')}
             icon={<FaGlobe aria-hidden />}
@@ -261,7 +268,7 @@ const App = () => {
           />
         ) : null}
 
-        {orgResults.length > 0 ? (
+        {visibleOrgs.length > 0 ? (
           <Tabs defaultActiveKey="public" className="mb-4 catalog-tabs">
             <Tab eventKey="public" title={publicTabTitle}>
               {publicCatalog ? (

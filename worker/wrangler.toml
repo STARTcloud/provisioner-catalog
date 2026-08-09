@@ -1,0 +1,40 @@
+# Cloudflare Worker config for the private-catalog gate.
+#
+# Deployed by CI (.github/workflows/deploy-worker.yml) on any push to main
+# touching worker/**; manual `wrangler deploy` still works. All secrets
+# (GITHUB_PAT, VAPID_PRIVATE_KEY, DISPATCH_KEY, DISPATCH_PAT) live only in
+# Cloudflare.
+
+name = "provisioner-catalog-gate"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+# Support@prominic.net's account — the one holding the startcloud.com zone.
+account_id = "acf886f02cfaa9a43340cdf96462b71c"
+
+# The route only intercepts /private/*; everything else on the domain keeps
+# flowing to GitHub Pages. Requires the provisioner-catalog DNS record to be
+# PROXIED (orange cloud) in Cloudflare.
+routes = [
+  { pattern = "provisioner-catalog.startcloud.com/private/*", zone_name = "startcloud.com" },
+  { pattern = "provisioner-catalog.startcloud.com/push/*", zone_name = "startcloud.com" },
+  { pattern = "provisioner-catalog.startcloud.com/admin/*", zone_name = "startcloud.com" }
+]
+
+[[kv_namespaces]]
+binding = "SUBS"
+id = "953c8691ec124338892a73599cc3043b"
+
+[vars]
+# Issuer exactly as it appears in tokens (per-hostname; prod IdP will differ).
+ISSUER = "https://dev-auth.startcloud.com"
+# The registered audience of the provisioner-catalog client.
+AUDIENCE = "provisioner-catalog"
+# The single private store repo the read-only PAT is scoped to.
+STORE_REPO = "STARTcloud/provisioner-catalogs-private"
+# Origins allowed to call cross-origin (the SPA's dev server; prod is
+# same-origin and needs no CORS, but listing it is harmless).
+ALLOWED_ORIGINS = "https://provisioner-catalog.startcloud.com,http://localhost:8080"
+VAPID_PUBLIC_KEY = "BJupS8RY1OiRw2AbYwo_VnhUkFGjzHiJr4L4W1gVTJA70BmT-2zDAyzOKjBLiItBjvPn-ikz-fab4KGapHQD_AU"
+VAPID_SUBJECT = "mailto:vagrantup-startcloud@prominic.net"
+DISPATCH_REPO = "STARTcloud/provisioner-catalog"
+DISPATCH_WORKFLOW = "generate-catalog-data.yml"

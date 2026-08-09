@@ -1,0 +1,59 @@
+# provisioner-catalog-gate — deploy notes
+
+Cloudflare Worker gating `/private/{org-uuid}/catalog.json` on
+`provisioner-catalog.startcloud.com`. Code is committed; CI deploys it on any
+push to main touching `worker/**` (deploy-worker.yml). Every secret lives only
+in Cloudflare; `.wrangler/` stays gitignored.
+
+## One-time setup
+
+1. Install wrangler and log in (run from this `worker/` folder):
+
+   ```bash
+   npm install -g wrangler
+   wrangler login
+   ```
+
+2. Make sure the DNS record for `provisioner-catalog.startcloud.com` is
+   **Proxied (orange cloud)** in the Cloudflare dashboard — a grey-cloud
+   record bypasses Workers entirely and `/private/*` would hit Pages (404).
+   The CNAME to GitHub Pages itself stays exactly as it is.
+
+3. Deploy the Worker and its route:
+
+   ```bash
+   wrangler deploy
+   ```
+
+4. Store the read-only store PAT (the fine-grained token named `Worker read`,
+   scoped to STARTcloud/provisioner-catalogs-private, Contents: Read-only).
+   Prompts for a paste:
+
+   ```bash
+   wrangler secret put GITHUB_PAT
+   ```
+
+## Verifying
+
+- `curl https://provisioner-catalog.startcloud.com/private/00000000-0000-0000-0000-000000000000/catalog.json`
+  → `401 {"error":"missing bearer token"}` means the route + Worker are live.
+- Same URL with a valid Bearer token for a member org → that org's catalog.json.
+- `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
+  return the public catalog straight from Pages (Worker untouched).
+
+## Config changes
+
+Vars (`ISSUER`, `AUDIENCE`, `STORE_REPO`, `ALLOWED_ORIGINS`) live in
+`wrangler.toml` — edit and `wrangler deploy` again. When the prod IdP host
+replaces dev-auth, change `ISSUER` here (it must match the `iss` claim in
+tokens exactly) and redeploy.
+
+## Rotating the PAT
+
+Generate a new fine-grained token (same scope), then:
+
+```bash
+wrangler secret put GITHUB_PAT
+```
+
+and revoke the old token on GitHub. No redeploy needed.

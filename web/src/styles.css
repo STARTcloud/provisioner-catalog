@@ -16,8 +16,8 @@
   --bs-light-rgb: 246, 249, 252;
   --bs-dark: #2a3547;
   --bs-dark-rgb: 42, 53, 71;
-  --bs-body-color: #5a6a85;
-  --bs-body-color-rgb: 90, 106, 133;
+  --bs-body-color: #46546e;
+  --bs-body-color-rgb: 70, 84, 110;
   --bs-body-bg: #fff;
   --bs-body-bg-rgb: 255, 255, 255;
   --bs-heading-color: #2a3547;
@@ -26,7 +26,7 @@
   --bs-link-color-rgb: 93, 135, 255;
   --bs-link-hover-color: #4a6ccc;
   --bs-link-hover-color-rgb: 74, 108, 204;
-  --bs-border-color: #ebf1f6;
+  --bs-border-color: #dbe4ee;
   --bs-border-radius: 7px;
   --bs-border-radius-sm: 5px;
   --bs-border-radius-lg: 15px;

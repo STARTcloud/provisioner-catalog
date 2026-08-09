@@ -361,7 +361,7 @@ const CatalogSection = ({
       ) : null}
       {subtitle ? <p className="text-body-secondary mb-3">{subtitle}</p> : null}
       {filtered.length === 0 ? (
-        <Alert variant="light">{query.trim() ? t('sections.noMatches') : emptyNote}</Alert>
+        <Alert variant="secondary">{query.trim() ? t('sections.noMatches') : emptyNote}</Alert>
       ) : (
         <Row xs={1} md={2} xl={3} className="g-3">
           {filtered.map(provisioner => (

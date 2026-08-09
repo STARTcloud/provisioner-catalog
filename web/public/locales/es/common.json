@@ -28,7 +28,9 @@
     "failed": "Error al regenerar: {{message}}"
   },
   "orgs": {
-    "primary": "Principal"
+    "primary": "Principal",
+    "cancel": "Cancelar",
+    "noCatalog": "Aún sin catálogo publicado"
   },
   "inbox": {
     "title": "Notificaciones",

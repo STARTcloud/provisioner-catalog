@@ -1,7 +1,7 @@
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
-import { Dropdown, Modal, Spinner } from 'react-bootstrap';
+import { Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
 import CountryFlag from 'react-country-flag';
 import { useTranslation } from 'react-i18next';
 import {
@@ -371,6 +371,7 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
               <button
                 key={org.uuid}
                 type="button"
+                disabled={!org.hasCatalog}
                 className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                 onClick={() => jumpToOrg(org.uuid)}
               >
@@ -391,9 +392,17 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
                   )}
                   <span>
                     <span className="fw-bold d-block">{org.name}</span>
-                    {org.primary ? (
-                      <small className="text-primary">{t('orgs.primary')}</small>
+                    {org.description ? (
+                      <small className="text-body-secondary d-block">{org.description}</small>
                     ) : null}
+                    {org.primary ? (
+                      <small className="text-primary d-block">{t('orgs.primary')}</small>
+                    ) : null}
+                    {org.hasCatalog ? null : (
+                      <small className="text-body-secondary fst-italic d-block">
+                        {t('orgs.noCatalog')}
+                      </small>
+                    )}
                   </span>
                 </span>
                 <span className="d-inline-flex gap-1">
@@ -407,6 +416,11 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
             ))}
           </div>
         </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowOrgModal(false)}>
+            {t('orgs.cancel')}
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       <Modal show={showLanguageModal} onHide={() => setShowLanguageModal(false)} centered>
@@ -455,6 +469,8 @@ UserMenu.propTypes = {
       roles: PropTypes.arrayOf(PropTypes.string),
       primary: PropTypes.bool,
       logo: PropTypes.string,
+      description: PropTypes.string,
+      hasCatalog: PropTypes.bool,
     })
   ),
   onSignIn: PropTypes.func.isRequired,

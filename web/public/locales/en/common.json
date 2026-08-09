@@ -28,7 +28,9 @@
     "failed": "Rebuild failed: {{message}}"
   },
   "orgs": {
-    "primary": "Primary"
+    "primary": "Primary",
+    "cancel": "Cancel",
+    "noCatalog": "No catalog published yet"
   },
   "inbox": {
     "title": "Notifications",

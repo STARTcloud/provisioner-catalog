@@ -375,10 +375,34 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
                 onClick={() => jumpToOrg(org.uuid)}
               >
                 <span className="d-inline-flex align-items-center gap-2">
-                  <FaBuilding aria-hidden />
-                  <span className="fw-bold">{org.name}</span>
+                  {org.logo ? (
+                    <img
+                      src={org.logo}
+                      alt=""
+                      width="20"
+                      height="20"
+                      className="rounded-circle"
+                      onError={event => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <FaBuilding aria-hidden />
+                  )}
+                  <span>
+                    <span className="fw-bold d-block">{org.name}</span>
+                    {org.primary ? (
+                      <small className="text-primary">{t('orgs.primary')}</small>
+                    ) : null}
+                  </span>
                 </span>
-                {org.role ? <span className="badge bg-secondary">{org.role}</span> : null}
+                <span className="d-inline-flex gap-1">
+                  {(org.roles || []).map(role => (
+                    <span key={role} className="badge bg-secondary">
+                      {role}
+                    </span>
+                  ))}
+                </span>
               </button>
             ))}
           </div>
@@ -428,7 +452,9 @@ UserMenu.propTypes = {
     PropTypes.shape({
       uuid: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      role: PropTypes.string,
+      roles: PropTypes.arrayOf(PropTypes.string),
+      primary: PropTypes.bool,
+      logo: PropTypes.string,
     })
   ),
   onSignIn: PropTypes.func.isRequired,

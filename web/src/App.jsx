@@ -125,12 +125,26 @@ const App = () => {
     </span>
   );
 
+  const orgIcon = org =>
+    org.logo ? (
+      <img
+        src={org.logo}
+        alt=""
+        className="org-logo"
+        onError={event => {
+          event.currentTarget.style.display = 'none';
+        }}
+      />
+    ) : (
+      <FaBuilding aria-hidden />
+    );
+
   const orgSections = orgResults.map(org => (
     <div key={org.uuid} id={`org-${org.uuid}`} className="section-anchor">
       {org.catalog ? (
         <CatalogSection
           title={org.name}
-          icon={<FaBuilding aria-hidden />}
+          icon={orgIcon(org)}
           subtitle={t('sections.privateSubtitle', { org: org.name })}
           provisioners={org.catalog.provisioners}
           health={org.health}
@@ -140,7 +154,7 @@ const App = () => {
       ) : (
         <section className="mb-5">
           <h2 className="h4 d-flex align-items-center gap-2 section-title">
-            <FaBuilding aria-hidden />
+            {orgIcon(org)}
             {org.name}
           </h2>
           <Alert variant="secondary">{org.errorKey ? t(org.errorKey) : org.errorMessage}</Alert>

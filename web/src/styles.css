@@ -246,6 +246,19 @@ h6,
 .notification-time {
   font-size: 0.75rem;
 }
+.org-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+.notification-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  flex-shrink: 0;
+}
 
 .section-anchor {
   scroll-margin-top: 90px;

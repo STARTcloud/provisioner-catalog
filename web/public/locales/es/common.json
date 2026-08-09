@@ -27,6 +27,9 @@
     "done": "Regeneración terminada.",
     "failed": "Error al regenerar: {{message}}"
   },
+  "orgs": {
+    "primary": "Principal"
+  },
   "inbox": {
     "title": "Notificaciones",
     "empty": "Sin notificaciones.",

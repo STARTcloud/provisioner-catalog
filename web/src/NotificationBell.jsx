@@ -2,10 +2,28 @@ import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { Badge, Button, Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaBell } from 'react-icons/fa';
+import { FaBell, FaCog, FaEnvelope, FaExclamationTriangle, FaShieldAlt } from 'react-icons/fa';
 
 import { ISSUER } from './auth';
 import { fetchNotifications, fetchUnreadCount, markAllRead, markRead } from './notifications';
+
+const TYPE_ICONS = {
+  SECURITY: FaShieldAlt,
+  OAUTH: FaShieldAlt,
+  ACCOUNT: FaEnvelope,
+  ADMIN: FaCog,
+  SYSTEM: FaCog,
+  ALERT: FaExclamationTriangle,
+};
+
+const SEVERITY_CLASSES = {
+  DANGER: 'text-danger',
+  CRITICAL: 'text-danger',
+  ERROR: 'text-danger',
+  WARNING: 'text-warning',
+  SUCCESS: 'text-success',
+  INFO: 'text-body-secondary',
+};
 
 const NotificationBell = ({ user = null }) => {
   const { t, i18n } = useTranslation();
@@ -110,21 +128,39 @@ const NotificationBell = ({ user = null }) => {
         {!failed && entries.length === 0 ? (
           <Dropdown.ItemText className="small">{t('inbox.empty')}</Dropdown.ItemText>
         ) : null}
-        {entries.map(entry => (
-          <Dropdown.Item as="button" type="button" key={entry.id} onClick={() => openEntry(entry)}>
-            <span
-              className={`d-block text-truncate notification-title ${entry.readAt ? '' : 'fw-semibold'}`}
+        {entries.map(entry => {
+          const TypeIcon = TYPE_ICONS[entry.type] || FaBell;
+          return (
+            <Dropdown.Item
+              as="button"
+              type="button"
+              key={entry.id}
+              onClick={() => openEntry(entry)}
+              className="d-flex align-items-start gap-2"
             >
-              {entry.title}
-            </span>
-            {entry.body ? (
-              <span className="d-block text-body-secondary notification-body">{entry.body}</span>
-            ) : null}
-            <span className="d-block text-body-secondary notification-time">
-              {entry.createdAt ? new Date(entry.createdAt).toLocaleString(i18n.language) : ''}
-            </span>
-          </Dropdown.Item>
-        ))}
+              <TypeIcon
+                className={`mt-1 flex-shrink-0 ${SEVERITY_CLASSES[entry.severity] || 'text-body-secondary'}`}
+                aria-hidden
+              />
+              <span className="flex-grow-1 min-width-0">
+                <span
+                  className={`d-block text-truncate notification-title ${entry.readAt ? '' : 'fw-semibold'}`}
+                >
+                  {entry.title}
+                </span>
+                {entry.body ? (
+                  <span className="d-block text-body-secondary notification-body">
+                    {entry.body}
+                  </span>
+                ) : null}
+                <span className="d-block text-body-secondary notification-time">
+                  {entry.createdAt ? new Date(entry.createdAt).toLocaleString(i18n.language) : ''}
+                </span>
+              </span>
+              {entry.readAt ? null : <span className="notification-item-dot mt-2" />}
+            </Dropdown.Item>
+          );
+        })}
         <Dropdown.Divider />
         <Dropdown.Item
           href={`${ISSUER}/notifications`}

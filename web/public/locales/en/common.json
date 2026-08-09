@@ -27,6 +27,9 @@
     "done": "Rebuild finished.",
     "failed": "Rebuild failed: {{message}}"
   },
+  "orgs": {
+    "primary": "Primary"
+  },
   "inbox": {
     "title": "Notifications",
     "empty": "No notifications.",

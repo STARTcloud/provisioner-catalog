@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.15](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.14...provisioner-catalog-v0.0.15) (2026-08-09)
+
+
+### Features
+
+* new theming system ([f37df19](https://github.com/STARTcloud/provisioner-catalog/commit/f37df19b38af24decaee658936210eeed24284f4))
+
+
+### Bug Fixes
+
+* auth ([9ebf457](https://github.com/STARTcloud/provisioner-catalog/commit/9ebf4577528abda53febdfb9fe506ed2b25310ca))
+
 ## [0.0.14](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.13...provisioner-catalog-v0.0.14) (2026-07-28)
 
 

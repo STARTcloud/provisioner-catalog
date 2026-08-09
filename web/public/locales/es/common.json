@@ -43,8 +43,6 @@
   "notifications": {
     "enable": "Activar notificaciones",
     "disable": "Desactivar notificaciones",
-    "enabled": "Notificaciones activadas.",
-    "disabled": "Notificaciones desactivadas.",
     "notSupported": "Este navegador no admite notificaciones.",
     "permissionDenied": "Se denegó el permiso de notificaciones.",
     "enableError": "No se pudieron activar las notificaciones.",

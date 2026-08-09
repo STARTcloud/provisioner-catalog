@@ -43,8 +43,6 @@
   "notifications": {
     "enable": "Enable notifications",
     "disable": "Disable notifications",
-    "enabled": "Notifications enabled.",
-    "disabled": "Notifications disabled.",
     "notSupported": "Notifications are not supported in this browser.",
     "permissionDenied": "Notification permission was denied.",
     "enableError": "Could not enable notifications.",

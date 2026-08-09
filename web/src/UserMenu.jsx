@@ -123,7 +123,6 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
     await subscribePush();
     setPushEnabled(true);
     setPushOn(true);
-    setMenuFeedback(t('notifications.enabled'));
   };
 
   const togglePush = async () => {
@@ -134,7 +133,6 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
         await unsubscribePush();
         setPushEnabled(false);
         setPushOn(false);
-        setMenuFeedback(t('notifications.disabled'));
       } else {
         await enablePush();
       }

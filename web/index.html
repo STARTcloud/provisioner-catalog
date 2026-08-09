@@ -17,11 +17,19 @@
     />
     <script>
       (function () {
-        var theme = localStorage.getItem('catalog.theme');
-        if (theme !== 'light' && theme !== 'dark') {
-          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        try {
+          var theme = localStorage.getItem('catalog.theme');
+          if (theme !== 'light' && theme !== 'dark') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-bs-theme', theme);
+          var lang = localStorage.getItem('i18nextLng');
+          if (lang) {
+            document.documentElement.lang = lang;
+          }
+        } catch (error) {
+          document.documentElement.setAttribute('data-bs-theme', 'light');
         }
-        document.documentElement.setAttribute('data-bs-theme', theme);
       })();
     </script>
   </head>

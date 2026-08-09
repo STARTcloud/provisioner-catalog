@@ -9,7 +9,7 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-const ISSUER = 'https://dev-auth.startcloud.com';
+export const ISSUER = 'https://dev-auth.startcloud.com';
 const CLIENT_ID = 'provisioner-catalog';
 const SCOPES = 'openid profile email organizations';
 const REDIRECT_URI = `${window.location.origin}/callback`;
@@ -192,4 +192,44 @@ export const fetchUserInfo = async token => {
   }
 };
 
-export const signOut = clearTokens;
+const THEME_VALUES = ['auto', 'light', 'dark'];
+
+const applyAccountPreferences = preferences => {
+  if (!preferences) {
+    return;
+  }
+  if (THEME_VALUES.includes(preferences.theme)) {
+    localStorage.setItem('catalog.theme', preferences.theme);
+  }
+  if (preferences.language) {
+    localStorage.setItem('i18nextLng', preferences.language);
+  }
+};
+
+let userInfoPromise = null;
+
+export const getUserInfo = () => {
+  userInfoPromise ||= getAccessToken().then(token => (token ? fetchUserInfo(token) : null));
+  return userInfoPromise;
+};
+
+export const syncAccountPreferences = async () => {
+  const info = await getUserInfo();
+  applyAccountPreferences(info?.preferences);
+};
+
+export const savePreferences = async patch => {
+  const token = await getAccessToken();
+  if (!token) {
+    return;
+  }
+  const url = import.meta.env.DEV ? '/api/user/preferences' : `${ISSUER}/api/user/preferences`;
+  await axios
+    .patch(url, patch, { headers: { Authorization: `Bearer ${token}` } })
+    .catch(() => null);
+};
+
+export const signOut = () => {
+  clearTokens();
+  userInfoPromise = null;
+};

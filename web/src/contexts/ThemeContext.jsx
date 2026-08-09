@@ -2,7 +2,20 @@ import PropTypes from 'prop-types';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getUserInfo, savePreferences } from '../auth';
+import i18n from '../i18n';
+
 const ThemeContext = createContext();
+
+const advanceTheme = current => {
+  if (current === 'auto') {
+    return 'light';
+  }
+  if (current === 'light') {
+    return 'dark';
+  }
+  return 'auto';
+};
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -43,16 +56,25 @@ export const ThemeProvider = ({ children }) => {
     return undefined;
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(current => {
-      if (current === 'auto') {
-        return 'light';
+  useEffect(() => {
+    getUserInfo().then(info => {
+      const preferences = info?.preferences;
+      if (!preferences) {
+        return;
       }
-      if (current === 'light') {
-        return 'dark';
+      if (['auto', 'light', 'dark'].includes(preferences.theme)) {
+        setTheme(preferences.theme);
       }
-      return 'auto';
+      if (preferences.language && preferences.language !== i18n.language) {
+        i18n.changeLanguage(preferences.language);
+      }
     });
+  }, []);
+
+  const toggleTheme = () => {
+    const next = advanceTheme(theme);
+    setTheme(next);
+    savePreferences({ theme: next });
   };
 
   const setSpecificTheme = newTheme => {

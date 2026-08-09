@@ -68,6 +68,7 @@ jobs:
         id: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CATALOG_PUSH_DISPATCH_KEY: ${{ secrets.CATALOG_PUSH_DISPATCH_KEY }}
         run: >-
           python3 -m scripts.build_catalog
           --out dist/catalog.json
@@ -142,6 +143,9 @@ jobs:
         env:
           CATALOG_APP_ID: ${{ secrets.CATALOG_APP_ID }}
           CATALOG_APP_PRIVATE_KEY: ${{ secrets.CATALOG_APP_PRIVATE_KEY }}
+          CATALOG_HUB_CLIENT_ID: ${{ secrets.CATALOG_HUB_CLIENT_ID }}
+          CATALOG_HUB_CLIENT_SECRET: ${{ secrets.CATALOG_HUB_CLIENT_SECRET }}
+          CATALOG_PUSH_DISPATCH_KEY: ${{ secrets.CATALOG_PUSH_DISPATCH_KEY }}
         run: >-
           python3 -m scripts.build_org_catalogs
           --config store/sources-orgs.yml

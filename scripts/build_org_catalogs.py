@@ -45,6 +45,7 @@ from scripts.build_catalog import (
     validate_against_schema,
     write_github_output,
 )
+from scripts.notify import send_hub_notification, send_push_dispatch, version_pairs
 from scripts.validate_repo import (
     API_ROOT,
     MAX_SIDECAR_BYTES,
@@ -307,6 +308,7 @@ def main() -> int:
 
     any_changed = False
     tripwired = False
+    push_events: list[dict] = []
 
     for org in orgs:
         rep.info(f"— org {org['name']} ({org['uuid']}): {len(org['repos'])} repo(s)")
@@ -350,6 +352,31 @@ def main() -> int:
         if health_changed:
             write_json(health_path, health)
         any_changed = True
+
+        if existing_catalog is not None:
+            for family, version in sorted(
+                version_pairs(catalog) - version_pairs(existing_catalog)
+            ):
+                title = f"{family} {version} released"
+                send_hub_notification(
+                    rep,
+                    org["uuid"],
+                    title,
+                    f"New provisioner version in the {org['name']} private catalog.",
+                    "https://provisioner-catalog.startcloud.com/",
+                    f"catalog-{family}",
+                    f"catalog:{org['uuid']}:{family}:{version}",
+                )
+                push_events.append(
+                    {
+                        "scope": "org",
+                        "org_uuid": org["uuid"],
+                        "title": title,
+                        "body": f"New version in the {org['name']} private catalog",
+                        "navigate": "https://provisioner-catalog.startcloud.com/",
+                        "tag": f"catalog-{family}",
+                    }
+                )
         total = sum(len(p["versions"]) for p in provisioners)
         tiers = ", ".join(f"{n}={e['tier']}" for n, e in sorted(health_map.items()))
         rep.info(
@@ -358,6 +385,7 @@ def main() -> int:
             f"{f'; tiers: {tiers}' if tiers else ''}"
         )
 
+    send_push_dispatch(rep, push_events)
     write_github_output(any_changed)
 
     if tripwired:

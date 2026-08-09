@@ -1,24 +1,36 @@
+import axios from 'axios';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Dropdown, Modal } from 'react-bootstrap';
 import CountryFlag from 'react-country-flag';
 import { useTranslation } from 'react-i18next';
 import {
+  FaBell,
+  FaBellSlash,
   FaBuilding,
-  FaPalette,
+  FaIdBadge,
   FaSignInAlt,
   FaSignOutAlt,
   FaStar,
+  FaSyncAlt,
   FaTicketAlt,
   FaUserCircle,
 } from 'react-icons/fa';
 
-import { useTheme } from './contexts/ThemeContext.jsx';
+import { getAccessToken, ISSUER, savePreferences } from './auth';
 import { supportedLanguages } from './i18n';
+import {
+  isPushEnabled,
+  isPushSupported,
+  setPushEnabled,
+  subscribePush,
+  unsubscribePush,
+} from './push';
 
 const TICKET_BASE_URL = 'https://xd.prominic.net/app/apprequest.nsf/router?openagent';
 const TICKET_REQ_TYPE = 'sso';
-const TICKET_CONTEXT = 'https://github.com/STARTcloud/provisioner-catalog';
+const TICKET_CONTEXT = `provisioner-catalog|${__APP_VERSION__}`;
+const FALLBACK_CUSTOMER_ID = 'A55DF1';
 
 const getLanguageFlag = languageCode => {
   const code = languageCode || 'en';
@@ -48,7 +60,7 @@ const getLanguageDisplayName = languageCode => {
 const buildTicketUrl = (user, userInfo) => {
   const params = new URLSearchParams({
     req: TICKET_REQ_TYPE,
-    customerId: userInfo?.customer_id || '',
+    customerId: userInfo?.customer_id || FALLBACK_CUSTOMER_ID,
     user: user?.name || '',
     email: user?.email || '',
     context: TICKET_CONTEXT,
@@ -56,18 +68,94 @@ const buildTicketUrl = (user, userInfo) => {
   return `${TICKET_BASE_URL}&${params.toString()}`;
 };
 
+const AppIcon = ({ app }) => {
+  const [failed, setFailed] = useState(false);
+  let iconUrl = app.iconUrl || '';
+  if (!iconUrl && app.homeUrl) {
+    try {
+      iconUrl = `${new URL(app.homeUrl).origin}/favicon.ico`;
+    } catch {
+      iconUrl = '';
+    }
+  }
+  if (!iconUrl || failed) {
+    return <FaStar className="text-warning" aria-hidden />;
+  }
+  return <img src={iconUrl} alt="" width="16" height="16" onError={() => setFailed(true)} />;
+};
+
+AppIcon.propTypes = {
+  app: PropTypes.shape({
+    iconUrl: PropTypes.string,
+    homeUrl: PropTypes.string,
+  }).isRequired,
+};
+
 const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, onSignOut }) => {
   const { t, i18n } = useTranslation();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const { toggleTheme, getThemeDisplay } = useTheme();
+  const [pushOn, setPushOn] = useState(isPushEnabled());
+  const [pushBusy, setPushBusy] = useState(false);
+  const [menuFeedback, setMenuFeedback] = useState('');
 
   const changeLanguage = async lang => {
     await i18n.changeLanguage(lang);
+    savePreferences({ language: lang });
     setShowLanguageModal(false);
   };
 
   const jumpToOrg = uuid => {
     document.getElementById(`org-${uuid}`)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const enablePush = async () => {
+    if (!isPushSupported()) {
+      setMenuFeedback(t('notifications.notSupported'));
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      setMenuFeedback(t('notifications.permissionDenied'));
+      return;
+    }
+    await subscribePush();
+    setPushEnabled(true);
+    setPushOn(true);
+    setMenuFeedback(t('notifications.enabled'));
+  };
+
+  const togglePush = async () => {
+    setPushBusy(true);
+    setMenuFeedback('');
+    try {
+      if (pushOn) {
+        await unsubscribePush();
+        setPushEnabled(false);
+        setPushOn(false);
+        setMenuFeedback(t('notifications.disabled'));
+      } else {
+        await enablePush();
+      }
+    } catch {
+      setMenuFeedback(pushOn ? t('notifications.disableError') : t('notifications.enableError'));
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const isAdmin = Boolean(user?.authorities?.includes('ROLE_ADMIN'));
+
+  const rebuild = async () => {
+    setMenuFeedback('');
+    try {
+      const token = await getAccessToken();
+      await axios.post('/admin/rebuild', null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMenuFeedback(t('rebuild.queued'));
+    } catch (rebuildError) {
+      setMenuFeedback(t('rebuild.failed', { message: rebuildError.message }));
+    }
   };
 
   const favoriteApps = userInfo?.favorite_apps || [];
@@ -81,24 +169,16 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
           className="d-flex align-items-center gap-2"
           aria-label={t('header.menuAria')}
         >
-          <FaUserCircle aria-hidden />
+          {userInfo?.picture ? (
+            <img src={userInfo.picture} alt="" width="20" height="20" className="rounded-circle" />
+          ) : (
+            <FaUserCircle aria-hidden />
+          )}
           <span className="text-truncate user-menu-name">
             {user ? user.name || user.email || t('header.signedIn') : t('header.signIn')}
           </span>
         </Dropdown.Toggle>
         <Dropdown.Menu>
-          <Dropdown.Item
-            as="button"
-            type="button"
-            onClick={toggleTheme}
-            className="d-flex align-items-center gap-2"
-          >
-            <FaPalette aria-hidden />
-            <span>
-              {t('header.theme')}: {getThemeDisplay().replace(/\s*\([^)]*\)/g, '')}
-            </span>
-          </Dropdown.Item>
-
           <Dropdown.Item
             as="button"
             type="button"
@@ -142,7 +222,7 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
                     rel="noopener noreferrer"
                     className="d-flex align-items-center gap-2"
                   >
-                    <FaStar className="text-warning" aria-hidden />
+                    <AppIcon app={app} />
                     <span className="text-truncate">
                       {app.customLabel || app.clientName || app.clientId}
                     </span>
@@ -155,6 +235,36 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
             <>
               <Dropdown.Divider />
               <Dropdown.Item
+                href={`${ISSUER}/user/profile`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="d-flex align-items-center gap-2"
+              >
+                <FaIdBadge aria-hidden />
+                <span>{t('header.profile')}</span>
+              </Dropdown.Item>
+              <Dropdown.Item
+                as="button"
+                type="button"
+                onClick={togglePush}
+                disabled={pushBusy}
+                className="d-flex align-items-center gap-2"
+              >
+                {pushOn ? <FaBellSlash aria-hidden /> : <FaBell aria-hidden />}
+                <span>{pushOn ? t('notifications.disable') : t('notifications.enable')}</span>
+              </Dropdown.Item>
+              {isAdmin ? (
+                <Dropdown.Item
+                  as="button"
+                  type="button"
+                  onClick={rebuild}
+                  className="d-flex align-items-center gap-2"
+                >
+                  <FaSyncAlt aria-hidden />
+                  <span>{t('header.rebuild')}</span>
+                </Dropdown.Item>
+              ) : null}
+              <Dropdown.Item
                 href={buildTicketUrl(user, userInfo)}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -163,6 +273,9 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
                 <FaTicketAlt aria-hidden />
                 <span>{t('header.helpSupport')}</span>
               </Dropdown.Item>
+              {menuFeedback ? (
+                <Dropdown.ItemText className="small">{menuFeedback}</Dropdown.ItemText>
+              ) : null}
             </>
           ) : null}
 
@@ -223,9 +336,11 @@ UserMenu.propTypes = {
   user: PropTypes.shape({
     name: PropTypes.string,
     email: PropTypes.string,
+    authorities: PropTypes.arrayOf(PropTypes.string),
   }),
   userInfo: PropTypes.shape({
     customer_id: PropTypes.string,
+    picture: PropTypes.string,
     favorite_apps: PropTypes.array,
   }),
   organizations: PropTypes.arrayOf(

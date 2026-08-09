@@ -4,7 +4,7 @@ import { Alert, Container, Spinner } from 'react-bootstrap';
 import { createRoot } from 'react-dom/client';
 import { useTranslation } from 'react-i18next';
 
-import { completeLogin } from './auth';
+import { completeLogin, syncAccountPreferences } from './auth';
 
 import './i18n';
 import './styles.css';
@@ -21,6 +21,7 @@ const CallbackPage = () => {
     }
     exchangeStarted = true;
     completeLogin()
+      .then(() => syncAccountPreferences())
       .then(() => window.location.replace('/'))
       .catch(loginError => setError(loginError.message));
   }, []);

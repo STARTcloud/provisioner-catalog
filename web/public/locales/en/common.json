@@ -17,7 +17,31 @@
     "theme": "Theme",
     "helpSupport": "Help & Support",
     "favorites": "Favorites",
-    "organizations": "Organizations"
+    "organizations": "Organizations",
+    "profile": "Profile",
+    "rebuild": "Rebuild catalog data"
+  },
+  "rebuild": {
+    "queued": "Rebuild queued.",
+    "failed": "Rebuild failed: {{message}}"
+  },
+  "inbox": {
+    "title": "Notifications",
+    "empty": "No notifications.",
+    "markAllRead": "Mark all read",
+    "loadError": "Could not load notifications.",
+    "viewAll": "View all",
+    "unreadAria": "{{count}} unread notifications"
+  },
+  "notifications": {
+    "enable": "Enable notifications",
+    "disable": "Disable notifications",
+    "enabled": "Notifications enabled.",
+    "disabled": "Notifications disabled.",
+    "notSupported": "Notifications are not supported in this browser.",
+    "permissionDenied": "Notification permission was denied.",
+    "enableError": "Could not enable notifications.",
+    "disableError": "Could not disable notifications."
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",

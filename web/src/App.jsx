@@ -1,12 +1,17 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { Alert, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Alert, Button, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaBuilding, FaGithub, FaGlobe, FaSearch } from 'react-icons/fa';
+import { FaAdjust, FaBuilding, FaGithub, FaGlobe, FaMoon, FaSearch, FaSun } from 'react-icons/fa';
 
-import { beginLogin, fetchUserInfo, getAccessToken, getClaims, signOut } from './auth';
+import { beginLogin, getAccessToken, getClaims, getUserInfo, signOut } from './auth';
 import CatalogSection from './CatalogCards.jsx';
+import { useTheme } from './contexts/ThemeContext.jsx';
+import NotificationBell from './NotificationBell.jsx';
+import { resyncPushSubscription } from './push';
 import UserMenu from './UserMenu.jsx';
+
+const THEME_ICONS = { auto: FaAdjust, light: FaSun, dark: FaMoon };
 
 const privateErrorKey = requestError => {
   const { status } = requestError.response || {};
@@ -21,6 +26,7 @@ const privateErrorKey = requestError => {
 
 const App = () => {
   const { t } = useTranslation();
+  const { theme, toggleTheme, getThemeDisplay } = useTheme();
   const [publicCatalog, setPublicCatalog] = useState(null);
   const [publicHealth, setPublicHealth] = useState(null);
   const [publicError, setPublicError] = useState('');
@@ -49,7 +55,7 @@ const App = () => {
       }
       const claims = getClaims();
       setUser(claims);
-      fetchUserInfo(token).then(setUserInfo);
+      getUserInfo().then(setUserInfo);
       const organizations = claims?.organizations || [];
       if (organizations.length === 0) {
         return;
@@ -86,6 +92,13 @@ const App = () => {
     };
     loadPrivate();
   }, []);
+
+  useEffect(() => {
+    resyncPushSubscription();
+  }, []);
+
+  const ThemeIcon = THEME_ICONS[theme] || FaAdjust;
+  const themeLabel = `${t('header.theme')}: ${getThemeDisplay()}`;
 
   const handleSignOut = () => {
     signOut();
@@ -171,13 +184,25 @@ const App = () => {
                 </a>
               </li>
             </ul>
-            <UserMenu
-              user={user}
-              userInfo={userInfo}
-              organizations={user?.organizations || []}
-              onSignIn={() => beginLogin()}
-              onSignOut={handleSignOut}
-            />
+            <div className="d-flex align-items-center gap-2">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={toggleTheme}
+                title={themeLabel}
+                aria-label={themeLabel}
+              >
+                <ThemeIcon aria-hidden />
+              </Button>
+              <NotificationBell user={user} />
+              <UserMenu
+                user={user}
+                userInfo={userInfo}
+                organizations={user?.organizations || []}
+                onSignIn={() => beginLogin()}
+                onSignOut={handleSignOut}
+              />
+            </div>
           </div>
         </Container>
       </header>

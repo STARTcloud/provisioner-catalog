@@ -43,6 +43,7 @@ from datetime import datetime, timezone
 import yaml
 
 from scripts import quality
+from scripts.notify import send_push_dispatch, version_pairs
 from scripts.validate_repo import (
     Reporter,
     _open_url,
@@ -374,6 +375,19 @@ def main() -> int:
     with open(health_out, "w", encoding="utf-8", newline="\n") as handle:
         json.dump(health, handle, indent=2)
         handle.write("\n")
+
+    if published is not None:
+        events = [
+            {
+                "scope": "public",
+                "title": f"{family} {version} released",
+                "body": "New provisioner version in the public catalog",
+                "navigate": "https://provisioner-catalog.startcloud.com/",
+                "tag": f"catalog-{family}",
+            }
+            for family, version in sorted(version_pairs(catalog) - version_pairs(published))
+        ]
+        send_push_dispatch(rep, events)
 
     total_versions = sum(len(p["versions"]) for p in provisioners)
     tiers = ", ".join(f"{name}={entry['tier']}" for name, entry in sorted(health_map.items()))

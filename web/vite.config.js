@@ -25,6 +25,7 @@ const loadDevConfig = () => {
 const devConfig = loadDevConfig();
 const devPort = devConfig.server?.port || 8080;
 const apiTarget = devConfig.server?.api_target || 'https://provisioner-catalog.startcloud.com';
+const authTarget = devConfig.server?.auth_target || 'https://dev-auth.startcloud.com';
 
 const localeDirs = fs.existsSync('./public/locales')
   ? fs
@@ -57,6 +58,22 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/private': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
+      '/api/user/preferences': {
+        target: authTarget,
+        changeOrigin: true,
+      },
+      '/api/notifications': {
+        target: authTarget,
+        changeOrigin: true,
+      },
+      '/push': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
+      '/admin': {
         target: apiTarget,
         changeOrigin: true,
       },

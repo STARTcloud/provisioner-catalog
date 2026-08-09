@@ -17,7 +17,31 @@
     "theme": "Tema",
     "helpSupport": "Ayuda y soporte",
     "favorites": "Favoritos",
-    "organizations": "Organizaciones"
+    "organizations": "Organizaciones",
+    "profile": "Perfil",
+    "rebuild": "Regenerar datos del catálogo"
+  },
+  "rebuild": {
+    "queued": "Regeneración en cola.",
+    "failed": "Error al regenerar: {{message}}"
+  },
+  "inbox": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones.",
+    "markAllRead": "Marcar todo como leído",
+    "loadError": "No se pudieron cargar las notificaciones.",
+    "viewAll": "Ver todas",
+    "unreadAria": "{{count}} notificaciones sin leer"
+  },
+  "notifications": {
+    "enable": "Activar notificaciones",
+    "disable": "Desactivar notificaciones",
+    "enabled": "Notificaciones activadas.",
+    "disabled": "Notificaciones desactivadas.",
+    "notSupported": "Este navegador no admite notificaciones.",
+    "permissionDenied": "Se denegó el permiso de notificaciones.",
+    "enableError": "No se pudieron activar las notificaciones.",
+    "disableError": "No se pudieron desactivar las notificaciones."
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",

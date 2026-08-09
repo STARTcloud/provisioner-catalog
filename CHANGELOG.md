@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.19](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.18...provisioner-catalog-v0.0.19) (2026-08-09)
+
+
+### Bug Fixes
+
+* push toggle flips icon silently instead of printing menu text ([a605ce5](https://github.com/STARTcloud/provisioner-catalog/commit/a605ce53429248be886c52a47ceaf7a7dba7061c))
+
 ## [0.0.18](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.17...provisioner-catalog-v0.0.18) (2026-08-09)
 
 

@@ -62,7 +62,7 @@ def version_pairs(document: dict | None) -> set[tuple[str, str]]:
     }
 
 
-def send_hub_notification(rep, org_uuid, title, body, navigate, tag, idempotency_key) -> None:
+def send_hub_notification(rep, recipient, title, body, navigate, tag, idempotency_key) -> None:
     issuer = os.environ.get("CATALOG_HUB_ISSUER", "https://dev-auth.startcloud.com")
     client_id = os.environ.get("CATALOG_HUB_CLIENT_ID", "")
     client_secret = os.environ.get("CATALOG_HUB_CLIENT_SECRET", "")
@@ -74,7 +74,7 @@ def send_hub_notification(rep, org_uuid, title, body, navigate, tag, idempotency
         _post_json(
             f"{issuer.rstrip('/')}/api/notify",
             {
-                "recipient": {"org_uuid": org_uuid},
+                "recipient": recipient,
                 "notification": {
                     "title": title[:255],
                     "body": body[:1000],

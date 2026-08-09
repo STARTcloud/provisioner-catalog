@@ -23,6 +23,8 @@
   },
   "rebuild": {
     "queued": "Rebuild queued.",
+    "running": "Rebuild running…",
+    "done": "Rebuild finished.",
     "failed": "Rebuild failed: {{message}}"
   },
   "inbox": {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import PropTypes from 'prop-types';
-import { useState } from 'react';
-import { Dropdown, Modal } from 'react-bootstrap';
+import { useEffect, useRef, useState } from 'react';
+import { Dropdown, Modal, Spinner } from 'react-bootstrap';
 import CountryFlag from 'react-country-flag';
 import { useTranslation } from 'react-i18next';
 import {
@@ -94,6 +94,7 @@ AppIcon.propTypes = {
 const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, onSignOut }) => {
   const { t, i18n } = useTranslation();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showOrgModal, setShowOrgModal] = useState(false);
   const [pushOn, setPushOn] = useState(isPushEnabled());
   const [pushBusy, setPushBusy] = useState(false);
   const [menuFeedback, setMenuFeedback] = useState('');
@@ -105,6 +106,7 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
   };
 
   const jumpToOrg = uuid => {
+    setShowOrgModal(false);
     document.getElementById(`org-${uuid}`)?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -144,6 +146,55 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
   };
 
   const isAdmin = Boolean(user?.authorities?.includes('ROLE_ADMIN'));
+  const [rebuildRunning, setRebuildRunning] = useState(false);
+  const pollRef = useRef(null);
+  const sawRunRef = useRef(false);
+  const pollCountRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+      }
+    },
+    []
+  );
+
+  const stopPolling = () => {
+    clearInterval(pollRef.current);
+    pollRef.current = null;
+    setRebuildRunning(false);
+  };
+
+  const pollRebuild = () => {
+    sawRunRef.current = false;
+    pollCountRef.current = 0;
+    pollRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
+      if (pollCountRef.current > 90) {
+        stopPolling();
+        return;
+      }
+      try {
+        const token = await getAccessToken();
+        const { data } = await axios.get('/admin/rebuild/status', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (data.status === 'queued' || data.status === 'in_progress') {
+          sawRunRef.current = true;
+        } else if (data.status === 'completed' && sawRunRef.current) {
+          stopPolling();
+          setMenuFeedback(
+            data.conclusion === 'success'
+              ? t('rebuild.done')
+              : t('rebuild.failed', { message: data.conclusion || 'unknown' })
+          );
+        }
+      } catch {
+        stopPolling();
+      }
+    }, 10000);
+  };
 
   const rebuild = async () => {
     setMenuFeedback('');
@@ -152,7 +203,9 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
       await axios.post('/admin/rebuild', null, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setMenuFeedback(t('rebuild.queued'));
+      setMenuFeedback(t('rebuild.running'));
+      setRebuildRunning(true);
+      pollRebuild();
     } catch (rebuildError) {
       setMenuFeedback(t('rebuild.failed', { message: rebuildError.message }));
     }
@@ -192,19 +245,15 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
           {organizations.length > 0 ? (
             <>
               <Dropdown.Divider />
-              <Dropdown.Header>{t('header.organizations')}</Dropdown.Header>
-              {organizations.map(org => (
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  key={org.uuid}
-                  onClick={() => jumpToOrg(org.uuid)}
-                  className="d-flex align-items-center gap-2"
-                >
-                  <FaBuilding aria-hidden />
-                  <span className="text-truncate">{org.name}</span>
-                </Dropdown.Item>
-              ))}
+              <Dropdown.Item
+                as="button"
+                type="button"
+                onClick={() => setShowOrgModal(true)}
+                className="d-flex align-items-center gap-2"
+              >
+                <FaBuilding aria-hidden />
+                <span>{t('header.organizations')}</span>
+              </Dropdown.Item>
             </>
           ) : null}
 
@@ -258,9 +307,14 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
                   as="button"
                   type="button"
                   onClick={rebuild}
+                  disabled={rebuildRunning}
                   className="d-flex align-items-center gap-2"
                 >
-                  <FaSyncAlt aria-hidden />
+                  {rebuildRunning ? (
+                    <Spinner animation="border" size="sm" role="status" />
+                  ) : (
+                    <FaSyncAlt aria-hidden />
+                  )}
                   <span>{t('header.rebuild')}</span>
                 </Dropdown.Item>
               ) : null}
@@ -303,6 +357,33 @@ const UserMenu = ({ user = null, userInfo = null, organizations = [], onSignIn, 
           )}
         </Dropdown.Menu>
       </Dropdown>
+
+      <Modal show={showOrgModal} onHide={() => setShowOrgModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="d-flex align-items-center gap-2">
+            <FaBuilding aria-hidden />
+            {t('header.organizations')}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="list-group">
+            {organizations.map(org => (
+              <button
+                key={org.uuid}
+                type="button"
+                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                onClick={() => jumpToOrg(org.uuid)}
+              >
+                <span className="d-inline-flex align-items-center gap-2">
+                  <FaBuilding aria-hidden />
+                  <span className="fw-bold">{org.name}</span>
+                </span>
+                {org.role ? <span className="badge bg-secondary">{org.role}</span> : null}
+              </button>
+            ))}
+          </div>
+        </Modal.Body>
+      </Modal>
 
       <Modal show={showLanguageModal} onHide={() => setShowLanguageModal(false)} centered>
         <Modal.Header closeButton>
@@ -347,6 +428,7 @@ UserMenu.propTypes = {
     PropTypes.shape({
       uuid: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
+      role: PropTypes.string,
     })
   ),
   onSignIn: PropTypes.func.isRequired,

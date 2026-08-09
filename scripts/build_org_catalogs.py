@@ -360,7 +360,7 @@ def main() -> int:
                 title = f"{family} {version} released"
                 send_hub_notification(
                     rep,
-                    org["uuid"],
+                    {"org_uuid": org["uuid"]},
                     title,
                     f"New provisioner version in the {org['name']} private catalog.",
                     "https://provisioner-catalog.startcloud.com/",

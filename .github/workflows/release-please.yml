@@ -32,6 +32,8 @@ jobs:
     name: Release Please
     needs: ci-checks
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -49,11 +51,13 @@ jobs:
         with:
           token: ${{ steps.app.outputs.token }}
 
-  # Publish catalog data right after the push-to-main flow (change-detected —
-  # deploys only when the generated data differs from what is live). The 2h
-  # cron remains the backstop for new releases in admitted repos.
+  # Publish catalog data only when release-please mints a release (change-
+  # detected — deploys only when the generated data differs from what is
+  # live). The 2h cron remains the backstop for new releases in admitted
+  # repos; workflow_dispatch covers manual runs and the admin rebuild button.
   generate-catalog-data:
     name: Generate Catalog Data
     needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
     uses: ./.github/workflows/generate-catalog-data.yml
     secrets: inherit

@@ -32,6 +32,10 @@ on:
         description: 'Publish even when the generated data is unchanged'
         type: boolean
         default: false
+      requested_by:
+        description: 'User UUID to notify when the run finishes'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -110,6 +114,37 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v5
         id: deployment
+
+  notify-requester:
+    name: Notify requester
+    needs: [build, deploy]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.requested_by != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: ".python-version"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies if needed
+        run: bash scripts/setup
+
+      - name: Send completion notification
+        env:
+          REQUESTED_BY: ${{ inputs.requested_by }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          CATALOG_HUB_CLIENT_ID: ${{ secrets.CATALOG_HUB_CLIENT_ID }}
+          CATALOG_HUB_CLIENT_SECRET: ${{ secrets.CATALOG_HUB_CLIENT_SECRET }}
+          CATALOG_PUSH_DISPATCH_KEY: ${{ secrets.CATALOG_PUSH_DISPATCH_KEY }}
+        run: python3 -m scripts.notify_done
 
   build-private:
     name: Build private org catalogs

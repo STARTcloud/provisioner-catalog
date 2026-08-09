@@ -23,6 +23,8 @@
   },
   "rebuild": {
     "queued": "Regeneración en cola.",
+    "running": "Regeneración en curso…",
+    "done": "Regeneración terminada.",
     "failed": "Error al regenerar: {{message}}"
   },
   "inbox": {

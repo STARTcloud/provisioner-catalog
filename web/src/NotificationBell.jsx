@@ -94,7 +94,7 @@ const NotificationBell = ({ user = null }) => {
           </Badge>
         ) : null}
       </Dropdown.Toggle>
-      <Dropdown.Menu style={{ minWidth: '20rem' }}>
+      <Dropdown.Menu className="notification-menu">
         <div className="d-flex justify-content-between align-items-center px-3 py-1">
           <strong>{t('inbox.title')}</strong>
           <Button variant="link" size="sm" className="p-0" onClick={readAll}>
@@ -112,13 +112,15 @@ const NotificationBell = ({ user = null }) => {
         ) : null}
         {entries.map(entry => (
           <Dropdown.Item as="button" type="button" key={entry.id} onClick={() => openEntry(entry)}>
-            <span className={`d-block text-truncate ${entry.readAt ? '' : 'fw-semibold'}`}>
+            <span
+              className={`d-block text-truncate notification-title ${entry.readAt ? '' : 'fw-semibold'}`}
+            >
               {entry.title}
             </span>
             {entry.body ? (
-              <span className="d-block small text-body-secondary text-truncate">{entry.body}</span>
+              <span className="d-block text-body-secondary notification-body">{entry.body}</span>
             ) : null}
-            <span className="d-block small text-body-secondary">
+            <span className="d-block text-body-secondary notification-time">
               {entry.createdAt ? new Date(entry.createdAt).toLocaleString(i18n.language) : ''}
             </span>
           </Dropdown.Item>

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.18](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.17...provisioner-catalog-v0.0.18) (2026-08-09)
+
+
+### Features
+
+* org logos, notification inbox polish, org switcher modal, rebuild status feedback ([977d282](https://github.com/STARTcloud/provisioner-catalog/commit/977d2827be37a5b32ed4505243032e007dacf922))
+
 ## [0.0.17](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.16...provisioner-catalog-v0.0.17) (2026-08-09)
 
 

@@ -221,8 +221,22 @@ h6,
   color: var(--bs-link-color);
 }
 
+.header-icon-btn {
+  width: 2.25rem;
+  height: 31px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-icon-btn img,
+.header-icon-btn svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
 .user-menu-name {
-  max-width: 180px;
+  max-width: 240px;
 }
 .user-menu-toggle {
   color: var(--bs-heading-color);

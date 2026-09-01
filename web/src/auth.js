@@ -106,9 +106,11 @@ const tokenRequest = async params => {
     return data;
   } catch (requestError) {
     const body = requestError.response?.data;
-    throw new Error(
+    const failure = new Error(
       body?.error_description || body?.error || `token request failed (${requestError.message})`
     );
+    failure.code = body?.error || '';
+    throw failure;
   }
 };
 

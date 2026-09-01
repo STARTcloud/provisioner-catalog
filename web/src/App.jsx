@@ -256,6 +256,7 @@ const App = () => {
               <Button
                 variant="outline-secondary"
                 size="sm"
+                className="header-icon-btn"
                 onClick={toggleTheme}
                 title={themeLabel}
                 aria-label={themeLabel}

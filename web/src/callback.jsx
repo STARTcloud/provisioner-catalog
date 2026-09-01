@@ -23,8 +23,12 @@ const CallbackPage = () => {
     completeLogin()
       .then(() => syncAccountPreferences())
       .then(() => window.location.replace('/'))
-      .catch(loginError => setError(loginError.message));
-  }, []);
+      .catch(loginError =>
+        setError(
+          loginError.code === 'invalid_dpop_proof' ? t('callback.clockSkew') : loginError.message
+        )
+      );
+  }, [t]);
 
   return (
     <Container className="py-5">

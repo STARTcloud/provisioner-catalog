@@ -48,7 +48,7 @@ const LanguageMenu = () => {
       <Button
         variant="outline-secondary"
         size="sm"
-        className="d-inline-flex align-items-center"
+        className="header-icon-btn"
         onClick={() => setShow(true)}
         title={label}
         aria-label={label}

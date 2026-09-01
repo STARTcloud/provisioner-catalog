@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.23](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.22...provisioner-catalog-v0.0.23) (2026-09-01)
+
+
+### Bug Fixes
+
+* removing breaking ci/cd stuffs ([b26100c](https://github.com/STARTcloud/provisioner-catalog/commit/b26100cdb5ecbcd37adbb3a3268e1d0d22adb98a))
+
 ## [0.0.22](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.21...provisioner-catalog-v0.0.22) (2026-09-01)
 
 

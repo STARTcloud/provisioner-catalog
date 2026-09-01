@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.31](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.30...provisioner-catalog-v0.0.31) (2026-09-01)
+
+
+### Bug Fixes
+
+* match BoxVault's preferences icon and menu row line-height ([768dbb8](https://github.com/STARTcloud/provisioner-catalog/commit/768dbb8e9d240880fc06dd917bacca1e9c3a8107))
+
 ## [0.0.30](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.29...provisioner-catalog-v0.0.30) (2026-09-01)
 
 

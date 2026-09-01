@@ -7,8 +7,6 @@
   },
   "header": {
     "brand": "Provisioner Catalog",
-    "startcloud": "STARTcloud",
-    "github": "GitHub",
     "contact": "Contact",
     "docs": "Docs",
     "menuAria": "User menu",
@@ -109,8 +107,8 @@
     "accessDenied": "Access denied by the catalog gate."
   },
   "footer": {
-    "copyright": "© 2026 STARTCloud, Inc",
-    "source": "Source on GitHub"
+    "poweredBy": "Powered by",
+    "poweredByCompany": "STARTcloud"
   },
   "languageModal": {
     "title": "Select Language"

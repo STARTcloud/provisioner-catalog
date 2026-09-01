@@ -229,19 +229,6 @@ const App = () => {
                 <span className="nav-link px-2 fw-semibold">{t('header.brand')}</span>
               </li>
               <li>
-                <a href="https://startcloud.com/" className="nav-link px-2">
-                  {t('header.startcloud')}
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/STARTcloud/provisioner-catalog"
-                  className="nav-link px-2"
-                >
-                  {t('header.github')}
-                </a>
-              </li>
-              <li>
                 <a href="https://startcloud.com/#contact" className="nav-link px-2">
                   {t('header.contact')}
                 </a>
@@ -360,22 +347,43 @@ const App = () => {
         {loadingPrivate ? <Spinner animation="border" role="status" /> : null}
       </Container>
 
-      <footer className="border-top py-3">
-        <Container className="text-center">
-          <span>{t('footer.copyright')}</span>
-        </Container>
-        <Container className="mt-2 d-flex flex-wrap gap-3 justify-content-center text-body-secondary small">
-          <a
-            className="text-decoration-none"
-            href="https://github.com/STARTcloud/provisioner-catalog"
-          >
-            <FaGithub className="me-1" />
-            {t('footer.source')}
-          </a>
-          <span>
-            {__APP_NAME__} v{__APP_VERSION__}
-          </span>
-        </Container>
+      <footer className="footer mt-auto py-3 bg-body-tertiary border-top">
+        <div className="container-fluid position-relative d-flex align-items-center">
+          <div className="position-absolute start-0 ms-4">
+            <span className="text-muted">
+              {t('header.brand')} &copy; {new Date().getFullYear()}
+            </span>
+          </div>
+          <div className="mx-auto d-flex align-items-center">
+            <span className="text-muted me-2">{t('footer.poweredBy')}</span>
+            <a
+              href="https://startcloud.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-decoration-none d-flex align-items-center"
+            >
+              <img
+                src="https://startcloud.com/assets/images/logos/startcloud-logo40.png"
+                alt="STARTcloud"
+                height="20"
+                className="me-2"
+                onError={event => {
+                  event.currentTarget.style.display = 'none';
+                }}
+              />
+              <span className="text-muted">{t('footer.poweredByCompany')}</span>
+            </a>
+          </div>
+          <div className="position-absolute end-0 me-4">
+            <a
+              className="text-decoration-none text-body-secondary small"
+              href="https://github.com/STARTcloud/provisioner-catalog"
+            >
+              <FaGithub className="me-1" />
+              {__APP_NAME__} v{__APP_VERSION__}
+            </a>
+          </div>
+        </div>
       </footer>
     </>
   );

@@ -7,8 +7,6 @@
   },
   "header": {
     "brand": "Catálogo de Provisioners",
-    "startcloud": "STARTcloud",
-    "github": "GitHub",
     "contact": "Contacto",
     "docs": "Documentación",
     "menuAria": "Menú de usuario",
@@ -109,8 +107,8 @@
     "accessDenied": "Acceso denegado por la puerta del catálogo."
   },
   "footer": {
-    "copyright": "© 2026 STARTCloud, Inc",
-    "source": "Código fuente en GitHub"
+    "poweredBy": "Con tecnología de",
+    "poweredByCompany": "STARTcloud"
   },
   "languageModal": {
     "title": "Seleccionar idioma"

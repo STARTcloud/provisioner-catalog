@@ -7,11 +7,11 @@ the ways you can get help.
 
 ### Documentation
 
-- **[README](README.md)** — what the catalog is, the URL agents fetch, the
+- **[Documentation site](https://provisioner-catalog.startcloud.com/docs/)** — what the catalog is, the URL agents fetch, the
   consumer contract, and both publishing doors
-- **[CONTRIBUTING](CONTRIBUTING.md)** — the submitter onboarding guide:
+- **[Contributing](https://provisioner-catalog.startcloud.com/docs/contributing/)** — the submitter onboarding guide:
   package requirements, the validation action, and the admission flow
-- **[examples/](examples/)** — the copy-paste publisher kit for new
+- **[examples/](https://github.com/STARTcloud/provisioner-catalog/tree/main/examples)** — the copy-paste publisher kit for new
   provisioner repositories
 
 ### Issues and Bug Reports
@@ -51,7 +51,7 @@ The catalog is maintained with limited development resources:
 
 ### For Questions
 
-1. **Check the README and CONTRIBUTING first**
+1. **Check the documentation site first**
 2. **Search existing issues and discussions**
 3. **Be specific** about what you're trying to achieve
 
@@ -64,7 +64,7 @@ The best way to improve support for everyone:
 - **Improve documentation** based on your onboarding experience
 - **Help answer questions** from other publishers
 
-See our [Contributing Guide](CONTRIBUTING.md) for more information.
+See our [Contributing Guide](https://provisioner-catalog.startcloud.com/docs/contributing/) for more information.
 
 ## Updates to Support
 

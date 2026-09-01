@@ -38,7 +38,8 @@ releases.**
   [CONTRIBUTING.md](CONTRIBUTING.md)).
 - The **data job**
   ([generate-catalog-data.yml](.github/workflows/generate-catalog-data.yml),
-  cron every 2 hours + manual dispatch with a force-update input) rebuilds
+  cron every 2 hours, after each release, and on manual dispatch — including
+  the admin rebuild button in the web UI) rebuilds
   `catalog.json` from the admitted repos' releases and deploys it to GitHub
   Pages **only when the data changed**. `catalog.json` is a build artifact —
   it is never committed to this repository.
@@ -209,12 +210,10 @@ issue.
 | [schema/](schema/) | JSON Schemas for catalog.json, sources.yml, removed.yml |
 | [scripts/](scripts/) | The validator and the catalog builders — public + per-org (Python) |
 | [web/](web/) | The catalog web UI (React + Vite), built into the Pages payload |
-| [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data |
+| [worker/](worker/) | The Cloudflare Worker gating `/private/*`, push, and admin endpoints — CI-deployed on change; every secret lives only in Cloudflare |
+| [docs/](docs/) | The documentation site (Jekyll + Just the Docs), built into the Pages payload at `/docs/` |
+| [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker |
 | [examples/](examples/) | Copy-paste publisher kit for new provisioner repos |
-
-The Cloudflare Worker gating `/private/*` is deliberately **not tracked
-here** — it is deployed by hand with wrangler and its one secret lives only
-in Cloudflare.
 
 ## This repository's own releases
 

@@ -54,7 +54,7 @@ GitHub releases. The security-relevant areas are:
 - **Admission review** — listing is moderated by maintainer review, but
   **listing is not an endorsement**: packages execute with real privileges on
   consumers' machines. Report malicious packages immediately — maintainers
-  eject them via [removed.yml](removed.yml).
+  eject them via [removed.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/removed.yml).
 
 ## Best Practices for Consumers
 

@@ -1,0 +1,117 @@
+title: STARTcloud Provisioner Catalog Documentation
+description: Documentation for the STARTcloud Provisioner Catalog — the HACS-style catalog of provisioner packages consumed by Hyperweaver agents
+baseurl: '/docs'
+url: 'https://provisioner-catalog.startcloud.com'
+repository: STARTcloud/provisioner-catalog
+
+permalink: pretty
+
+includes_dir: '.'
+
+favicon_ico: '/startcloud.svg'
+
+defaults:
+  - scope:
+      path: 'docs'
+      type: 'pages'
+    values:
+      layout: 'default'
+
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/
+  - bin/
+  - lib/
+  - '*.gemspec'
+  - '*.gem'
+  - package.json
+  - package-lock.json
+  - Rakefile
+  - README.md
+  - CODE_OF_CONDUCT.md
+  - CONTRIBUTING.md
+  - SECURITY.md
+  - SUPPORT.md
+  - LICENSE.md
+  - AUTHORS.md
+  - ACKNOWLEDGMENTS.md
+  - CHANGELOG.md
+  - FOLLOWUPS.md
+  - examples/
+  - scripts/
+  - web/
+  - worker/
+  - .github/
+  - sources.yml
+  - removed.yml
+  - action.yml
+  - version.txt
+  - requirements.txt
+  - release-please-config.json
+  - .release-please-manifest.json
+  - .python-version
+  - catalog.json
+  - dist/
+  - '*.log'
+
+theme: just-the-docs
+
+color_scheme: wider
+search_enabled: true
+
+aux_links:
+  'Catalog':
+    - 'https://provisioner-catalog.startcloud.com/'
+  'View on GitHub':
+    - 'https://github.com/STARTcloud/provisioner-catalog'
+aux_links_new_tab: true
+
+footer_content: 'Copyright &copy; 2026 STARTcloud, Inc.'
+
+back_to_top: true
+back_to_top_text: 'Back to top'
+
+last_edit_timestamp: true
+last_edit_time_format: '%b %e %Y at %I:%M %p'
+
+gh_edit_link: true
+gh_edit_link_text: 'Edit this page on GitHub'
+gh_edit_repository: 'https://github.com/STARTcloud/provisioner-catalog'
+gh_edit_branch: 'main'
+gh_edit_source: docs
+gh_edit_view_mode: 'tree'
+
+liquid:
+  error_mode: strict
+  strict_filters: true
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-github-metadata
+  - jekyll-include-cache
+  - jekyll-sitemap
+
+heading_anchors: true
+
+enable_copy_code_button: true
+
+mermaid:
+  version: '9.1.6'
+
+compress_html:
+  clippings: all
+  comments: all
+  endings: all
+  startings: []
+  blanklines: false
+  profile: false

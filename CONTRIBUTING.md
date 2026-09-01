@@ -8,7 +8,7 @@ contributions are covered at the [end](#contributing-to-the-catalog-tooling).)
 
 Humans admit repositories; a scheduled data job publishes version data;
 authors own their releases. You PR **one line** into
-[sources.yml](sources.yml). After merge, the data job picks up your GitHub
+[sources.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/sources.yml). After merge, the data job picks up your GitHub
 releases automatically — every ~2 hours, forever. No catalog PRs for new
 versions, no secrets, no tokens, no dispatch. Your repository stays entirely
 yours.
@@ -48,7 +48,7 @@ The artifact contract, inherited from
 
 5. **Published releases only** — drafts and prereleases are ignored.
 
-The [examples/](examples/) publisher kit contains a copy-paste
+The [examples/](https://github.com/STARTcloud/provisioner-catalog/tree/main/examples) publisher kit contains a copy-paste
 `build-provisioner.yml` that produces all of this.
 
 **Immutability**: once a version is published in the catalog, its asset bytes
@@ -58,7 +58,7 @@ Need to rebuild? Ship a new version.
 ## Step 1 — validate your releases in your own CI
 
 Add the catalog's validation action to your repository (copy
-[examples/validate.yml](examples/validate.yml) to
+[examples/validate.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/examples/validate.yml) to
 `.github/workflows/validate.yml`):
 
 ```yaml
@@ -74,7 +74,7 @@ Get it green. Create a release **after** validation passes.
 
 ## Step 2 — open the admission PR
 
-Add **one line** to [sources.yml](sources.yml):
+Add **one line** to [sources.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/sources.yml):
 
 ```yaml
 sources:
@@ -113,7 +113,7 @@ data-job run). No catalog release needed.
 - **There is no deprecate/yank machinery** — no central per-version state
   exists. Manage your releases as you see fit.
 - **Removal**: repositories found malicious or persistently broken are added
-  to [removed.yml](removed.yml) with a reason and vanish from the generated
+  to [removed.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/removed.yml) with a reason and vanish from the generated
   data. Appeal by opening an issue.
 
 ## Running your own catalog instead
@@ -148,6 +148,6 @@ welcome:
 
 ## Code of Conduct and license
 
-This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By
+This project follows our [Code of Conduct](https://provisioner-catalog.startcloud.com/docs/code-of-conduct/). By
 contributing, you agree that your contributions are licensed under the
-[Apache License 2.0](LICENSE.md).
+[Apache License 2.0](https://provisioner-catalog.startcloud.com/docs/license/).

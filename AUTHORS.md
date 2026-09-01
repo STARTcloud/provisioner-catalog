@@ -28,7 +28,7 @@ _No community contributions yet - help us improve our docs!_
 ### Provisioner Publishers
 
 Provisioner authors are credited where it counts: the attribution comments in
-[sources.yml](sources.yml) and their own repositories. This catalog lists
+[sources.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/sources.yml) and their own repositories. This catalog lists
 their work; it does not claim it.
 
 ## How to Become a Contributor
@@ -36,7 +36,7 @@ their work; it does not claim it.
 We encourage contributions of all types:
 
 - **Publishing provisioners**: the main event — see
-  [CONTRIBUTING.md](CONTRIBUTING.md) for the one-line admission flow
+  [Contributing](https://provisioner-catalog.startcloud.com/docs/contributing/) for the one-line admission flow
 - **Code contributions**: fixes and improvements to the scripts, schemas, and
   workflows
 - **Documentation**: onboarding guides, examples, clarifications
@@ -53,7 +53,7 @@ Contributors are added to this file when they:
 - Report critical bugs or security issues
 
 All contributors retain copyright to their contributions while licensing them
-under the project's [Apache-2.0 license](LICENSE.md).
+under the project's [Apache-2.0 license](https://provisioner-catalog.startcloud.com/docs/license/).
 
 ## Special Thanks
 
@@ -67,7 +67,7 @@ under the project's [Apache-2.0 license](LICENSE.md).
 ---
 
 **Want to see your name here?** Check out our
-[Contributing Guidelines](CONTRIBUTING.md) and start contributing!
+[Contributing Guidelines](https://provisioner-catalog.startcloud.com/docs/contributing/) and start contributing!
 
 Remember: Due to limited development resources, community contributions
 directly impact the project's growth and development pace.

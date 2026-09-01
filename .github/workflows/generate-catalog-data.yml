@@ -1,13 +1,13 @@
 name: Generate Catalog Data
 
 # The data job (the HACS generate-hacs-data pattern): admission is human (PRs
-# to sources.yml), data is scheduled. Every 2 hours — on manual dispatch — or
-# chained from release-please.yml after every successful push-to-main flow
-# (our deviation from HACS's schedule-only trigger, so merges publish
-# immediately) — this rebuilds catalog.json from the admitted repositories'
-# GitHub releases and deploys it to GitHub Pages together with the SPA,
-# when the data changed, on any push-to-main chain (so SPA changes ship), or
-# when forceRepositoryUpdate is set.
+# to sources.yml), data is scheduled. Every 2 hours — on manual dispatch
+# (including the web UI's admin rebuild, which always forces a publish) — or
+# chained from release-please.yml when a release is minted — this rebuilds
+# catalog.json from the admitted repositories' GitHub releases and deploys it
+# to GitHub Pages together with the SPA and the docs site, when the data
+# changed, on a release chain (so SPA and docs changes ship), or when
+# forceRepositoryUpdate is set.
 #
 # This job can never admit a repository: it only reads sources.yml and
 # removed.yml from main. The immutability tripwire fails the run loudly if an
@@ -95,6 +95,21 @@ jobs:
 
       - name: Merge SPA into the Pages payload
         run: cp -r web/dist/. dist/
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler: latest
+          bundler-cache: true
+
+      - name: Build docs with Jekyll
+        run: bundle exec jekyll build
+        env:
+          JEKYLL_ENV: production
+
+      - name: Merge docs into the Pages payload
+        run: cp -r _site dist/docs
 
       - name: Upload Pages artifact
         if: ${{ steps.build.outputs.changed == 'true' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.forceRepositoryUpdate) }}

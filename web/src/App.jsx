@@ -199,6 +199,11 @@ const App = () => {
                   {t('header.contact')}
                 </a>
               </li>
+              <li>
+                <a href="/docs/" className="nav-link px-2">
+                  {t('header.docs')}
+                </a>
+              </li>
             </ul>
             <div className="d-flex align-items-center gap-2">
               <Button

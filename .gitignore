@@ -10,6 +10,14 @@ worker/.wrangler/
 # Node (web/ SPA)
 node_modules/
 
+# Jekyll docs build output, caches, and Ruby gems
+_site/
+.jekyll-cache/
+.jekyll-metadata
+.sass-cache/
+vendor/
+.bundle/
+
 # Python
 __pycache__/
 *.pyc

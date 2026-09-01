@@ -1,0 +1,45 @@
+<link rel="icon" type="image/svg+xml" href="/startcloud.svg" />
+
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.location.pathname.includes('/security/')) {
+      var versionsDiv = document.getElementById('supported-versions-content');
+      if (versionsDiv) {
+        fetch('https://api.github.com/repos/STARTcloud/provisioner-catalog/releases')
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (releases) {
+            var html =
+              '<table><thead><tr><th>Version</th><th>Release Date</th><th>Supported</th><th>Release</th></tr></thead><tbody>';
+            var count = 0;
+
+            for (var i = 0; i < releases.length && count < 5; i++) {
+              var release = releases[i];
+              if (!release.draft && !release.prerelease) {
+                var releaseDate = new Date(release.published_at).toLocaleDateString();
+                var isSupported = count < 3;
+                var supportIcon = isSupported ? '✅' : '❌';
+
+                html += '<tr>';
+                html += '<td><a href="' + release.html_url + '">' + release.tag_name + '</a></td>';
+                html += '<td>' + releaseDate + '</td>';
+                html += '<td>' + supportIcon + '</td>';
+                html += '<td><a href="' + release.html_url + '">Notes</a></td>';
+                html += '</tr>';
+                count++;
+              }
+            }
+
+            html += '</tbody></table>';
+            html += '<p><em>Last updated: ' + new Date().toLocaleDateString() + '</em></p>';
+
+            versionsDiv.innerHTML = html;
+          })
+          .catch(function () {
+            versionsDiv.innerHTML = '<p><em>Error loading versions</em></p>';
+          });
+      }
+    }
+  });
+</script>

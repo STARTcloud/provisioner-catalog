@@ -1,0 +1,61 @@
+@import './color_schemes/dark';
+
+$content-width: 60rem;
+
+.swagger-ui .model-toggle::after,
+.swagger-ui span.model-toggle::after,
+.swagger-ui .model-box-control .model-toggle::after {
+  background: none !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  background-size: 0 !important;
+  content: '' !important;
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.model-toggle {
+  background-image: none !important;
+}
+
+.swagger-ui .model-toggle.collapsed::before,
+.swagger-ui span.model-toggle.collapsed::before,
+.swagger-ui .model-box-control .model-toggle.collapsed::before {
+  content: '►' !important;
+  color: #8b949e !important;
+  display: inline !important;
+  font-size: 12px !important;
+  margin-right: 6px !important;
+}
+
+.swagger-ui .model-toggle:not(.collapsed)::before,
+.swagger-ui span.model-toggle:not(.collapsed)::before,
+.swagger-ui .model-box-control .model-toggle:not(.collapsed)::before {
+  content: '▼' !important;
+  color: #8b949e !important;
+  display: inline !important;
+  font-size: 12px !important;
+  margin-right: 6px !important;
+}
+
+.swagger-ui .opblock-section-header {
+  background: hsla(0, 0%, 0%, 0.8) !important;
+}
+
+.swagger-ui .scheme-container {
+  max-width: 1460px !important;
+  padding: 0 20px !important;
+  width: 100% !important;
+}
+
+.btn.btn-outline {
+  border: none !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #7253ed !important;
+}
+
+.btn.btn-outline:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: #7253ed !important;
+}

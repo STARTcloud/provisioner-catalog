@@ -137,7 +137,37 @@ jobs:
       - name: Build
         run: npm run build
 
+  docs:
+    name: Docs Build & Link Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler: latest
+          bundler-cache: true
+
+      - name: Build with Jekyll
+        run: bundle exec jekyll build
+        env:
+          JEKYLL_ENV: production
+
+      - name: Lint built HTML (html-proofer)
+        run: |
+          bundle exec htmlproofer _site \
+            --disable-external \
+            --no-enforce-https \
+            --allow-hash-href \
+            --swap-urls "^/docs:" \
+            --ignore-urls "/startcloud.svg"
+
   codeql-analysis:
     name: CodeQL
-    needs: [jsonschema, sorted, actionlint, web]
+    needs: [jsonschema, sorted, actionlint, web, docs]
     uses: ./.github/workflows/codeql.yml

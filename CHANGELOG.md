@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.30](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.29...provisioner-catalog-v0.0.30) (2026-09-01)
+
+
+### Bug Fixes
+
+* drop the custom palette and Google Fonts for BoxVault's native Bootstrap theme with self-hosted typefaces ([c14bc40](https://github.com/STARTcloud/provisioner-catalog/commit/c14bc40a6ed09c6662d782d560fb40811d831ada))
+
 ## [0.0.29](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.28...provisioner-catalog-v0.0.29) (2026-09-01)
 
 

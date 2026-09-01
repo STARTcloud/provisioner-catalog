@@ -2,7 +2,15 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Button, Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaChevronRight, FaCog, FaSignInAlt, FaTicketAlt, FaUserCircle } from 'react-icons/fa';
+import {
+  FaBook,
+  FaChevronRight,
+  FaCog,
+  FaEnvelope,
+  FaSignInAlt,
+  FaTicketAlt,
+  FaUserCircle,
+} from 'react-icons/fa';
 
 import { ISSUER } from './auth';
 import FavoriteApps from './FavoriteApps.jsx';
@@ -143,13 +151,22 @@ const UserMenu = ({
 
           <FavoriteApps apps={userInfo?.favorite_apps || []} />
 
-          {isAdmin ? (
-            <>
-              <Dropdown.Divider />
-              <Dropdown.Header>{t('header.brand')}</Dropdown.Header>
-              <RebuildItem />
-            </>
-          ) : null}
+          <Dropdown.Divider />
+          <Dropdown.Header>{t('header.brand')}</Dropdown.Header>
+          {isAdmin ? <RebuildItem /> : null}
+          <Dropdown.Item
+            href="https://startcloud.com/#contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="d-flex align-items-center gap-2"
+          >
+            <FaEnvelope aria-hidden />
+            <span>{t('header.contact')}</span>
+          </Dropdown.Item>
+          <Dropdown.Item href="/docs/" className="d-flex align-items-center gap-2">
+            <FaBook aria-hidden />
+            <span>{t('header.docs')}</span>
+          </Dropdown.Item>
 
           <Dropdown.Divider />
           {hasNotifications ? <NotificationsItem /> : null}

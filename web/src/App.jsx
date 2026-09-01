@@ -227,16 +227,20 @@ const App = () => {
             <li>
               <span className="nav-link px-2 fw-semibold">{t('header.brand')}</span>
             </li>
-            <li>
-              <a href="https://startcloud.com/#contact" className="nav-link px-2">
-                {t('header.contact')}
-              </a>
-            </li>
-            <li>
-              <a href="/docs/" className="nav-link px-2">
-                {t('header.docs')}
-              </a>
-            </li>
+            {!user ? (
+              <>
+                <li>
+                  <a href="https://startcloud.com/#contact" className="nav-link px-2">
+                    {t('header.contact')}
+                  </a>
+                </li>
+                <li>
+                  <a href="/docs/" className="nav-link px-2">
+                    {t('header.docs')}
+                  </a>
+                </li>
+              </>
+            ) : null}
           </ul>
           <div className="d-flex align-items-center gap-2">
             <Button

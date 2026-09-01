@@ -17,10 +17,12 @@ const REDIRECT_URI = `${window.location.origin}/callback`;
 const STORE = {
   access: 'catalog.access_token',
   refresh: 'catalog.refresh_token',
+  id: 'catalog.id_token',
   expires: 'catalog.expires_at',
   verifier: 'catalog.pkce_verifier',
   state: 'catalog.pkce_state',
   discovery: 'catalog.oidc_discovery',
+  ended: 'catalog.session_ended',
 };
 
 const base64url = buffer => {
@@ -58,6 +60,9 @@ const storeTokens = tokens => {
   if (tokens.refresh_token) {
     localStorage.setItem(STORE.refresh, tokens.refresh_token);
   }
+  if (tokens.id_token) {
+    localStorage.setItem(STORE.id, tokens.id_token);
+  }
   const ttlSeconds = typeof tokens.expires_in === 'number' ? tokens.expires_in : 3600;
   localStorage.setItem(STORE.expires, String(Date.now() + ttlSeconds * 1000));
 };
@@ -65,7 +70,18 @@ const storeTokens = tokens => {
 const clearTokens = () => {
   localStorage.removeItem(STORE.access);
   localStorage.removeItem(STORE.refresh);
+  localStorage.removeItem(STORE.id);
   localStorage.removeItem(STORE.expires);
+};
+
+export const markSessionEnded = () => {
+  sessionStorage.setItem(STORE.ended, '1');
+};
+
+export const consumeSessionEnded = () => {
+  const ended = sessionStorage.getItem(STORE.ended) === '1';
+  sessionStorage.removeItem(STORE.ended);
+  return ended;
 };
 
 const tokenRequest = async params => {
@@ -83,6 +99,7 @@ const tokenRequest = async params => {
 
 /* Redirect to the IdP's authorization endpoint with a fresh PKCE pair. */
 export const beginLogin = async () => {
+  sessionStorage.removeItem(STORE.ended);
   const verifier = randomUrlSafe(48);
   const state = randomUrlSafe(24);
   // localStorage, NOT sessionStorage: magic-link sign-ins complete in a NEW
@@ -161,6 +178,7 @@ export const getAccessToken = async () => {
     return localStorage.getItem(STORE.access);
   } catch {
     clearTokens();
+    markSessionEnded();
     return null;
   }
 };
@@ -232,4 +250,38 @@ export const savePreferences = async patch => {
 export const signOut = () => {
   clearTokens();
   userInfoPromise = null;
+};
+
+const submitForm = (action, fields) => {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = action;
+  Object.entries(fields).forEach(([name, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+};
+
+export const signOutEverywhere = async () => {
+  const idToken = localStorage.getItem(STORE.id);
+  const { end_session_endpoint } = await discover();
+  signOut();
+  if (!end_session_endpoint) {
+    window.location.assign('/');
+    return;
+  }
+  const fields = {
+    client_id: CLIENT_ID,
+    post_logout_redirect_uri: `${window.location.origin}/`,
+    state: randomUrlSafe(24),
+  };
+  if (idToken) {
+    fields.id_token_hint = idToken;
+  }
+  submitForm(end_session_endpoint, fields);
 };

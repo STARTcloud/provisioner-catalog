@@ -25,7 +25,7 @@ Please describe what you've already attempted:
 
 - [ ] Checked the [README](../../blob/main/README.md)
 - [ ] Checked the [CONTRIBUTING guide](../../blob/main/CONTRIBUTING.md) (the submitter onboarding doc)
-- [ ] Checked the [examples/](../../tree/main/examples) publisher kit
+- [ ] Checked the [Provisioner CI/CD guide](https://provisioner-catalog.startcloud.com/docs/guides/provisioner-ci/)
 - [ ] Searched existing issues and discussions
 
 **Specific attempts:**

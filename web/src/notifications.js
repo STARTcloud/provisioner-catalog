@@ -35,3 +35,7 @@ export const markRead = async id => {
 export const markAllRead = async () => {
   await axios.post(`${base}/api/notifications/read-all`, null, await authed());
 };
+
+export const deleteNotification = async id => {
+  await axios.delete(`${base}/api/notifications/${encodeURIComponent(id)}`, await authed());
+};

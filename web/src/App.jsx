@@ -2,12 +2,29 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Alert, Button, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaAdjust, FaBuilding, FaGithub, FaGlobe, FaMoon, FaSearch, FaSun } from 'react-icons/fa';
+import {
+  FaAdjust,
+  FaBuilding,
+  FaExclamationTriangle,
+  FaGithub,
+  FaGlobe,
+  FaMoon,
+  FaSearch,
+  FaSun,
+} from 'react-icons/fa';
 
-import { beginLogin, getAccessToken, getClaims, getUserInfo, signOut } from './auth';
+import {
+  beginLogin,
+  consumeSessionEnded,
+  getAccessToken,
+  getClaims,
+  getUserInfo,
+  signOut,
+  signOutEverywhere,
+} from './auth';
 import CatalogSection from './CatalogCards.jsx';
 import { useTheme } from './contexts/ThemeContext.jsx';
-import NotificationBell from './NotificationBell.jsx';
+import LanguageMenu from './LanguageMenu.jsx';
 import { resyncPushSubscription } from './push';
 import UserMenu from './UserMenu.jsx';
 
@@ -24,6 +41,9 @@ const privateErrorKey = requestError => {
   return '';
 };
 
+const defaultOrgUuid = organizations =>
+  (organizations.find(org => org.primary) || organizations[0])?.uuid || '';
+
 const App = () => {
   const { t } = useTranslation();
   const { theme, toggleTheme, getThemeDisplay } = useTheme();
@@ -33,7 +53,9 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [orgResults, setOrgResults] = useState([]);
+  const [activeOrgUuid, setActiveOrgUuid] = useState('');
   const [loadingPrivate, setLoadingPrivate] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -51,12 +73,14 @@ const App = () => {
     const loadPrivate = async () => {
       const token = await getAccessToken();
       if (!token) {
+        setSessionEnded(consumeSessionEnded());
         return;
       }
       const claims = getClaims();
       setUser(claims);
       getUserInfo().then(setUserInfo);
       const organizations = claims?.organizations || [];
+      setActiveOrgUuid(defaultOrgUuid(organizations));
       if (organizations.length === 0) {
         return;
       }
@@ -83,10 +107,19 @@ const App = () => {
               health: null,
               errorKey: privateErrorKey(requestError),
               errorMessage: requestError.message,
+              status: requestError.response?.status,
             };
           }
         })
       );
+      if (results.some(result => result.status === 401)) {
+        signOut();
+        setUser(null);
+        setUserInfo(null);
+        setSessionEnded(true);
+        setLoadingPrivate(false);
+        return;
+      }
       setOrgResults(results);
       setLoadingPrivate(false);
     };
@@ -105,6 +138,16 @@ const App = () => {
     setUser(null);
     setUserInfo(null);
     setOrgResults([]);
+  };
+
+  const handleSignIn = () => {
+    setSessionEnded(false);
+    beginLogin();
+  };
+
+  const pickOrg = uuid => {
+    setActiveOrgUuid(uuid);
+    document.getElementById(`org-${uuid}`)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const updatedTooltip = publicCatalog
@@ -215,23 +258,41 @@ const App = () => {
               >
                 <ThemeIcon aria-hidden />
               </Button>
-              <NotificationBell user={user} />
+              <LanguageMenu />
               <UserMenu
                 user={user}
                 userInfo={userInfo}
-                organizations={(user?.organizations || []).map(org => ({
-                  ...org,
-                  hasCatalog: orgResults.some(
-                    result => result.uuid === org.uuid && Boolean(result.catalog)
-                  ),
-                }))}
-                onSignIn={() => beginLogin()}
+                organizations={user?.organizations || []}
+                activeOrgUuid={activeOrgUuid}
+                onPickOrg={pickOrg}
+                onSignIn={handleSignIn}
                 onSignOut={handleSignOut}
+                onSignOutEverywhere={signOutEverywhere}
               />
             </div>
           </div>
         </Container>
       </header>
+
+      {sessionEnded && !user ? (
+        <Container className="pt-3">
+          <Alert
+            variant="warning"
+            dismissible
+            onClose={() => setSessionEnded(false)}
+            className="d-flex align-items-center gap-3 mb-0"
+          >
+            <FaExclamationTriangle className="flex-shrink-0" aria-hidden />
+            <span className="flex-grow-1">
+              <strong className="d-block">{t('session.endedTitle')}</strong>
+              <span className="small">{t('session.endedBody')}</span>
+            </span>
+            <Button variant="primary" size="sm" onClick={handleSignIn}>
+              {t('header.signIn')}
+            </Button>
+          </Alert>
+        </Container>
+      ) : null}
 
       <section className="hero">
         <Container>

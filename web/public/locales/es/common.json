@@ -13,14 +13,16 @@
     "docs": "Documentación",
     "menuAria": "Menú de usuario",
     "signIn": "Iniciar sesión",
-    "signOut": "Cerrar sesión",
     "signedIn": "Sesión iniciada",
     "theme": "Tema",
-    "helpSupport": "Ayuda y soporte",
+    "language": "Idioma",
+    "preferences": "Preferencias",
     "favorites": "Favoritos",
-    "organizations": "Organizaciones",
-    "profile": "Perfil",
-    "rebuild": "Regenerar datos del catálogo"
+    "help": "Ayuda",
+    "rebuild": "Regenerar datos del catálogo",
+    "logout": "Cerrar sesión",
+    "logoutEverywhereTitle": "Cerrando sesión en todas partes — haga clic para cerrarla solo en el catálogo",
+    "logoutLocalTitle": "Cerrando sesión solo en el catálogo — haga clic para cerrar también su sesión de STARTcloud"
   },
   "rebuild": {
     "queued": "Regeneración en cola.",
@@ -29,25 +31,34 @@
     "failed": "Error al regenerar: {{message}}"
   },
   "orgs": {
-    "primary": "Principal",
-    "cancel": "Cancelar",
-    "noCatalog": "Aún sin catálogo publicado"
+    "switchTitle": "Cambiar de organización",
+    "primary": "Organización principal",
+    "active": "Organización activa",
+    "roles": {
+      "owner": "Propietario",
+      "admin": "Administrador",
+      "member": "Miembro"
+    }
   },
   "inbox": {
     "title": "Notificaciones",
     "empty": "Sin notificaciones.",
     "markAllRead": "Marcar todo como leído",
+    "dismiss": "Descartar",
     "loadError": "No se pudieron cargar las notificaciones.",
-    "viewAll": "Ver todas",
-    "unreadAria": "{{count}} notificaciones sin leer"
+    "viewAll": "Ver todas las notificaciones"
   },
   "notifications": {
-    "enable": "Activar notificaciones",
-    "disable": "Desactivar notificaciones",
+    "pushSwitch": "Notificaciones del navegador en este dispositivo",
     "notSupported": "Este navegador no admite notificaciones.",
     "permissionDenied": "Se denegó el permiso de notificaciones.",
+    "scopeMissing": "Su cuenta aún no está autorizada para recibir notificaciones.",
     "enableError": "No se pudieron activar las notificaciones.",
     "disableError": "No se pudieron desactivar las notificaciones."
+  },
+  "session": {
+    "endedTitle": "Se cerró su sesión.",
+    "endedBody": "Su sesión de STARTcloud terminó en otro dispositivo o aplicación. Inicie sesión de nuevo para continuar."
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",

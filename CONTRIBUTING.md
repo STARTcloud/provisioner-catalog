@@ -48,8 +48,9 @@ The artifact contract, inherited from
 
 5. **Published releases only** — drafts and prereleases are ignored.
 
-The [examples/](https://github.com/STARTcloud/provisioner-catalog/tree/main/examples) publisher kit contains a copy-paste
-`build-provisioner.yml` that produces all of this.
+The family CI set — nine files copied as is from the reference repository's
+`.github/` — produces all of this; see
+[Provisioner CI/CD](https://provisioner-catalog.startcloud.com/docs/guides/provisioner-ci/).
 
 **Immutability**: once a version is published in the catalog, its asset bytes
 must never change — the data job's tripwire hard-fails on a mutated artifact.
@@ -57,9 +58,11 @@ Need to rebuild? Ship a new version.
 
 ## Step 1 — validate your releases in your own CI
 
-Add the catalog's validation action to your repository (copy
-[examples/validate.yml](https://github.com/STARTcloud/provisioner-catalog/blob/main/examples/validate.yml) to
-`.github/workflows/validate.yml`):
+Add the catalog's validation action to your repository — it is the
+`validate.yml` of the family CI set described in
+[Provisioner CI/CD](https://provisioner-catalog.startcloud.com/docs/guides/provisioner-ci/),
+copied from
+[startcloud_generic_provisioner's `.github/`](https://github.com/STARTcloud/startcloud_generic_provisioner/tree/main/.github):
 
 ```yaml
 - uses: STARTcloud/provisioner-catalog@main

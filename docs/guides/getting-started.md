@@ -131,7 +131,7 @@ The short version; the full walkthrough is [Publishing a Provisioner](../publish
 
 ### 1. Run the validation action
 
-Add the catalog's reusable validation action to your repository's CI (the `examples/validate.yml` publisher kit is a copy-paste workflow):
+Add the catalog's reusable validation action to your repository's CI (the family CI set in [Provisioner CI/CD](../provisioner-ci/) already carries it as `validate.yml`):
 
 ```yaml
 - uses: STARTcloud/provisioner-catalog@main

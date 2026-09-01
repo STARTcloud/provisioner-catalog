@@ -1,12 +1,27 @@
 ---
 title: Provisioner CI/CD
+layout: default
+nav_order: 3
+parent: Guides
+permalink: /guides/provisioner-ci/
 ---
 
 # Provisioner CI/CD — the family contract
 
+{: .no_toc }
+
 For anyone publishing a provisioner package to this catalog: what CI a provisioner repository carries, and why it is shaped that way.
 
-Every `*_provisioner` repository runs one set of nine CI files, byte-identical, copied from the reference and never edited per repository. Anything that must differ between provisioners is decided inside those files from data the repository already carries. The reference is [STARTcloud/startcloud_generic_provisioner](https://github.com/STARTcloud/startcloud_generic_provisioner) — copy its `.github/` as is.
+Every `*_provisioner` repository runs one set of nine CI files, byte-identical, copied from the reference and never edited per repository. Anything that must differ between provisioners is decided inside those files from data the repository already carries. The reference is [STARTcloud/startcloud_generic_provisioner](https://github.com/STARTcloud/startcloud_generic_provisioner) — copy its [`.github/`](https://github.com/STARTcloud/startcloud_generic_provisioner/tree/main/.github) as is.
+
+## Table of contents
+
+{: .no_toc .text-delta }
+
+1. TOC
+   {:toc}
+
+---
 
 ## The nine files
 
@@ -69,3 +84,7 @@ release-please manages the version from Conventional Commits and stamps `provisi
 2. Add `driver.version`, `collections/*.version`, and the two App secrets in both stores.
 3. Remove any `provisioners/ansible/requirements.yml`.
 4. Commit; the push runs the full chain.
+
+---
+
+Next: [Publishing a Provisioner](../publishing-a-provisioner/) for the artifact contract the build satisfies, and [Admission](../admission/) to get listed.

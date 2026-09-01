@@ -11,8 +11,8 @@ the ways you can get help.
   consumer contract, and both publishing doors
 - **[Contributing](https://provisioner-catalog.startcloud.com/docs/contributing/)** — the submitter onboarding guide:
   package requirements, the validation action, and the admission flow
-- **[examples/](https://github.com/STARTcloud/provisioner-catalog/tree/main/examples)** — the copy-paste publisher kit for new
-  provisioner repositories
+- **[Provisioner CI/CD](https://provisioner-catalog.startcloud.com/docs/guides/provisioner-ci/)** — the nine-file family CI set
+  every provisioner repository copies from the reference repository
 
 ### Issues and Bug Reports
 

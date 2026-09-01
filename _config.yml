@@ -41,8 +41,6 @@ exclude:
   - AUTHORS.md
   - ACKNOWLEDGMENTS.md
   - CHANGELOG.md
-  - FOLLOWUPS.md
-  - examples/
   - scripts/
   - web/
   - worker/

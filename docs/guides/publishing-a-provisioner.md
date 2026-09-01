@@ -138,7 +138,7 @@ With a token, assets are fetched through the API asset endpoint, so a **private*
 
 ### Adding it to your CI
 
-Copy `examples/validate.yml` from the catalog repository to `.github/workflows/validate.yml` in your repository:
+`validate.yml` is one of the nine files in the family CI set ([Provisioner CI/CD](../provisioner-ci/)); copied from the reference repository it runs after every build and on a daily cron. Its standalone form, for a repository not yet on the family set:
 
 ```yaml
 name: Validate
@@ -164,7 +164,7 @@ jobs:
         uses: STARTcloud/provisioner-catalog@main
 ```
 
-No checkout is needed: the action validates your published releases, not your working tree. Green runs of this workflow are part of the admission checklist, and the family CI set in the reference repository calls it after every build and on a daily cron.
+No checkout is needed: the action validates your published releases, not your working tree. Green runs of this workflow are part of the admission checklist.
 
 ### What it checks per family
 
@@ -202,97 +202,18 @@ Archive shape, sidecars and checksums can only be checked against published rele
 
 In GitHub Actions the findings are also emitted as `::error::` and `::warning::` annotations.
 
-## Release workflow example
+## Release workflow
 
-`examples/build-provisioner.yml` in the catalog repository is the copy-paste build that produces conforming assets. Copy it to `.github/workflows/build-provisioner.yml`:
+The build that produces conforming assets is `build-provisioner.yml` plus the `stage-seed` action, two of the nine files in the family CI set — copied as is from [startcloud_generic_provisioner's `.github/`](https://github.com/STARTcloud/startcloud_generic_provisioner/tree/main/.github) and never edited per repository. [Provisioner CI/CD](../provisioner-ci/) lists all nine and why they are shaped that way. In outline:
 
-```yaml
-name: Build Provisioner Artifact
+1. `release-please.yml` calls the build when a release is created, passing the version and tag.
+2. `stage-seed` reads `name:` and `version:` from `provisioner.yml`, downloads the pinned core driver and collection releases named in `driver.version` and `collections/*.version` (sha256-verified), and stages the registry-shaped `<name>/<version>/` tree. The build refuses when the manifest version differs from the release version, so the filename, the directory and the manifest can never disagree.
+3. Four assets are built and uploaded: `<name>-<version>.tar.gz`, the `<name>.tar.gz` latest alias, and one `sha256sum` sidecar for each.
+4. `validate.yml` runs against the release the moment the assets exist.
 
-on:
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version to build (must match provisioner.yml)'
-        required: true
-        type: string
-      tag_name:
-        description: 'GitHub release tag'
-        required: true
-        type: string
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to build (must match provisioner.yml)'
-        required: true
-        type: string
-      tag_name:
-        description: 'GitHub release tag'
-        required: true
-        type: string
+The upload replaces same-named assets on the release. Never re-run the build against a version the catalog has already published; see [Immutability](#immutability).
 
-permissions:
-  contents: write
-
-jobs:
-  build-and-upload:
-    name: Build & Upload
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code with submodules
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - name: Stage registry-shaped tree and build seed archive
-        id: stage
-        run: |
-          NAME="$(sed -nE 's/^name:[[:space:]]*"?([A-Za-z0-9._-]+)"?.*/\1/p' provisioner.yml | head -n1)"
-          VERSION="$(sed -nE 's/^version:[[:space:]]*"?([0-9]+\.[0-9]+\.[0-9]+[0-9A-Za-z.+-]*)"?.*/\1/p' provisioner.yml | head -n1)"
-          echo "Parsed name=$NAME version=$VERSION"
-          if [ "$VERSION" != "${{ inputs.version }}" ]; then
-            echo "provisioner.yml version ($VERSION) does not match requested version (${{ inputs.version }})" >&2
-            exit 1
-          fi
-          STAGE="$RUNNER_TEMP/seed/$NAME/$VERSION"
-          mkdir -p "$STAGE"
-          rsync -a \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='.gitmodules' \
-            --exclude='.gitattributes' \
-            --exclude='release-please-config.json' \
-            --exclude='.release-please-manifest.json' \
-            ./ "$STAGE/"
-          tar -czf "$NAME-$VERSION.tar.gz" -C "$RUNNER_TEMP/seed" "$NAME"
-          cp "$NAME-$VERSION.tar.gz" "$NAME.tar.gz"
-          sha256sum "$NAME-$VERSION.tar.gz" > "$NAME-$VERSION.tar.gz.sha256"
-          sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256"
-          echo "artifact=$NAME-$VERSION.tar.gz" >> "$GITHUB_OUTPUT"
-          echo "latest_artifact=$NAME.tar.gz" >> "$GITHUB_OUTPUT"
-
-      - name: Upload seed archives to the release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ inputs.tag_name }}" \
-            "${{ steps.stage.outputs.artifact }}" \
-            "${{ steps.stage.outputs.artifact }}.sha256" \
-            "${{ steps.stage.outputs.latest_artifact }}" \
-            "${{ steps.stage.outputs.latest_artifact }}.sha256" --clobber
-```
-
-Step by step:
-
-1. **Inputs**: `version` and `tag_name`, accepted from a calling workflow (`workflow_call`) or a manual dispatch. The reference repository's `release-please.yml` calls this workflow when a release is created.
-2. **Parse the manifest**: `name:` and `version:` are read from `provisioner.yml`, quoted or unquoted. The build **refuses** when the parsed version differs from the requested one, so the filename, the directory and the manifest can never disagree.
-3. **Stage the registry shape**: the repository tree is copied to `<name>/<version>/` under a temporary seed directory, excluding `.git`, `.github`, `.gitmodules`, `.gitattributes` and the release-please files.
-4. **Build four assets**: `<name>-<version>.tar.gz` rooted at `<name>/`, the `<name>.tar.gz` latest alias as a copy of it, and one `sha256sum` sidecar for each.
-5. **Upload** all four to the release named by `tag_name` with the default `GITHUB_TOKEN`. No other secrets and no dispatch into other repositories.
-
-The upload uses `--clobber`, which replaces same-named assets on the release. Never re-run the build against a version the catalog has already published; see [Immutability](#immutability).
-
-Any process that produces conforming release assets is acceptable. The reference repository's current `.github/` carries the full family CI set (release-please orchestration, a `stage-seed` action that fetches pinned collection releases, and the validate workflow chained after the build); copy it as is if you want the same flow.
+Any process that produces conforming release assets is acceptable.
 
 ## What the catalog shows
 

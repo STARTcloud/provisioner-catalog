@@ -13,14 +13,16 @@
     "docs": "Docs",
     "menuAria": "User menu",
     "signIn": "Sign in",
-    "signOut": "Sign out",
     "signedIn": "Signed in",
     "theme": "Theme",
-    "helpSupport": "Help & Support",
+    "language": "Language",
+    "preferences": "Preferences",
     "favorites": "Favorites",
-    "organizations": "Organizations",
-    "profile": "Profile",
-    "rebuild": "Rebuild catalog data"
+    "help": "Help",
+    "rebuild": "Rebuild catalog data",
+    "logout": "Logout",
+    "logoutEverywhereTitle": "Logging out everywhere — click to log out of the catalog only",
+    "logoutLocalTitle": "Logging out of the catalog only — click to also end your STARTcloud session"
   },
   "rebuild": {
     "queued": "Rebuild queued.",
@@ -29,25 +31,34 @@
     "failed": "Rebuild failed: {{message}}"
   },
   "orgs": {
-    "primary": "Primary",
-    "cancel": "Cancel",
-    "noCatalog": "No catalog published yet"
+    "switchTitle": "Switch Organization",
+    "primary": "Primary organization",
+    "active": "Active organization",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Administrator",
+      "member": "Member"
+    }
   },
   "inbox": {
     "title": "Notifications",
     "empty": "No notifications.",
     "markAllRead": "Mark all read",
+    "dismiss": "Dismiss",
     "loadError": "Could not load notifications.",
-    "viewAll": "View all",
-    "unreadAria": "{{count}} unread notifications"
+    "viewAll": "View all notifications"
   },
   "notifications": {
-    "enable": "Enable notifications",
-    "disable": "Disable notifications",
+    "pushSwitch": "Browser notifications on this device",
     "notSupported": "Notifications are not supported in this browser.",
     "permissionDenied": "Notification permission was denied.",
+    "scopeMissing": "Your account is not yet authorized for notifications.",
     "enableError": "Could not enable notifications.",
     "disableError": "Could not disable notifications."
+  },
+  "session": {
+    "endedTitle": "You were signed out.",
+    "endedBody": "Your STARTcloud session ended on another device or app. Sign in again to continue."
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",

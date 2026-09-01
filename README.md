@@ -167,10 +167,12 @@ The validation action reports the measured tier on every run, and its new
 
 Full walkthrough: [CONTRIBUTING.md](CONTRIBUTING.md). Short version:
 
-1. Make your repo's releases conform to the artifact contract — the
-   [examples/](examples/) publisher kit has copy-paste workflows
-   (registry-shaped versioned tar.gz + `.sha256` sidecars, version sourced
-   from `provisioner.yml`).
+1. Make your repo's releases conform to the artifact contract — copy the
+   nine-file family CI set from
+   [startcloud_generic_provisioner's `.github/`](https://github.com/STARTcloud/startcloud_generic_provisioner/tree/main/.github)
+   as is ([Provisioner CI/CD](https://provisioner-catalog.startcloud.com/docs/guides/provisioner-ci/)):
+   registry-shaped versioned tar.gz + `.sha256` sidecars, version sourced
+   from `provisioner.yml`.
 2. Add this repo's **validation action** to your CI and get it green:
 
    ```yaml
@@ -213,7 +215,6 @@ issue.
 | [worker/](worker/) | The Cloudflare Worker gating `/private/*`, push, and admin endpoints — CI-deployed on change; every secret lives only in Cloudflare |
 | [docs/](docs/) | The documentation site (Jekyll + Just the Docs), built into the Pages payload at `/docs/` |
 | [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker |
-| [examples/](examples/) | Copy-paste publisher kit for new provisioner repos |
 
 ## This repository's own releases
 

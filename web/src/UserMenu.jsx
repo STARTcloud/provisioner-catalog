@@ -114,7 +114,7 @@ const UserMenu = ({
           aria-label={t('header.menuAria')}
         >
           <span className="text-truncate user-menu-name fw-semibold">{displayName}</span>
-          <Avatar picture={picture} size={28} />
+          <Avatar picture={picture} size={34} />
         </Dropdown.Toggle>
         <Dropdown.Menu>
           <IdentityCard displayName={displayName} email={email} picture={picture} />

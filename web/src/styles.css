@@ -213,6 +213,7 @@ h6,
   background-color: var(--bs-tertiary-bg);
   border-bottom: 1px solid var(--bs-border-color);
   z-index: 1030;
+  padding: 14px 20px;
 }
 .sc-header .nav-link {
   color: var(--bs-body-color);
@@ -222,12 +223,20 @@ h6,
 }
 
 .header-icon-btn {
-  width: 2.25rem;
-  height: 31px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--bs-body-color);
+}
+.header-icon-btn:hover,
+.header-icon-btn:focus-visible {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-heading-color);
 }
 .header-icon-btn img,
 .header-icon-btn svg {
@@ -331,6 +340,10 @@ h6,
 
 footer {
   margin-top: auto;
+}
+.sc-footer {
+  padding: 12px 20px;
+  font-size: 13px;
 }
 
 #root {

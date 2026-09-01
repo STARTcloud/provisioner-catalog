@@ -214,56 +214,54 @@ const App = () => {
 
   return (
     <>
-      <header className="p-3 sticky-top sc-header shadow-sm">
-        <Container>
-          <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-            <a
-              className="navbar-brand p-0 me-0 me-lg-2"
-              href="https://startcloud.com/"
-              aria-label="STARTcloud"
+      <header className="sticky-top sc-header shadow-sm">
+        <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+          <a
+            className="navbar-brand p-0 me-0 me-lg-2"
+            href="https://startcloud.com/"
+            aria-label="STARTcloud"
+          >
+            <img src="/startcloud.svg" width="34" height="34" alt="" />
+          </a>
+          <ul className="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+            <li>
+              <span className="nav-link px-2 fw-semibold">{t('header.brand')}</span>
+            </li>
+            <li>
+              <a href="https://startcloud.com/#contact" className="nav-link px-2">
+                {t('header.contact')}
+              </a>
+            </li>
+            <li>
+              <a href="/docs/" className="nav-link px-2">
+                {t('header.docs')}
+              </a>
+            </li>
+          </ul>
+          <div className="d-flex align-items-center gap-2">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="header-icon-btn"
+              onClick={toggleTheme}
+              title={themeLabel}
+              aria-label={themeLabel}
             >
-              <img src="/startcloud.svg" width="40" height="40" alt="" />
-            </a>
-            <ul className="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-              <li>
-                <span className="nav-link px-2 fw-semibold">{t('header.brand')}</span>
-              </li>
-              <li>
-                <a href="https://startcloud.com/#contact" className="nav-link px-2">
-                  {t('header.contact')}
-                </a>
-              </li>
-              <li>
-                <a href="/docs/" className="nav-link px-2">
-                  {t('header.docs')}
-                </a>
-              </li>
-            </ul>
-            <div className="d-flex align-items-center gap-2">
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                className="header-icon-btn"
-                onClick={toggleTheme}
-                title={themeLabel}
-                aria-label={themeLabel}
-              >
-                <ThemeIcon aria-hidden />
-              </Button>
-              <LanguageMenu />
-              <UserMenu
-                user={user}
-                userInfo={userInfo}
-                organizations={user?.organizations || []}
-                activeOrgUuid={activeOrgUuid}
-                onPickOrg={pickOrg}
-                onSignIn={handleSignIn}
-                onSignOut={handleSignOut}
-                onSignOutEverywhere={signOutEverywhere}
-              />
-            </div>
+              <ThemeIcon aria-hidden />
+            </Button>
+            <LanguageMenu />
+            <UserMenu
+              user={user}
+              userInfo={userInfo}
+              organizations={user?.organizations || []}
+              activeOrgUuid={activeOrgUuid}
+              onPickOrg={pickOrg}
+              onSignIn={handleSignIn}
+              onSignOut={handleSignOut}
+              onSignOutEverywhere={signOutEverywhere}
+            />
           </div>
-        </Container>
+        </div>
       </header>
 
       {sessionEnded && !user ? (
@@ -347,9 +345,9 @@ const App = () => {
         {loadingPrivate ? <Spinner animation="border" role="status" /> : null}
       </Container>
 
-      <footer className="footer mt-auto py-3 bg-body-tertiary border-top">
-        <div className="container-fluid position-relative d-flex align-items-center">
-          <div className="position-absolute start-0 ms-4">
+      <footer className="footer mt-auto sc-footer bg-body-tertiary border-top">
+        <div className="position-relative d-flex align-items-center">
+          <div className="position-absolute start-0">
             <span className="text-muted">
               {t('header.brand')} &copy; {new Date().getFullYear()}
             </span>
@@ -363,7 +361,7 @@ const App = () => {
               className="text-decoration-none d-flex align-items-center"
             >
               <img
-                src="https://startcloud.com/assets/images/logos/startcloud-logo40.png"
+                src="/startcloud-logo40.png"
                 alt="STARTcloud"
                 height="20"
                 className="me-2"
@@ -374,9 +372,9 @@ const App = () => {
               <span className="text-muted">{t('footer.poweredByCompany')}</span>
             </a>
           </div>
-          <div className="position-absolute end-0 me-4">
+          <div className="position-absolute end-0">
             <a
-              className="text-decoration-none text-body-secondary small"
+              className="text-decoration-none text-body-secondary"
               href="https://github.com/STARTcloud/provisioner-catalog"
             >
               <FaGithub className="me-1" />

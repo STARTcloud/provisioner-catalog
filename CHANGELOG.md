@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.27](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.26...provisioner-catalog-v0.0.27) (2026-09-01)
+
+
+### Bug Fixes
+
+* fixing git attributes ([114627c](https://github.com/STARTcloud/provisioner-catalog/commit/114627c14041427fad566edc2288aa1433b0ac7e))
+
 ## [0.0.26](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.25...provisioner-catalog-v0.0.26) (2026-09-01)
 
 

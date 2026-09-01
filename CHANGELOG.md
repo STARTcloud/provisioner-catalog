@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.29](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.28...provisioner-catalog-v0.0.29) (2026-09-01)
+
+
+### Bug Fixes
+
+* restore the footer logo bytes mangled by text normalization ([f8ab253](https://github.com/STARTcloud/provisioner-catalog/commit/f8ab253373f3e4893dd67460162cbc8d3b8197bb))
+
 ## [0.0.28](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.27...provisioner-catalog-v0.0.28) (2026-09-01)
 
 

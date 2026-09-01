@@ -208,8 +208,9 @@ def collect_assets(releases: list[dict]) -> dict[str, dict[str, dict]]:
     """Group versioned assets by family: {name: {version: entry}}.
 
     Entry = {"asset": <asset dict>, "sidecar": <asset dict or None>,
-    "tag": <release tag>}. Releases arrive newest-first; the first occurrence
-    of a (family, version) pair wins.
+    "tag": <release tag>, "published_at": <release publish time or "">}.
+    Releases arrive newest-first; the first occurrence of a (family, version)
+    pair wins.
     """
     families: dict[str, dict[str, dict]] = {}
     for release in releases:
@@ -226,6 +227,7 @@ def collect_assets(releases: list[dict]) -> dict[str, dict[str, dict]]:
                     "asset": asset,
                     "sidecar": assets_by_name.get(f"{asset_name}.sha256"),
                     "tag": release.get("tag_name", ""),
+                    "published_at": release.get("published_at") or "",
                 },
             )
     return families

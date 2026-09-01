@@ -229,18 +229,19 @@ def build_org_provisioners(
                         sidecars_ok = False
                         continue
 
-                version_entries.append(
-                    {
-                        "version": version,
-                        "artifacts": [
-                            {
-                                "url": asset["browser_download_url"],
-                                "checksum_type": "sha256",
-                                "checksum": digest,
-                            }
-                        ],
-                    }
-                )
+                version_entry = {
+                    "version": version,
+                    "artifacts": [
+                        {
+                            "url": asset["browser_download_url"],
+                            "checksum_type": "sha256",
+                            "checksum": digest,
+                        }
+                    ],
+                }
+                if entry["published_at"]:
+                    version_entry["released_at"] = entry["published_at"]
+                version_entries.append(version_entry)
 
             if version_entries:
                 provisioners.append(

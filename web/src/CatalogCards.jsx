@@ -13,6 +13,7 @@ export const provisionerShape = PropTypes.shape({
   versions: PropTypes.arrayOf(
     PropTypes.shape({
       version: PropTypes.string.isRequired,
+      released_at: PropTypes.string,
       artifacts: PropTypes.arrayOf(
         PropTypes.shape({
           url: PropTypes.string.isRequired,
@@ -199,7 +200,7 @@ ProvisionerIcon.propTypes = {
 };
 
 const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [latest] = provisioner.versions;
   const [showAllVersions, setShowAllVersions] = useState(false);
   const [owner, repoName] = provisioner.repo.split('/');
@@ -274,7 +275,14 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
                   {versions.map(entry => (
                     <ListGroup.Item key={entry.version}>
                       <div className="d-flex justify-content-between align-items-center gap-2">
-                        <strong>{entry.version}</strong>
+                        <span className="d-inline-flex align-items-baseline gap-2">
+                          <strong>{entry.version}</strong>
+                          {entry.released_at ? (
+                            <span className="small text-body-secondary">
+                              {new Date(entry.released_at).toLocaleDateString(i18n.language)}
+                            </span>
+                          ) : null}
+                        </span>
                         <span>
                           {entry.artifacts.map(artifact => (
                             <a key={artifact.url} href={artifact.url}>

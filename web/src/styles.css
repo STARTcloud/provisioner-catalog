@@ -158,6 +158,14 @@ h6,
 .user-menu .dropdown-menu {
   min-width: 20rem;
 }
+.user-menu .dropdown-item svg,
+.user-menu .dropdown-item img {
+  flex-shrink: 0;
+  line-height: 1;
+}
+.user-menu .dropdown-item span {
+  line-height: 1;
+}
 .user-card {
   margin: 0.25rem 0.5rem 0.5rem;
   width: auto;

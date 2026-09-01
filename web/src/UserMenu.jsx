@@ -5,12 +5,12 @@ import { useTranslation } from 'react-i18next';
 import {
   FaBook,
   FaChevronRight,
-  FaCog,
   FaEnvelope,
   FaSignInAlt,
   FaTicketAlt,
   FaUserCircle,
 } from 'react-icons/fa';
+import { FaSliders } from 'react-icons/fa6';
 
 import { ISSUER } from './auth';
 import FavoriteApps from './FavoriteApps.jsx';
@@ -145,7 +145,7 @@ const UserMenu = ({
             rel="noopener noreferrer"
             className="d-flex align-items-center gap-2"
           >
-            <FaCog aria-hidden />
+            <FaSliders aria-hidden />
             <span>{t('header.preferences')}</span>
           </Dropdown.Item>
 

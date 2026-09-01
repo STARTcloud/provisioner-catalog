@@ -71,6 +71,7 @@ graph TD
 - **[API Reference](api/)** - The `catalog.json` and `health.json` contracts and the Worker routes
 - **[Getting Started Guide](guides/getting-started/)** - First steps for authors and consumers
 - **[Publishing a Provisioner](guides/publishing-a-provisioner/)** - The artifact contract and release workflows
+- **[Provisioner CI/CD](guides/provisioner-ci/)** - The family CI/CD contract every provisioner repository follows
 - **[Admission](guides/admission/)** - The `sources.yml` pull request and its checks
 - **[Quality Tiers](guides/quality-tiers/)** - The measured tier ladder and its rules
 - **[Private Catalogs](guides/private-catalogs/)** - Per-organization catalogs behind OIDC

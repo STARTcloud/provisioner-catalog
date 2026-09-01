@@ -71,7 +71,7 @@ const corsFor = (request, env) => {
   if (origin && allowed.includes(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, DELETE, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type';
+    headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, DPoP';
     headers['Access-Control-Max-Age'] = '86400';
   }
   return headers;
@@ -158,12 +158,108 @@ const verifyJwt = async (token, env) => {
   return payload;
 };
 
-const bearerPayload = async (request, env) => {
+const PROOF_MAX_AGE_SECONDS = 60;
+const JTI_TTL_SECONDS = 300;
+
+const decodeSegment = (segment) => JSON.parse(new TextDecoder().decode(b64urlToBytes(segment)));
+
+const jwkThumbprint = async (jwk) => {
+  const canonical = JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y });
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
+  return bytesToB64url(new Uint8Array(digest));
+};
+
+const sha256B64url = async (text) => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return bytesToB64url(new Uint8Array(digest));
+};
+
+const htuOf = (url) => {
+  const target = new URL(url);
+  return `${target.origin}${target.pathname}`;
+};
+
+const verifyProof = async (proof, request, token, boundJkt, env) => {
+  const segments = proof.split('.');
+  if (segments.length !== 3) {
+    throw new Error('malformed DPoP proof');
+  }
+  const [headerB64, payloadB64, signatureB64] = segments;
+  const header = decodeSegment(headerB64);
+  if (header.typ !== 'dpop+jwt' || header.alg !== 'ES256') {
+    throw new Error('unsupported DPoP proof');
+  }
+  const { jwk } = header;
+  if (!jwk || jwk.kty !== 'EC' || jwk.crv !== 'P-256' || !jwk.x || !jwk.y || jwk.d) {
+    throw new Error('bad DPoP proof key');
+  }
+  const key = await crypto.subtle.importKey(
+    'jwk',
+    { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['verify']
+  );
+  const valid = await crypto.subtle.verify(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    b64urlToBytes(signatureB64),
+    new TextEncoder().encode(`${headerB64}.${payloadB64}`)
+  );
+  if (!valid) {
+    throw new Error('bad DPoP proof signature');
+  }
+  const payload = decodeSegment(payloadB64);
+  if (payload.htm !== request.method) {
+    throw new Error('DPoP htm mismatch');
+  }
+  if (payload.htu !== htuOf(request.url)) {
+    throw new Error('DPoP htu mismatch');
+  }
+  const now = Math.floor(Date.now() / 1000);
+  if (typeof payload.iat !== 'number' || Math.abs(now - payload.iat) > PROOF_MAX_AGE_SECONDS) {
+    throw new Error('DPoP proof expired');
+  }
+  if (payload.ath !== (await sha256B64url(token))) {
+    throw new Error('DPoP ath mismatch');
+  }
+  if ((await jwkThumbprint(jwk)) !== boundJkt) {
+    throw new Error('DPoP key does not match the token binding');
+  }
+  if (typeof payload.jti !== 'string' || !payload.jti) {
+    throw new Error('DPoP jti required');
+  }
+  const jtiKey = `jti:${payload.jti}`;
+  if (await env.SUBS.get(jtiKey)) {
+    throw new Error('DPoP proof replayed');
+  }
+  await env.SUBS.put(jtiKey, '1', { expirationTtl: JTI_TTL_SECONDS });
+};
+
+const authPayload = async (request, env) => {
   const authorization = request.headers.get('Authorization') || '';
-  if (!authorization.startsWith('Bearer ')) {
+  const [scheme, ...rest] = authorization.split(' ');
+  const token = rest.join(' ').trim();
+  if (!token || !['Bearer', 'DPoP'].includes(scheme)) {
     return null;
   }
-  return verifyJwt(authorization.slice('Bearer '.length).trim(), env);
+  const payload = await verifyJwt(token, env);
+  const boundJkt = payload.cnf?.jkt;
+  if (scheme === 'Bearer') {
+    if (boundJkt) {
+      throw new Error('key-bound token presented as Bearer');
+    }
+    return payload;
+  }
+  if (!boundJkt) {
+    throw new Error('token is not key-bound');
+  }
+  const proof = request.headers.get('DPoP') || '';
+  if (!proof) {
+    throw new Error('DPoP proof required');
+  }
+  await verifyProof(proof, request, token, boundJkt, env);
+  return payload;
 };
 
 const fetchOrgFile = async (uuid, file, env) => {
@@ -184,7 +280,7 @@ const handlePrivate = async (request, env, cors, match) => {
 
   let payload;
   try {
-    payload = await bearerPayload(request, env);
+    payload = await authPayload(request, env);
   } catch (verifyError) {
     return jsonResponse(
       401,
@@ -230,7 +326,7 @@ const handlePrivate = async (request, env, cors, match) => {
 const handleRebuild = async (request, env, cors) => {
   let payload;
   try {
-    payload = await bearerPayload(request, env);
+    payload = await authPayload(request, env);
   } catch (verifyError) {
     return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
   }
@@ -271,7 +367,7 @@ const handleRebuild = async (request, env, cors) => {
 const handleRebuildStatus = async (request, env, cors) => {
   let payload;
   try {
-    payload = await bearerPayload(request, env);
+    payload = await authPayload(request, env);
   } catch (verifyError) {
     return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
   }
@@ -321,7 +417,7 @@ const isValidSubscription = (body) =>
 const handleSubscribe = async (request, env, cors) => {
   let payload;
   try {
-    payload = await bearerPayload(request, env);
+    payload = await authPayload(request, env);
   } catch (verifyError) {
     return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
   }
@@ -352,7 +448,7 @@ const handleSubscribe = async (request, env, cors) => {
 const handleUnsubscribe = async (request, env, cors) => {
   let payload;
   try {
-    payload = await bearerPayload(request, env);
+    payload = await authPayload(request, env);
   } catch (verifyError) {
     return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
   }

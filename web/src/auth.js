@@ -9,7 +9,10 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
+import { clearDpopKey, dpopProof } from './dpop';
+
 export const ISSUER = 'https://dev-auth.startcloud.com';
+export const API_ORIGIN = __API_ORIGIN__ || window.location.origin;
 const CLIENT_ID = 'provisioner-catalog';
 const SCOPES = 'openid profile email organizations notifications';
 const REDIRECT_URI = `${window.location.origin}/callback`;
@@ -18,6 +21,7 @@ const STORE = {
   access: 'catalog.access_token',
   refresh: 'catalog.refresh_token',
   id: 'catalog.id_token',
+  tokenType: 'catalog.token_type',
   expires: 'catalog.expires_at',
   verifier: 'catalog.pkce_verifier',
   state: 'catalog.pkce_state',
@@ -63,6 +67,7 @@ const storeTokens = tokens => {
   if (tokens.id_token) {
     localStorage.setItem(STORE.id, tokens.id_token);
   }
+  localStorage.setItem(STORE.tokenType, tokens.token_type === 'DPoP' ? 'DPoP' : 'Bearer');
   const ttlSeconds = typeof tokens.expires_in === 'number' ? tokens.expires_in : 3600;
   localStorage.setItem(STORE.expires, String(Date.now() + ttlSeconds * 1000));
 };
@@ -71,7 +76,15 @@ const clearTokens = () => {
   localStorage.removeItem(STORE.access);
   localStorage.removeItem(STORE.refresh);
   localStorage.removeItem(STORE.id);
+  localStorage.removeItem(STORE.tokenType);
   localStorage.removeItem(STORE.expires);
+};
+
+const requestHeaders = async (method, url, token) => {
+  if (localStorage.getItem(STORE.tokenType) !== 'DPoP') {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return { Authorization: `DPoP ${token}`, DPoP: await dpopProof(method, url, token) };
 };
 
 export const markSessionEnded = () => {
@@ -87,7 +100,9 @@ export const consumeSessionEnded = () => {
 const tokenRequest = async params => {
   const { token_endpoint } = await discover();
   try {
-    const { data } = await axios.post(token_endpoint, new URLSearchParams(params));
+    const { data } = await axios.post(token_endpoint, new URLSearchParams(params), {
+      headers: { DPoP: await dpopProof('POST', token_endpoint) },
+    });
     return data;
   } catch (requestError) {
     const body = requestError.response?.data;
@@ -202,12 +217,20 @@ export const fetchUserInfo = async token => {
   try {
     const { userinfo_endpoint } = await discover();
     const { data } = await axios.get(userinfo_endpoint, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: await requestHeaders('GET', userinfo_endpoint, token),
     });
     return data;
   } catch {
     return null;
   }
+};
+
+export const authHeaders = async (method, url) => {
+  const token = await getAccessToken();
+  if (!token) {
+    throw new Error('not signed in');
+  }
+  return requestHeaders(method, url, token);
 };
 
 const THEME_VALUES = ['auto', 'light', 'dark'];
@@ -242,14 +265,14 @@ export const savePreferences = async patch => {
     return;
   }
   const url = import.meta.env.DEV ? '/api/user/preferences' : `${ISSUER}/api/user/preferences`;
-  await axios
-    .patch(url, patch, { headers: { Authorization: `Bearer ${token}` } })
-    .catch(() => null);
+  const headers = await requestHeaders('PATCH', `${ISSUER}/api/user/preferences`, token);
+  await axios.patch(url, patch, { headers }).catch(() => null);
 };
 
 export const signOut = () => {
   clearTokens();
   userInfoPromise = null;
+  clearDpopKey().catch(() => null);
 };
 
 const submitForm = (action, fields) => {

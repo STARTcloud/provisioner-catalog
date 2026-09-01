@@ -47,6 +47,7 @@ export default [
         __APP_NAME__: 'readonly',
         __APP_VERSION__: 'readonly',
         __SUPPORTED_LOCALES__: 'readonly',
+        __API_ORIGIN__: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: {

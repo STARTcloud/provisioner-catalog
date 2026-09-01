@@ -35,11 +35,12 @@ const localeDirs = fs.existsSync('./public/locales')
   : [];
 const supportedLocales = localeDirs.length ? localeDirs : ['en'];
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(releaseVersion),
     __APP_NAME__: JSON.stringify(pkg.name),
     __SUPPORTED_LOCALES__: JSON.stringify(supportedLocales),
+    __API_ORIGIN__: JSON.stringify(command === 'serve' ? apiTarget : ''),
   },
   plugins: [react()],
   base: '/',
@@ -114,4 +115,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

@@ -14,6 +14,8 @@ import {
 } from 'react-icons/fa';
 
 import {
+  API_ORIGIN,
+  authHeaders,
   beginLogin,
   consumeSessionEnded,
   getAccessToken,
@@ -43,6 +45,9 @@ const privateErrorKey = requestError => {
 
 const defaultOrgUuid = organizations =>
   (organizations.find(org => org.primary) || organizations[0])?.uuid || '';
+
+const fetchPrivate = async path =>
+  axios.get(path, { headers: await authHeaders('GET', `${API_ORIGIN}${path}`) });
 
 const App = () => {
   const { t } = useTranslation();
@@ -85,13 +90,12 @@ const App = () => {
         return;
       }
       setLoadingPrivate(true);
-      const auth = { headers: { Authorization: `Bearer ${token}` } };
       const results = await Promise.all(
         organizations.map(async org => {
           try {
             const [catalogRes, healthRes] = await Promise.all([
-              axios.get(`/private/${org.uuid}/catalog.json`, auth),
-              axios.get(`/private/${org.uuid}/health.json`, auth).catch(() => null),
+              fetchPrivate(`/private/${org.uuid}/catalog.json`),
+              fetchPrivate(`/private/${org.uuid}/health.json`).catch(() => null),
             ]);
             return {
               ...org,

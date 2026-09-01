@@ -1,41 +1,36 @@
 import axios from 'axios';
 
-import { getAccessToken, ISSUER } from './auth';
+import { authHeaders, ISSUER } from './auth';
 
 const base = import.meta.env.DEV ? '' : ISSUER;
 
-const authed = async () => {
-  const token = await getAccessToken();
-  if (!token) {
-    throw new Error('not signed in');
-  }
-  return { headers: { Authorization: `Bearer ${token}` } };
-};
+const authed = async (method, path) => ({
+  headers: await authHeaders(method, `${ISSUER}${path}`),
+});
 
 export const fetchNotifications = async params => {
-  const config = await authed();
-  const { data } = await axios.get(`${base}/api/notifications`, { ...config, params });
+  const path = '/api/notifications';
+  const { data } = await axios.get(`${base}${path}`, { ...(await authed('GET', path)), params });
   return data;
 };
 
 export const fetchUnreadCount = async () => {
-  const config = await authed();
-  const { data } = await axios.get(`${base}/api/notifications/unread-count`, config);
+  const path = '/api/notifications/unread-count';
+  const { data } = await axios.get(`${base}${path}`, await authed('GET', path));
   return data;
 };
 
 export const markRead = async id => {
-  await axios.post(
-    `${base}/api/notifications/${encodeURIComponent(id)}/read`,
-    null,
-    await authed()
-  );
+  const path = `/api/notifications/${encodeURIComponent(id)}/read`;
+  await axios.post(`${base}${path}`, null, await authed('POST', path));
 };
 
 export const markAllRead = async () => {
-  await axios.post(`${base}/api/notifications/read-all`, null, await authed());
+  const path = '/api/notifications/read-all';
+  await axios.post(`${base}${path}`, null, await authed('POST', path));
 };
 
 export const deleteNotification = async id => {
-  await axios.delete(`${base}/api/notifications/${encodeURIComponent(id)}`, await authed());
+  const path = `/api/notifications/${encodeURIComponent(id)}`;
+  await axios.delete(`${base}${path}`, await authed('DELETE', path));
 };

@@ -4,13 +4,13 @@ import { Dropdown, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaSyncAlt } from 'react-icons/fa';
 
-import { getAccessToken } from './auth';
+import { API_ORIGIN, authHeaders } from './auth';
 
 const POLL_INTERVAL_MS = 10000;
 const POLL_LIMIT = 90;
 
-const authHeaders = async () => ({
-  headers: { Authorization: `Bearer ${await getAccessToken()}` },
+const authed = async (method, path) => ({
+  headers: await authHeaders(method, `${API_ORIGIN}${path}`),
 });
 
 const RebuildItem = () => {
@@ -58,7 +58,10 @@ const RebuildItem = () => {
       return;
     }
     try {
-      const { data } = await axios.get('/admin/rebuild/status', await authHeaders());
+      const { data } = await axios.get(
+        '/admin/rebuild/status',
+        await authed('GET', '/admin/rebuild/status')
+      );
       settle(data);
     } catch {
       stopPolling();
@@ -68,7 +71,7 @@ const RebuildItem = () => {
   const rebuild = async () => {
     setFeedback('');
     try {
-      await axios.post('/admin/rebuild', null, await authHeaders());
+      await axios.post('/admin/rebuild', null, await authed('POST', '/admin/rebuild'));
       setFeedback(t('rebuild.running'));
       setRunning(true);
       sawRunRef.current = false;

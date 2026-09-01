@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-import { getAccessToken } from './auth';
+import { API_ORIGIN, authHeaders } from './auth';
 
 const PUSH_ENABLED_KEY = 'catalog.push_enabled';
+const SUBSCRIPTIONS_PATH = '/push/subscriptions';
 
 export const isPushSupported = () =>
   'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -29,13 +30,7 @@ const ensureServiceWorker = async () => {
   return navigator.serviceWorker.ready;
 };
 
-const authHeaders = async () => {
-  const token = await getAccessToken();
-  if (!token) {
-    throw new Error('not signed in');
-  }
-  return { Authorization: `Bearer ${token}` };
-};
+const subscriptionHeaders = method => authHeaders(method, `${API_ORIGIN}${SUBSCRIPTIONS_PATH}`);
 
 export const subscribePush = async () => {
   const registration = await ensureServiceWorker();
@@ -44,7 +39,9 @@ export const subscribePush = async () => {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(data.publicKey),
   });
-  await axios.post('/push/subscriptions', subscription.toJSON(), { headers: await authHeaders() });
+  await axios.post(SUBSCRIPTIONS_PATH, subscription.toJSON(), {
+    headers: await subscriptionHeaders('POST'),
+  });
   return subscription;
 };
 
@@ -54,9 +51,9 @@ export const unsubscribePush = async () => {
   if (!subscription) {
     return;
   }
-  await axios.delete('/push/subscriptions', {
+  await axios.delete(SUBSCRIPTIONS_PATH, {
     params: { endpoint: subscription.endpoint },
-    headers: await authHeaders(),
+    headers: await subscriptionHeaders('DELETE'),
   });
   await subscription.unsubscribe();
 };
@@ -72,8 +69,8 @@ export const resyncPushSubscription = () => {
         setPushEnabled(false);
         return null;
       }
-      await axios.post('/push/subscriptions', subscription.toJSON(), {
-        headers: await authHeaders(),
+      await axios.post(SUBSCRIPTIONS_PATH, subscription.toJSON(), {
+        headers: await subscriptionHeaders('POST'),
       });
       return subscription;
     })

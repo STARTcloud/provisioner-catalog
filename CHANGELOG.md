@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.24](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.23...provisioner-catalog-v0.0.24) (2026-09-01)
+
+
+### Bug Fixes
+
+* dpop implemented and tested ([066e761](https://github.com/STARTcloud/provisioner-catalog/commit/066e761628b6cdd95ea8fb133565a70df1ac2f1c))
+* Names ([414e69f](https://github.com/STARTcloud/provisioner-catalog/commit/414e69f191d08b28c25ac7850f56862dc8a48cc5))
+
 ## [0.0.23](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.22...provisioner-catalog-v0.0.23) (2026-09-01)
 
 

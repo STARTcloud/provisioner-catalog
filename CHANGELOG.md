@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.25](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.24...provisioner-catalog-v0.0.25) (2026-09-01)
+
+
+### Bug Fixes
+
+* footer and updating header ([95f8265](https://github.com/STARTcloud/provisioner-catalog/commit/95f8265615e0e0bb41aae4d4eba897c22696b821))
+
 ## [0.0.24](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.23...provisioner-catalog-v0.0.24) (2026-09-01)
 
 

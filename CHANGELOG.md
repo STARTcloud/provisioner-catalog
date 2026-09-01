@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.21](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.20...provisioner-catalog-v0.0.21) (2026-09-01)
+
+
+### Features
+
+* universal navbar — account cluster, user menu, org switcher, notifications modal ([03970b5](https://github.com/STARTcloud/provisioner-catalog/commit/03970b5382483c3b6c0d9e5d0ddc3a3450caf09e))
+
 ## [0.0.20](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.19...provisioner-catalog-v0.0.20) (2026-09-01)
 
 

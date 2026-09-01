@@ -216,17 +216,11 @@ const App = () => {
     <>
       <header className="sticky-top sc-header shadow-sm">
         <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-          <a
-            className="navbar-brand p-0 me-0 me-lg-2"
-            href="https://startcloud.com/"
-            aria-label="STARTcloud"
-          >
+          <a className="navbar-brand p-0 me-0 me-lg-2 d-flex align-items-center gap-2" href="/">
             <img src="/startcloud.svg" width="34" height="34" alt="" />
+            {t('header.brand')}
           </a>
           <ul className="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-            <li>
-              <span className="nav-link px-2 fw-semibold">{t('header.brand')}</span>
-            </li>
             {!user ? (
               <>
                 <li>
@@ -382,7 +376,7 @@ const App = () => {
               href="https://github.com/STARTcloud/provisioner-catalog"
             >
               <FaGithub className="me-1" />
-              {__APP_NAME__} v{__APP_VERSION__}
+              {t('header.brand')} v{__APP_VERSION__}
             </a>
           </div>
         </div>

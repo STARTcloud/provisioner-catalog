@@ -5,10 +5,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import YAML from 'yaml';
 
-// Name comes from this package's package.json; the version comes from the
-// repository's release-please-managed version.txt so the footer always shows
-// the released catalog version.
-const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+// The version comes from the repository's release-please-managed version.txt
+// so the footer always shows the released catalog version.
 const releaseVersion = fs.readFileSync('../version.txt', 'utf8').trim();
 
 // Dev-server settings come from this package's own config.yaml (not a dotfile,
@@ -38,7 +36,6 @@ const supportedLocales = localeDirs.length ? localeDirs : ['en'];
 export default defineConfig(({ command }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(releaseVersion),
-    __APP_NAME__: JSON.stringify(pkg.name),
     __SUPPORTED_LOCALES__: JSON.stringify(supportedLocales),
     __API_ORIGIN__: JSON.stringify(command === 'serve' ? apiTarget : ''),
   },

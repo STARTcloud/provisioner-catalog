@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.26](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.25...provisioner-catalog-v0.0.26) (2026-09-01)
+
+
+### Bug Fixes
+
+* converging the navbar stuff a little more ([476088b](https://github.com/STARTcloud/provisioner-catalog/commit/476088bd128fb1a567bee777c9f6b90a67d43e50))
+
 ## [0.0.25](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.24...provisioner-catalog-v0.0.25) (2026-09-01)
 
 

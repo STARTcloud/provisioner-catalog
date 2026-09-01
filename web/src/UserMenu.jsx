@@ -100,7 +100,7 @@ const UserMenu = ({
   const hasNotifications = String(user.scope || '').includes('notifications');
   const isAdmin = Boolean(user.authorities?.includes('ROLE_ADMIN'));
   const activeOrg = organizations.find(org => org.uuid === activeOrgUuid) || null;
-  const displayName = user.name || user.email || t('header.signedIn');
+  const displayName = userInfo?.name || user.name || user.email || t('header.signedIn');
   const email = user.email && user.email !== displayName ? user.email : '';
   const picture = userInfo?.picture || '';
 
@@ -191,6 +191,7 @@ UserMenu.propTypes = {
   }),
   userInfo: PropTypes.shape({
     customer_id: PropTypes.string,
+    name: PropTypes.string,
     picture: PropTypes.string,
     favorite_apps: PropTypes.array,
   }),

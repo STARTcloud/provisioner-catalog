@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.20](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.19...provisioner-catalog-v0.0.20) (2026-09-01)
+
+
+### Features
+
+* per-version release dates in catalog data and version list ([f57c858](https://github.com/STARTcloud/provisioner-catalog/commit/f57c8582d553b79f08375dcce9d65618604d70ae))
+
+
+### Bug Fixes
+
+* updating some documentation ([4e4328c](https://github.com/STARTcloud/provisioner-catalog/commit/4e4328c99a87bd3f181305ffd8633ab218529b17))
+
 ## [0.0.19](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.18...provisioner-catalog-v0.0.19) (2026-08-09)
 
 

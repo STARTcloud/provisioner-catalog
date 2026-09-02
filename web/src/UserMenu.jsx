@@ -7,6 +7,7 @@ import {
   FaChevronRight,
   FaCircleUser,
   FaEnvelope,
+  FaIdBadge,
   FaRightToBracket,
   FaSliders,
   FaTicket,
@@ -75,11 +76,16 @@ const IdentityCard = ({ displayName, email, picture }) => (
     className="user-card d-flex align-items-center gap-3"
   >
     <Avatar picture={picture} size={36} />
-    <span className="flex-grow-1 min-width-0">
-      <span className="d-block fw-semibold text-truncate">{displayName}</span>
-      {email ? <small className="d-block text-body-secondary text-truncate">{email}</small> : null}
+    <span className="flex-grow-1">
+      <span className="d-block fw-semibold">{displayName}</span>
+      {email ? <small className="d-block text-body-secondary">{email}</small> : null}
     </span>
-    <FaChevronRight className="text-body-secondary flex-shrink-0" />
+    <span className="user-card-actions">
+      <span className="d-inline-flex text-body-secondary flex-shrink-0">
+        <FaIdBadge />
+      </span>
+      <FaChevronRight className="text-body-secondary flex-shrink-0" />
+    </span>
   </Dropdown.Item>
 );
 

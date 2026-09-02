@@ -176,6 +176,14 @@ button::-moz-focus-inner {
   overflow-y: auto;
 }
 
+.notifications-modal {
+  --bs-modal-width: 540px;
+}
+
+.notifications-modal .modal-footer > * {
+  margin: 0;
+}
+
 .user-menu .dropdown-menu {
   min-width: 20rem;
 }
@@ -513,12 +521,25 @@ button::-moz-focus-inner {
 .navbar .crumb-sep {
   display: inline-flex;
   align-items: center;
-  padding: 0 2px;
+  align-self: center;
+  padding: 0 4px;
+  font-size: 1.1rem;
+  line-height: 1;
   color: var(--bs-secondary-color);
 }
 
+.navbar .nav .crumb-sep:first-child {
+  padding-left: 0;
+}
+
 .navbar .crumb {
+  font-size: 1.1rem;
   color: var(--bs-body-color);
+}
+
+.navbar .crumb.dropdown-toggle::after {
+  margin-left: 0.35em;
+  vertical-align: 0.2em;
 }
 
 .navbar .crumb:hover,

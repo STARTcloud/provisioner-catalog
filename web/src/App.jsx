@@ -50,21 +50,27 @@ const THEME_ICONS = { auto: FaCircleHalfStroke, light: FaSun, dark: FaMoon };
 const ACTIVE_ORG_KEY = 'activeOrganization';
 const PREFS_PREFIX = 'catalog_table_prefs_';
 
-const emptyFilters = () => ({ tiers: new Set(), providers: new Set() });
+const CATALOG_FILTERS = ['tiers', 'providers'];
+const ORG_FILTERS = ['roles', 'catalog'];
+const ROLE_ORDER = ['OWNER', 'ADMIN', 'MEMBER'];
 
-const readPrefs = key => {
+const filterNamesFor = view => (view === PRIVATE_VIEW ? ORG_FILTERS : CATALOG_FILTERS);
+
+const emptyFilters = names => Object.fromEntries(names.map(name => [name, new Set()]));
+
+const readPrefs = (key, names) => {
   try {
     const saved = JSON.parse(localStorage.getItem(`${PREFS_PREFIX}${key}`) || 'null');
-    return { tiers: new Set(saved?.tiers || []), providers: new Set(saved?.providers || []) };
+    return Object.fromEntries(names.map(name => [name, new Set(saved?.[name] || [])]));
   } catch {
-    return emptyFilters();
+    return emptyFilters(names);
   }
 };
 
 const writePrefs = (key, filters) => {
   localStorage.setItem(
     `${PREFS_PREFIX}${key}`,
-    JSON.stringify({ tiers: [...filters.tiers], providers: [...filters.providers] })
+    JSON.stringify(Object.fromEntries(Object.entries(filters).map(([name, set]) => [name, [...set]])))
   );
 };
 
@@ -111,7 +117,61 @@ const viewData = (view, orgResults, publicCatalog, publicHealth) => {
 };
 
 const hasFilters = (query, filters) =>
-  query.trim() !== '' || filters.tiers.size > 0 || filters.providers.size > 0;
+  query.trim() !== '' || Object.values(filters).some(set => set.size > 0);
+
+const orgRoleCounts = organizations => {
+  const counts = {};
+  organizations.forEach(org => {
+    (org.roles || []).forEach(role => {
+      counts[role] = (counts[role] || 0) + 1;
+    });
+  });
+  const extra = Object.keys(counts).filter(role => !ROLE_ORDER.includes(role));
+  const ordered = {};
+  [...ROLE_ORDER, ...extra]
+    .filter(role => counts[role])
+    .forEach(role => {
+      ordered[role] = counts[role];
+    });
+  return ordered;
+};
+
+const orgCatalogCounts = (organizations, published) => {
+  const counts = {};
+  organizations.forEach(org => {
+    const key = published(org.uuid) ? 'published' : 'unpublished';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+};
+
+const matchesOrgFilters = (org, filters, published) =>
+  (filters.roles.size === 0 || (org.roles || []).some(role => filters.roles.has(role))) &&
+  (filters.catalog.size === 0 ||
+    filters.catalog.has(published(org.uuid) ? 'published' : 'unpublished'));
+
+const buildOrgGroups = (t, organizations, published, filters, updateFilters) => [
+  {
+    key: 'role',
+    label: t('orgs.role'),
+    entries: orgRoleCounts(organizations),
+    activeSet: filters.roles,
+    activeClass: 'bg-primary',
+    labelFor: role => t(`roles.${role.toLowerCase()}`, { defaultValue: role }),
+    onToggle: role =>
+      updateFilters(current => ({ ...current, roles: toggleIn(current.roles, role) })),
+  },
+  {
+    key: 'catalog',
+    label: t('orgs.catalogGroup'),
+    entries: orgCatalogCounts(organizations, published),
+    activeSet: filters.catalog,
+    activeClass: 'bg-success',
+    labelFor: value => t(`orgs.${value}`),
+    onToggle: value =>
+      updateFilters(current => ({ ...current, catalog: toggleIn(current.catalog, value) })),
+  },
+];
 
 const buildGroups = (t, provisioners, health, filters, updateFilters) => [
   {
@@ -391,24 +451,29 @@ const App = () => {
   };
 
   const organizations = user?.organizations || [];
-  const filters = filtersByView[viewKey] || readPrefs(viewKey);
+  const names = filterNamesFor(view);
+  const filters = filtersByView[viewKey] || readPrefs(viewKey, names);
 
   const updateFilters = updater => {
     setFiltersByView(current => ({
       ...current,
-      [viewKey]: updater(current[viewKey] || readPrefs(viewKey)),
+      [viewKey]: updater(current[viewKey] || readPrefs(viewKey, names)),
     }));
   };
 
   const currentView = user ? view : '';
   const shown = viewData(currentView, orgResults, publicCatalog, publicHealth);
   const listing = currentView === PRIVATE_VIEW;
+  const published = uuid => Boolean(orgResults.find(result => result.uuid === uuid)?.catalog);
   const filtered = listing
     ? []
     : filterProvisioners(shown.provisioners, shown.health, query, filters);
-  const filteredOrgs = listing ? organizations.filter(org => matchesOrg(org, query)) : [];
+  const filteredOrgs = listing
+    ? organizations.filter(
+        org => matchesOrg(org, query) && matchesOrgFilters(org, filters, published)
+      )
+    : [];
   const filtering = hasFilters(query, filters);
-  const published = uuid => Boolean(orgResults.find(result => result.uuid === uuid)?.catalog);
 
   useNavbarSearchBinding({
     query,
@@ -416,8 +481,10 @@ const App = () => {
     placeholder: t(listing ? 'search.placeholderOrgs' : 'search.placeholder'),
     matched: listing ? filteredOrgs.length : filtered.length,
     total: listing ? organizations.length : shown.provisioners.length,
-    groups: listing ? [] : buildGroups(t, shown.provisioners, shown.health, filters, updateFilters),
-    onClearFilters: () => updateFilters(() => emptyFilters()),
+    groups: listing
+      ? buildOrgGroups(t, organizations, published, filters, updateFilters)
+      : buildGroups(t, shown.provisioners, shown.health, filters, updateFilters),
+    onClearFilters: () => updateFilters(() => emptyFilters(names)),
   });
 
   const renderBody = () => {
@@ -426,7 +493,7 @@ const App = () => {
         <OrgList
           organizations={filteredOrgs}
           results={orgResults}
-          filtering={query.trim() !== ''}
+          filtering={filtering}
           onOpen={goTo}
         />
       );

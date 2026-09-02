@@ -4,36 +4,30 @@ Estate-level work that starts here but is decided across BoxVault and the
 catalog together. Nothing in this file is scheduled; it records intent so it
 is not lost.
 
-## Navbar search module
+## Global search scope
 
-Move search out of the page body and into the navbar as a shared module.
-Today the catalog has a search box above its cards and BoxVault has one above
-each of its box and ISO tables; both are page-specific.
+The navbar search module searches the page it is on. The contract reserves
+a scope row in its filter panel (Search in: This page · Everywhere · a named
+app) and the binding fields `scopes`, `activeScope` and `onScopeChange`;
+nothing draws it yet.
 
-- A search icon in the account cluster, next to the theme button, rendered
-  from the same component in both apps. Clicking it, or hovering it for a
-  short dwell, expands it into the input.
-- The expanded element carries two controls of its own: an × that collapses
-  it and clears the query and every active filter, and a gear that opens the
-  filter panel.
-- The filter panel drops out under the header at full width, hidden until
-  the gear is used, holding whatever filters the page offers (the catalog's
-  tier and provider chips, BoxVault's watched/provider/architecture chips).
-- The module owns only the icon, the input, the panel shell and the
-  expanded/open state; each app supplies its filter set and receives the
-  query and active filters.
-- Recorded in the universal navbar contract once the shape is agreed, with
-  the component and its CSS added to the byte-identical shared files.
-
-## Organization drill-down instead of tabs
-
-The catalog's Public / Private tabs are the odd one out: BoxVault shows the
-active organization as a breadcrumb-style link in the left nav and drills
-into that organization's own list. The catalog should do the same — the
-left nav carries the active organization, choosing one in the switcher
-drills into that organization's provisioners alone, and the public catalog
-is the root the breadcrumb returns to — so the two apps navigate
-organizations the same way and the tabs go away.
+- **Scope row**: the panel's first row, pills like the filter pills without
+  counts, "This page" first and active by default; present only while the
+  binding offers a scope beyond the page. Picking a scope hands the query to
+  that scope and hides the count and the filter groups, which belong to the
+  page scope.
+- **Global results**: a dropdown under the input, grouped by app with the
+  app's icon (BoxVault boxes, catalog provisioners, hyperweaver and
+  zoneweaver machines), each row with a title, a subline and a right-hand
+  action (open in a new tab, console, an SSH launcher), arrow keys and
+  Enter, Escape back to the page scope.
+- **Data**: each app publishes a small `/api/search?q=` over its own data,
+  read with the user's token; the IdP's userinfo favorites list says which
+  apps to fan out to, so the module needs no registry beyond what the menu
+  already knows.
+- **Contract**: a "Global scope" section and a checklist row per app that
+  exposes a search endpoint; the module file stays byte-identical, the
+  scope row and result list are added to it once.
 
 ## Merging the catalog into BoxVault
 

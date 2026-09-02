@@ -687,24 +687,66 @@ def merged_versions(
     latest_version: str,
     latest_providers: list[str],
     previous: dict | None,
+    backfilled: dict[str, dict] | None = None,
 ) -> dict[str, dict]:
     """Per-version provider data for health.json.
 
-    Only the latest version is measured on a run; every other recorded version
+    The latest version is measured on every run; every other recorded version
     keeps the entry the previously published health.json holds for it, because
-    published bytes never change and neither does what they render. A version
-    with no entry yet carries no providers until the run that first measured it
-    as latest — or until a later run re-measures history, which this one does
-    not do.
+    published bytes never change and neither does what they render. Versions
+    with no entry yet take the answers backfill_versions measured from their
+    own archives this run.
     """
     carried = ((previous or {}).get("versions") or {}) if isinstance(previous, dict) else {}
+    filled = backfilled or {}
     merged: dict[str, dict] = {}
     for version in versions:
         if version == latest_version:
             merged[version] = {"providers": sorted(latest_providers)}
         elif isinstance(carried.get(version), dict):
             merged[version] = {"providers": sorted(carried[version].get("providers") or [])}
+        elif isinstance(filled.get(version), dict):
+            merged[version] = {"providers": sorted(filled[version].get("providers") or [])}
     return merged
+
+
+def backfill_versions(
+    fetch_bytes,
+    family: str,
+    versions: list[str],
+    latest_version: str,
+    previous: dict | None,
+    cache: dict,
+) -> dict[str, dict]:
+    """Provider data for recorded versions that have no entry yet.
+
+    Each such version's archive is fetched once through ``fetch_bytes``, its
+    packaged manifest's fields and Hosts.template.yml rendered and checked
+    against the box catalog exactly as the latest version is, and the answer
+    is carried forward from then on. A version whose archive could not be
+    fetched, or whose box catalog did not answer, gets no entry so the next
+    run tries again.
+    """
+    carried = ((previous or {}).get("versions") or {}) if isinstance(previous, dict) else {}
+    filled: dict[str, dict] = {}
+    for version in versions:
+        if version == latest_version or isinstance(carried.get(version), dict):
+            continue
+        data = fetch_bytes(version)
+        if data is None:
+            continue
+        text = archive_text_member(data, f"{family}/{version}/provisioner.yml", MAX_TEMPLATE_BYTES)
+        try:
+            manifest = yaml.safe_load(text) if text else None
+        except yaml.YAMLError:
+            manifest = None
+        fields = collect_config_fields(manifest if isinstance(manifest, dict) else {})
+        providers, complete = version_providers(
+            verify_providers(data, family, version, fields, cache), None
+        )
+        if complete:
+            filled[version] = {"providers": providers}
+    return filled
 
 
 def health_entry(

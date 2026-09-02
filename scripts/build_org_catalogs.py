@@ -294,8 +294,17 @@ def build_org_provisioners(
                     boot,
                     prev,
                 )
+                def fetch_version(version: str) -> bytes | None:
+                    try:
+                        return download_release_asset(versions[version]["asset"], token)
+                    except (urllib.error.URLError, RuntimeError, OSError):
+                        return None
+
+                backfilled = quality.backfill_versions(
+                    fetch_version, family, list(versions), latest, prev_health, box_cache
+                )
                 version_data = quality.merged_versions(
-                    list(versions), latest, latest_providers, prev_health
+                    list(versions), latest, latest_providers, prev_health, backfilled
                 )
                 health_map[family] = quality.health_entry(
                     family,

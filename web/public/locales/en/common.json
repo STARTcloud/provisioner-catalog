@@ -27,6 +27,10 @@
   "orgs": {
     "open": "Open catalog",
     "noCatalog": "No catalog published yet",
+    "role": "Role",
+    "catalogGroup": "Catalog",
+    "published": "Published",
+    "unpublished": "Not published",
     "loading": "Loading…",
     "provisioners_one": "{{count}} provisioner",
     "provisioners_other": "{{count}} provisioners"

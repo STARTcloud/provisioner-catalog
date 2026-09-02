@@ -220,14 +220,16 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered>
+    <Modal show={show} onHide={onHide} centered dialogClassName="notifications-modal">
       <Modal.Header closeButton>
-        <Modal.Title className="d-flex align-items-center gap-3">
-          {t('inbox.title')}
-          <button type="button" className="btn btn-link btn-sm p-0" onClick={handleMarkAllRead}>
-            {t('inbox.markAllRead')}
-          </button>
-        </Modal.Title>
+        <Modal.Title as="h5">{t('inbox.title')}</Modal.Title>
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0 ms-auto me-3"
+          onClick={handleMarkAllRead}
+        >
+          {t('inbox.markAllRead')}
+        </button>
       </Modal.Header>
       <Modal.Body className="p-0">
         {loadFailed ? <p className="small text-danger m-3">{t('inbox.loadError')}</p> : null}
@@ -245,13 +247,13 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
           ))}
         </div>
       </Modal.Body>
-      <Modal.Footer className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <Modal.Footer className="d-flex justify-content-between align-items-center flex-nowrap gap-3 small">
         <PushSwitch />
         <a
           href={`${ISSUER}/notifications`}
           target="_blank"
           rel="noopener noreferrer"
-          className="small"
+          className="text-nowrap"
         >
           {t('inbox.viewAll')}
           <FaArrowUpRightFromSquare className="ms-2" />

@@ -177,7 +177,7 @@ Only published, non-draft, non-prerelease releases are recorded. A version whose
 | `health.artifacts_ok` | boolean | yes | False when any versioned asset failed to download during the run |
 | `health.sidecars_ok` | boolean | yes | False when any version lacked a sidecar or its sidecar failed |
 | `health.providers` | array of string | yes | Providers with a verified image for the latest version — the rendered `Hosts.yml` names a box the box catalog serves for that provider and architecture at that version |
-| `health.versions` | object keyed by version | yes | Per recorded version, `{ "providers": [...] }` — the providers verified for that version, measured once and carried forward |
+| `health.versions` | object keyed by version | yes | Per recorded version, `{ "providers": [...] }` — the providers verified for that version, measured once from its archive and carried forward |
 | `health.downloads` | integer ≥ 0 | yes | Total GitHub download count of the family's versioned assets |
 
 Security is never graded here. The archive safety scan, sidecar verification and the immutability tripwire are hard gates — a package that violates them never appears in either document.

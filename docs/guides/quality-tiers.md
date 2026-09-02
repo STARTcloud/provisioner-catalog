@@ -122,7 +122,7 @@ Beside every `catalog.json` — public and per-organization private — the data
 | `health.artifacts_ok`       | `false` when any versioned asset of the family failed to download during this run                                         |
 | `health.sidecars_ok`        | `false` when any version lacks a `.sha256` sidecar, its sidecar could not be downloaded, holds no sha256, or does not match the asset |
 | `health.providers`          | Sorted list of the providers with a verified image for the latest version                                                 |
-| `health.versions`           | Per recorded version, `{ "providers": [...] }` — the providers verified for that version. Each version is measured once, on the run where it was the latest, and carried forward unchanged afterwards, because published bytes never change and neither does what they render |
+| `health.versions`           | Per recorded version, `{ "providers": [...] }` — the providers verified for that version. The latest version is measured every run; a version with no entry yet is measured once from its own archive, and every measured entry is carried forward unchanged afterwards, because published bytes never change and neither does what they render |
 | `health.downloads`          | Total GitHub download count of the family's versioned assets across all published releases                                |
 
 A change in `health.json` alone (a tier moving, a download count ticking up) is enough for the data job to redeploy, exactly as a `catalog.json` change is.

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.32](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.31...provisioner-catalog-v0.0.32) (2026-09-02)
+
+
+### Bug Fixes
+
+* mirror BoxVault's navbar, menu and footer markup, styles and icons ([5f814cb](https://github.com/STARTcloud/provisioner-catalog/commit/5f814cbe33a1694550b8dea8a2a7a7ad26f2bc25))
+
 ## [0.0.31](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.30...provisioner-catalog-v0.0.31) (2026-09-01)
 
 

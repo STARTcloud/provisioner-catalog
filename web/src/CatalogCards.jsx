@@ -58,6 +58,64 @@ const providerCoverage = entry => {
   return { counts, total: measured.length };
 };
 
+export const TIER_ORDER = ['diamond', 'platinum', 'gold', 'silver', 'bronze', 'unrated'];
+
+export const tierOf = entry => entry?.tier || 'unrated';
+
+export const providersOf = entry => Object.keys(providerCoverage(entry).counts).sort();
+
+const matchesQuery = (provisioner, health, query) => {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return true;
+  }
+  const label = health?.provisioners?.[provisioner.name]?.presentation?.label || '';
+  return [provisioner.name, provisioner.description || '', provisioner.repo, label].some(text =>
+    text.toLowerCase().includes(needle)
+  );
+};
+
+const matchesFilters = (entry, filters) =>
+  (filters.tiers.size === 0 || filters.tiers.has(tierOf(entry))) &&
+  (filters.providers.size === 0 ||
+    providersOf(entry).some(provider => filters.providers.has(provider)));
+
+export const filterProvisioners = (provisioners, health, query, filters) =>
+  provisioners.filter(
+    provisioner =>
+      matchesQuery(provisioner, health, query) &&
+      matchesFilters(health?.provisioners?.[provisioner.name], filters)
+  );
+
+export const tierCounts = (provisioners, health) => {
+  const counts = {};
+  provisioners.forEach(provisioner => {
+    const tier = tierOf(health?.provisioners?.[provisioner.name]);
+    counts[tier] = (counts[tier] || 0) + 1;
+  });
+  const ordered = {};
+  TIER_ORDER.filter(tier => counts[tier]).forEach(tier => {
+    ordered[tier] = counts[tier];
+  });
+  return ordered;
+};
+
+export const providerCounts = (provisioners, health) => {
+  const counts = {};
+  provisioners.forEach(provisioner => {
+    providersOf(health?.provisioners?.[provisioner.name]).forEach(provider => {
+      counts[provider] = (counts[provider] || 0) + 1;
+    });
+  });
+  const ordered = {};
+  Object.keys(counts)
+    .sort()
+    .forEach(provider => {
+      ordered[provider] = counts[provider];
+    });
+  return ordered;
+};
+
 const coverageClass = (count, total) => {
   if (count === total) {
     return 'provider-all';
@@ -366,17 +424,6 @@ ProvisionerCard.propTypes = {
   healthEntry: healthEntryShape,
 };
 
-const matchesQuery = (provisioner, health, query) => {
-  const needle = query.trim().toLowerCase();
-  if (!needle) {
-    return true;
-  }
-  const label = health?.provisioners?.[provisioner.name]?.presentation?.label || '';
-  return [provisioner.name, provisioner.description || '', provisioner.repo, label].some(text =>
-    text.toLowerCase().includes(needle)
-  );
-};
-
 const CatalogSection = ({
   title = '',
   icon = null,
@@ -384,11 +431,10 @@ const CatalogSection = ({
   titleTooltip = '',
   provisioners,
   health = null,
-  query = '',
+  filtering = false,
   emptyNote = '',
 }) => {
   const { t } = useTranslation();
-  const filtered = provisioners.filter(provisioner => matchesQuery(provisioner, health, query));
   return (
     <section className="mb-5">
       {title ? (
@@ -398,19 +444,14 @@ const CatalogSection = ({
         >
           {icon}
           {title}
-          {query.trim() ? (
-            <Badge bg="secondary" pill>
-              {filtered.length}/{provisioners.length}
-            </Badge>
-          ) : null}
         </h2>
       ) : null}
       {subtitle ? <p className="text-body-secondary mb-3">{subtitle}</p> : null}
-      {filtered.length === 0 ? (
-        <Alert variant="secondary">{query.trim() ? t('sections.noMatches') : emptyNote}</Alert>
+      {provisioners.length === 0 ? (
+        <Alert variant="secondary">{filtering ? t('sections.noMatches') : emptyNote}</Alert>
       ) : (
         <Row xs={1} md={2} xl={3} className="g-3">
-          {filtered.map(provisioner => (
+          {provisioners.map(provisioner => (
             <Col key={provisioner.name}>
               <ProvisionerCard
                 provisioner={provisioner}
@@ -431,7 +472,7 @@ CatalogSection.propTypes = {
   titleTooltip: PropTypes.string,
   provisioners: PropTypes.arrayOf(provisionerShape).isRequired,
   health: PropTypes.shape({ provisioners: PropTypes.object }),
-  query: PropTypes.string,
+  filtering: PropTypes.bool,
   emptyNote: PropTypes.string,
 };
 

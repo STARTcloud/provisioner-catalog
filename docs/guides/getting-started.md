@@ -38,9 +38,9 @@ Each card shows the family's label (or its `name` slug), the owning GitHub accou
 
 Health chips appear when the data run found something worth flagging: a stale family (last release more than 365 days ago), artifact download errors, or incomplete checksum sidecars.
 
-### Search
+### Search and filters
 
-The search box filters cards by family name, description, repository, or label. While a query is active, each section heading shows a matched/total count.
+The search lives in the header, first in the account cluster: a magnifier icon that expands into an input on click or a short hover. Typing filters the cards on the page live by family name, description, repository, or label, and the input shows a matched / total count. The gear beside it opens a filter panel under the header with one row of pills per group, each labelled `value (count)`: **Tier** (the measured quality tier) and **Provider** (providers with a verified image in any recorded version). Picked filters persist per page in the browser; the × clears the query and every filter and collapses the search.
 
 ### Theme and language
 
@@ -50,22 +50,17 @@ The header's theme button cycles **Auto → Light → Dark**. The user menu's fi
 
 The user menu's **Sign in** entry starts an OIDC authorization-code + PKCE flow against the STARTcloud IdP. The catalog is a public client with no secret. After the IdP redirects back to `/callback`, the page exchanges the code, syncs your account preferences, and returns you to the catalog. Sign-in state is stored in the browser, and access tokens are refreshed automatically shortly before they expire.
 
-### Public and private tabs
+### Public root and organization pages
 
-Signed out, or signed in with no organization that has a published private catalog, the page shows only the **Public Catalog** section.
+The brand is the root: it always shows the **Public Catalog**, the same data everyone sees, and hovering the section title shows when it was last regenerated.
 
-Signed in as a member of at least one organization with a private catalog, the page switches to two tabs:
+Signed in with organizations in your token, an organization pill sits beside the brand naming your active organization. Clicking it drills into that organization alone: the page then shows only that organization's private catalog, fetched from `/private/<org-uuid>/catalog.json` with your bearer token, and the search and filters apply to it. The brand takes you back to the public root.
 
-| Tab | Content |
-| --- | --- |
-| **Public Catalog** | The same public data everyone sees; hovering the tab title shows when it was last regenerated |
-| **Private Catalog** | One section per organization in your token, each fetched from `/private/<org-uuid>/catalog.json` with your bearer token |
-
-Organizations with no private catalog published are hidden from the private tab. Organizations the gate refuses show an "Access denied by the catalog gate" notice in place of their cards.
+The active organization is remembered in the browser, validated against your token on every load, and falls back to your primary organization, then the first. An organization with no private catalog published shows "No private catalog published for this organization yet."; one the gate refuses shows "Access denied by the catalog gate."
 
 ### Organization switcher
 
-When your token carries organizations, the user menu gains an **Organizations** entry. It opens a modal listing every organization with its logo, description, roles, and primary flag; selecting one scrolls to its section. Organizations without a published catalog are listed but disabled, marked "No catalog published yet".
+When your token carries at least two organizations, the user menu gains an active-organization entry. It opens a modal listing every organization with its logo, description, roles, and primary flag; selecting one makes it the active organization and drills into it.
 
 ### Notifications bell
 
@@ -154,7 +149,7 @@ Add one line to `sources.yml`, alphabetized, with an owner-attribution comment, 
 
 ## Troubleshooting
 
-**Private tab is missing after sign-in** — your token carries no organization with a published private catalog. The gate answers `404 no catalog published for this organization` for such organizations and the page hides them; the organization switcher lists them as "No catalog published yet".
+**No organization pill after sign-in** — your token carries no organizations, so there is nothing to drill into. An organization that is in your token but has no published catalog still has a pill; drilling into it shows "No private catalog published for this organization yet." because the gate answered `404 no catalog published for this organization`.
 
 **"Access denied by the catalog gate"** — the gate returned `403 not a member of this organization` (the organization uuid is not in your token's `organizations` claim) or `401`. Membership is the only thing that grants read access; there is no other route in.
 

@@ -150,22 +150,23 @@ After sign-in the UI decodes the access token, reads its `organizations` claim, 
 
 | Gate status | Shown as |
 | --- | --- |
-| `404` | the organization is hidden from the private tab; the org switcher lists it as "No catalog published yet" |
+| `404` | "No private catalog published for this organization yet." on that organization's page |
 | `401` / `403` | "Access denied by the catalog gate." in that organization's section |
 | anything else | the raw request error |
 
-A multi-org user sees every org they belong to. That is the cross-sharing mechanism: an organization shares a provisioner by adding the repository to its own entry, and members of that org see it wherever else they belong.
+A multi-org user can drill into every org they belong to. That is the cross-sharing mechanism: an organization shares a provisioner by adding the repository to its own entry, and members of that org see it wherever else they belong.
 
-### The private tab
+### Organization pages
 
-- With no visible organizations, the page shows only the **Public Catalog** section.
-- With at least one, the page switches to two tabs, **Public Catalog** and **Private Catalog**. The private tab holds one section per organization: the org's logo (or a building icon), its name, the subtitle "Private catalog — visible to `<org>` members only.", and the same provisioner cards as the public catalog, including tier badges and health chips from the org's `health.json`.
+- The brand is the public root and always shows the **Public Catalog** section.
+- Signed in with organizations in the token, an organization pill beside the brand names the active organization; clicking it drills into that organization alone. The page then shows one section: the org's logo (or a building icon), its name, the subtitle "Private catalog — visible to `<org>` members only.", and the same provisioner cards as the public catalog, including tier badges and provider chips from the org's `health.json`.
+- The active organization uuid is stored in the browser under `activeOrganization`, validated against the token's `organizations` claim on every load, and falls back to the primary membership, then the first.
 - An organization whose catalog exists but lists no provisioners shows "This organization has no published provisioners yet."
-- The search box filters public and private cards together.
+- The header search and its tier and provider filters apply to whichever page is shown, with filter picks persisted per page.
 
 ### The org switcher
 
-The user menu gains an **Organizations** entry when the token carries organizations. It opens a modal listing each org with logo, name, description, a "Primary" marker, and role badges. Choosing one scrolls to that organization's section; organizations without a published catalog are listed but disabled.
+The user menu gains an active-organization entry when the token carries at least two organizations. It opens a modal listing each org with logo, name, description, a "Primary" marker, and role badges. Choosing one makes it the active organization and drills into it.
 
 ## Notifications for private catalogs
 
@@ -260,7 +261,7 @@ Signed-in users whose token carries `ROLE_ADMIN` in `authorities` get a **Rebuil
 | `404` from GitHub Pages (HTML) | The Worker route never fired | The DNS record is proxied in Cloudflare |
 | `502 store fetch failed (…)` | GitHub refused the store read | `GITHUB_PAT` validity and scope; rotate it |
 | `503 push not configured` / `dispatch not configured` | A Worker secret is missing | `VAPID_PRIVATE_KEY`, `DISPATCH_KEY`, or `DISPATCH_PAT` |
-| Org hidden from the private tab | The gate answered `404` for that org | Same as the `404` row above |
+| "No private catalog published for this organization yet." on an org page | The gate answered `404` for that org | Same as the `404` row above |
 | "Access denied by the catalog gate." in an org section | The gate answered `401` or `403` | The `401`/`403` rows above |
 | `no App installation for '<owner>'` in the data job | The App is not installed on the repository's owner, or the repo is not selected | The App installation on that organization |
 | Data job exit code 2 | Immutability tripwire — a published version's asset changed | Ship the rebuilt artifact as a new version |

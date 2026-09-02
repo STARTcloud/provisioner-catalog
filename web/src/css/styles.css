@@ -509,3 +509,114 @@ button::-moz-focus-inner {
   background-color: var(--bs-danger) !important;
   color: #fff;
 }
+
+.navbar .org-pill {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  height: 34px;
+}
+
+.navbar .org-pill:hover,
+.navbar .org-pill:focus-visible {
+  color: var(--bs-primary);
+}
+
+.navbar .cluster-btn.filters-on {
+  color: var(--bs-primary);
+}
+
+.navbar-search {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  width: 340px;
+  max-width: 60vw;
+  gap: 8px;
+  padding: 0 6px 0 10px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+}
+
+.navbar-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-body-color);
+  font-size: 13px;
+  outline: 0;
+}
+
+.navbar-search input::placeholder {
+  color: var(--bs-secondary-color);
+}
+
+.navbar-search-count {
+  font-size: 11px;
+  color: var(--bs-secondary-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.navbar-search-tool {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bs-border-radius-sm);
+  background: transparent;
+  color: var(--bs-secondary-color);
+}
+
+.navbar-search-tool:hover,
+.navbar-search-tool:focus-visible {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-emphasis-color);
+}
+
+.navbar-search-tool.on {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-primary);
+}
+
+.navbar-search-panel {
+  margin: 14px 0 -14px;
+  padding: 12px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bs-tertiary-bg);
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.navbar-search-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.navbar-search-group-label {
+  width: 96px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.navbar-search-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 6px;
+  font-size: 12.5px;
+  border-top: 1px solid var(--bs-border-color);
+}

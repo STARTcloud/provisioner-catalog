@@ -1,13 +1,13 @@
 import axios from 'axios';
+import PropTypes from 'prop-types';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Alert, Button, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Alert, Button, Container, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import {
   FaBuilding,
   FaCircleHalfStroke,
   FaGithub,
   FaGlobe,
-  FaMagnifyingGlass,
   FaMoon,
   FaSun,
   FaTriangleExclamation,
@@ -27,8 +27,10 @@ import {
   signOut,
   signOutEverywhere,
 } from './auth';
-import CatalogSection from './CatalogCards.jsx';
+import CatalogSection, { filterProvisioners, providerCounts, tierCounts } from './CatalogCards.jsx';
 import LanguageMenu from './LanguageMenu.jsx';
+import { NavbarSearchControl, NavbarSearchPanel, useNavbarSearchBinding } from './NavbarSearch.jsx';
+import { OrgLogo } from './OrgSwitcher.jsx';
 import { resyncPushSubscription } from './push';
 import UserMenu from './UserMenu.jsx';
 
@@ -44,6 +46,37 @@ const systemPrefersDark = () => window.matchMedia(DARK_SCHEME_QUERY).matches;
 
 const THEME_ICONS = { auto: FaCircleHalfStroke, light: FaSun, dark: FaMoon };
 
+const ACTIVE_ORG_KEY = 'activeOrganization';
+const PREFS_PREFIX = 'catalog_table_prefs_';
+
+const emptyFilters = () => ({ tiers: new Set(), providers: new Set() });
+
+const readPrefs = key => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`${PREFS_PREFIX}${key}`) || 'null');
+    return { tiers: new Set(saved?.tiers || []), providers: new Set(saved?.providers || []) };
+  } catch {
+    return emptyFilters();
+  }
+};
+
+const writePrefs = (key, filters) => {
+  localStorage.setItem(
+    `${PREFS_PREFIX}${key}`,
+    JSON.stringify({ tiers: [...filters.tiers], providers: [...filters.providers] })
+  );
+};
+
+const toggleIn = (set, value) => {
+  const next = new Set(set);
+  if (next.has(value)) {
+    next.delete(value);
+  } else {
+    next.add(value);
+  }
+  return next;
+};
+
 const privateErrorKey = requestError => {
   const { status } = requestError.response || {};
   if (status === 404) {
@@ -55,11 +88,144 @@ const privateErrorKey = requestError => {
   return '';
 };
 
-const defaultOrgUuid = organizations =>
-  (organizations.find(org => org.primary) || organizations[0])?.uuid || '';
+const resolveActiveOrg = (organizations, stored) => {
+  if (stored && organizations.some(org => org.uuid === stored)) {
+    return stored;
+  }
+  return (organizations.find(org => org.primary) || organizations[0])?.uuid || '';
+};
 
 const fetchPrivate = async path =>
   axios.get(path, { headers: await authHeaders('GET', `${API_ORIGIN}${path}`) });
+
+const viewData = (view, orgResults, publicCatalog, publicHealth) => {
+  if (!view) {
+    return { org: null, provisioners: publicCatalog?.provisioners || [], health: publicHealth };
+  }
+  const org = orgResults.find(entry => entry.uuid === view) || null;
+  return { org, provisioners: org?.catalog?.provisioners || [], health: org?.health || null };
+};
+
+const hasFilters = (query, filters) =>
+  query.trim() !== '' || filters.tiers.size > 0 || filters.providers.size > 0;
+
+const buildGroups = (t, provisioners, health, filters, updateFilters) => [
+  {
+    key: 'tier',
+    label: t('search.tier'),
+    entries: tierCounts(provisioners, health),
+    activeSet: filters.tiers,
+    activeClass: 'bg-primary',
+    pillClass: tier => `tier-badge tier-${tier}`,
+    labelFor: tier => t(`tiers.${tier}`),
+    onToggle: tier =>
+      updateFilters(current => ({ ...current, tiers: toggleIn(current.tiers, tier) })),
+  },
+  {
+    key: 'provider',
+    label: t('search.provider'),
+    entries: providerCounts(provisioners, health),
+    activeSet: filters.providers,
+    activeClass: 'bg-primary',
+    onToggle: provider =>
+      updateFilters(current => ({ ...current, providers: toggleIn(current.providers, provider) })),
+  },
+];
+
+const OrgIcon = ({ org }) =>
+  org.logo ? (
+    <img
+      src={org.logo}
+      alt=""
+      className="org-logo"
+      onError={event => {
+        event.currentTarget.style.display = 'none';
+      }}
+    />
+  ) : (
+    <FaBuilding aria-hidden />
+  );
+
+OrgIcon.propTypes = {
+  org: PropTypes.shape({ logo: PropTypes.string }).isRequired,
+};
+
+const PublicView = ({ catalog, health, error, provisioners, filtering }) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      {error ? (
+        <Alert variant="danger">{t('sections.publicLoadFailed', { message: error })}</Alert>
+      ) : null}
+      {!catalog && !error ? <Spinner animation="border" role="status" /> : null}
+      {catalog ? (
+        <CatalogSection
+          title={t('sections.publicTitle')}
+          icon={<FaGlobe aria-hidden />}
+          titleTooltip={t('sections.publicSubtitle', { updated: catalog.updated })}
+          provisioners={provisioners}
+          health={health}
+          filtering={filtering}
+          emptyNote={t('sections.publicEmpty')}
+        />
+      ) : null}
+    </>
+  );
+};
+
+PublicView.propTypes = {
+  catalog: PropTypes.shape({ updated: PropTypes.string }),
+  health: PropTypes.shape({ provisioners: PropTypes.object }),
+  error: PropTypes.string.isRequired,
+  provisioners: PropTypes.array.isRequired,
+  filtering: PropTypes.bool.isRequired,
+};
+
+const OrgView = ({ org, loading, provisioners, filtering }) => {
+  const { t } = useTranslation();
+  if (!org) {
+    if (loading) {
+      return <Spinner animation="border" role="status" />;
+    }
+    return <Alert variant="secondary">{t('errors.noPrivateCatalog')}</Alert>;
+  }
+  if (!org.catalog) {
+    return (
+      <section className="mb-5">
+        <h2 className="h4 d-flex align-items-center gap-2 section-title">
+          <OrgIcon org={org} />
+          {org.name}
+        </h2>
+        <Alert variant="secondary">{org.errorKey ? t(org.errorKey) : org.errorMessage}</Alert>
+      </section>
+    );
+  }
+  return (
+    <CatalogSection
+      title={org.name}
+      icon={<OrgIcon org={org} />}
+      subtitle={t('sections.privateSubtitle', { org: org.name })}
+      provisioners={provisioners}
+      health={org.health}
+      filtering={filtering}
+      emptyNote={t('sections.orgEmpty')}
+    />
+  );
+};
+
+OrgView.propTypes = {
+  org: PropTypes.shape({
+    name: PropTypes.string,
+    logo: PropTypes.string,
+    catalog: PropTypes.object,
+    health: PropTypes.object,
+    errorKey: PropTypes.string,
+    errorMessage: PropTypes.string,
+  }),
+  loading: PropTypes.bool.isRequired,
+  provisioners: PropTypes.array.isRequired,
+  filtering: PropTypes.bool.isRequired,
+};
 
 const App = () => {
   const { t, i18n } = useTranslation(['common', 'auth']);
@@ -70,9 +236,11 @@ const App = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [orgResults, setOrgResults] = useState([]);
   const [activeOrgUuid, setActiveOrgUuid] = useState('');
+  const [view, setView] = useState('');
   const [loadingPrivate, setLoadingPrivate] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
   const [query, setQuery] = useState('');
+  const [filtersByView, setFiltersByView] = useState({});
   const [themePreference, setThemePreference] = useState(
     () => localStorage.getItem('theme') || 'auto'
   );
@@ -115,7 +283,13 @@ const App = () => {
         }
       });
       const organizations = claims?.organizations || [];
-      setActiveOrgUuid(defaultOrgUuid(organizations));
+      const resolved = resolveActiveOrg(organizations, localStorage.getItem(ACTIVE_ORG_KEY));
+      setActiveOrgUuid(resolved);
+      if (resolved) {
+        localStorage.setItem(ACTIVE_ORG_KEY, resolved);
+      } else {
+        localStorage.removeItem(ACTIVE_ORG_KEY);
+      }
       if (organizations.length === 0) {
         return;
       }
@@ -164,6 +338,15 @@ const App = () => {
     resyncPushSubscription();
   }, []);
 
+  const viewKey = view || 'home';
+
+  useEffect(() => {
+    const current = filtersByView[viewKey];
+    if (current) {
+      writePrefs(viewKey, current);
+    }
+  }, [viewKey, filtersByView]);
+
   const applyThemePreference = preference => {
     setThemePreference(preference);
     savePreferences({ theme: preference });
@@ -183,6 +366,9 @@ const App = () => {
     setUser(null);
     setUserInfo(null);
     setOrgResults([]);
+    setActiveOrgUuid('');
+    setView('');
+    localStorage.removeItem(ACTIVE_ORG_KEY);
   };
 
   const handleSignIn = () => {
@@ -192,76 +378,65 @@ const App = () => {
 
   const pickOrg = uuid => {
     setActiveOrgUuid(uuid);
-    document.getElementById(`org-${uuid}`)?.scrollIntoView({ behavior: 'smooth' });
+    localStorage.setItem(ACTIVE_ORG_KEY, uuid);
+    setView(uuid);
+    window.scrollTo({ top: 0 });
   };
 
-  const updatedTooltip = publicCatalog
-    ? t('sections.publicSubtitle', { updated: publicCatalog.updated })
-    : '';
+  const organizations = user?.organizations || [];
+  const activeOrg = organizations.find(org => org.uuid === activeOrgUuid) || null;
+  const filters = filtersByView[viewKey] || readPrefs(viewKey);
 
-  const publicTabTitle = (
-    <span className="d-inline-flex align-items-center gap-2" title={updatedTooltip || undefined}>
-      <FaGlobe aria-hidden />
-      {t('sections.publicTitle')}
-    </span>
-  );
+  const updateFilters = updater => {
+    setFiltersByView(current => ({
+      ...current,
+      [viewKey]: updater(current[viewKey] || readPrefs(viewKey)),
+    }));
+  };
 
-  const privateTabTitle = (
-    <span className="d-inline-flex align-items-center gap-2">
-      <FaBuilding aria-hidden />
-      {t('sections.privateTitle')}
-    </span>
-  );
+  const shown = viewData(user ? view : '', orgResults, publicCatalog, publicHealth);
+  const filtered = filterProvisioners(shown.provisioners, shown.health, query, filters);
+  const filtering = hasFilters(query, filters);
 
-  const orgIcon = org =>
-    org.logo ? (
-      <img
-        src={org.logo}
-        alt=""
-        className="org-logo"
-        onError={event => {
-          event.currentTarget.style.display = 'none';
-        }}
-      />
-    ) : (
-      <FaBuilding aria-hidden />
-    );
-
-  const visibleOrgs = orgResults.filter(org => org.errorKey !== 'errors.noPrivateCatalog');
-
-  const orgSections = visibleOrgs.map(org => (
-    <div key={org.uuid} id={`org-${org.uuid}`} className="section-anchor">
-      {org.catalog ? (
-        <CatalogSection
-          title={org.name}
-          icon={orgIcon(org)}
-          subtitle={t('sections.privateSubtitle', { org: org.name })}
-          provisioners={org.catalog.provisioners}
-          health={org.health}
-          query={query}
-          emptyNote={t('sections.orgEmpty')}
-        />
-      ) : (
-        <section className="mb-5">
-          <h2 className="h4 d-flex align-items-center gap-2 section-title">
-            {orgIcon(org)}
-            {org.name}
-          </h2>
-          <Alert variant="secondary">{org.errorKey ? t(org.errorKey) : org.errorMessage}</Alert>
-        </section>
-      )}
-    </div>
-  ));
+  useNavbarSearchBinding({
+    query,
+    onQueryChange: setQuery,
+    placeholder: t('search.placeholder'),
+    matched: filtered.length,
+    total: shown.provisioners.length,
+    groups: buildGroups(t, shown.provisioners, shown.health, filters, updateFilters),
+    onClearFilters: () => updateFilters(() => emptyFilters()),
+  });
 
   return (
     <div className="App d-flex flex-column min-vh-100">
       <nav className="navbar navbar-expand-lg sticky-top shadow-sm bg-body-tertiary border-bottom">
         <div className="container-fluid">
-          <a href="/" className="navbar-brand p-0 d-flex align-items-center">
+          <a
+            href="/"
+            className="navbar-brand p-0 d-flex align-items-center"
+            onClick={event => {
+              event.preventDefault();
+              setView('');
+            }}
+          >
             <img src="/startcloud.svg" alt="" className="logo-cluster icon-with-margin-sm" />
             Provisioner Catalog
           </a>
           <ul className="nav nav-pills me-auto">
+            {user && activeOrg ? (
+              <li className="nav-item">
+                <button
+                  type="button"
+                  className="nav-link py-0 px-2 d-inline-flex align-items-center gap-2 org-pill"
+                  onClick={() => setView(activeOrg.uuid)}
+                  aria-current={view === activeOrg.uuid ? 'page' : undefined}
+                >
+                  <OrgLogo org={activeOrg} size={16} className="rounded-circle avatar-sm" />
+                  <span>{activeOrg.name}</span>
+                </button>
+              </li>
+            ) : null}
             {!user ? (
               <>
                 <li className="nav-item">
@@ -279,6 +454,7 @@ const App = () => {
           </ul>
 
           <ul className="nav nav-pills ms-auto align-items-center">
+            <NavbarSearchControl />
             <li className="nav-item">
               <button
                 key={themePreference}
@@ -297,7 +473,7 @@ const App = () => {
             <UserMenu
               user={user}
               userInfo={userInfo}
-              organizations={user?.organizations || []}
+              organizations={organizations}
               activeOrgUuid={activeOrgUuid}
               onPickOrg={pickOrg}
               onSignIn={handleSignIn}
@@ -306,6 +482,7 @@ const App = () => {
             />
           </ul>
         </div>
+        <NavbarSearchPanel />
       </nav>
 
       {sessionEnded && !user ? (
@@ -335,54 +512,22 @@ const App = () => {
       </section>
 
       <Container className="py-4 flex-grow-1">
-        <InputGroup className="mb-4 catalog-search">
-          <InputGroup.Text>
-            <FaMagnifyingGlass aria-hidden />
-          </InputGroup.Text>
-          <Form.Control
-            type="search"
-            placeholder={t('search.placeholder')}
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-            aria-label={t('search.aria')}
+        {view && user ? (
+          <OrgView
+            org={shown.org}
+            loading={loadingPrivate}
+            provisioners={filtered}
+            filtering={filtering}
           />
-        </InputGroup>
-
-        {publicError ? (
-          <Alert variant="danger">{t('sections.publicLoadFailed', { message: publicError })}</Alert>
-        ) : null}
-        {!publicCatalog && !publicError ? <Spinner animation="border" role="status" /> : null}
-        {publicCatalog && visibleOrgs.length === 0 ? (
-          <CatalogSection
-            title={t('sections.publicTitle')}
-            icon={<FaGlobe aria-hidden />}
-            titleTooltip={updatedTooltip}
-            provisioners={publicCatalog.provisioners}
+        ) : (
+          <PublicView
+            catalog={publicCatalog}
             health={publicHealth}
-            query={query}
-            emptyNote={t('sections.publicEmpty')}
+            error={publicError}
+            provisioners={filtered}
+            filtering={filtering}
           />
-        ) : null}
-
-        {visibleOrgs.length > 0 ? (
-          <Tabs defaultActiveKey="public" className="mb-4 catalog-tabs">
-            <Tab eventKey="public" title={publicTabTitle}>
-              {publicCatalog ? (
-                <CatalogSection
-                  provisioners={publicCatalog.provisioners}
-                  health={publicHealth}
-                  query={query}
-                  emptyNote={t('sections.publicEmpty')}
-                />
-              ) : null}
-            </Tab>
-            <Tab eventKey="private" title={privateTabTitle}>
-              {orgSections}
-            </Tab>
-          </Tabs>
-        ) : null}
-
-        {loadingPrivate ? <Spinner animation="border" role="status" /> : null}
+        )}
       </Container>
 
       <footer className="footer mt-auto bg-body-tertiary border-top">

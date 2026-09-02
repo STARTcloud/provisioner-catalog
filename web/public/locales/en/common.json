@@ -65,11 +65,17 @@
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",
-    "aria": "Search provisioners"
+    "open": "Search",
+    "filters": "Filters",
+    "clear": "Clear search and filters",
+    "clearFilters": "Clear filters",
+    "activeFilters_one": "{{count}} filter active",
+    "activeFilters_other": "{{count}} filters active",
+    "tier": "Tier",
+    "provider": "Provider"
   },
   "sections": {
     "publicTitle": "Public Catalog",
-    "privateTitle": "Private Catalog",
     "publicSubtitle": "Updated {{updated}} — regenerates every ~2 hours from admitted repositories.",
     "publicEmpty": "The public catalog is empty.",
     "privateSubtitle": "Private catalog — visible to {{org}} members only.",

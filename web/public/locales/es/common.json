@@ -65,11 +65,17 @@
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",
-    "aria": "Buscar provisioners"
+    "open": "Buscar",
+    "filters": "Filtros",
+    "clear": "Borrar búsqueda y filtros",
+    "clearFilters": "Quitar filtros",
+    "activeFilters_one": "{{count}} filtro activo",
+    "activeFilters_other": "{{count}} filtros activos",
+    "tier": "Nivel",
+    "provider": "Proveedor"
   },
   "sections": {
     "publicTitle": "Catálogo público",
-    "privateTitle": "Catálogo privado",
     "publicSubtitle": "Actualizado {{updated}} — se regenera cada ~2 horas a partir de los repositorios admitidos.",
     "publicEmpty": "El catálogo público está vacío.",
     "privateSubtitle": "Catálogo privado — visible solo para los miembros de {{org}}.",

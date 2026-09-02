@@ -21,9 +21,7 @@
     "rebuild": "Regenerar datos del catálogo",
     "favorites": "Favoritos",
     "help": "Ayuda",
-    "profileModeTitle": "Cambiar entre el perfil del proveedor de identidad y el perfil local",
-    "publicCrumb": "Público",
-    "privateCrumb": "Privado"
+    "profileModeTitle": "Cambiar entre el perfil del proveedor de identidad y el perfil local"
   },
   "footer": {
     "health": {
@@ -39,17 +37,8 @@
     }
   },
   "loading": "Cargando...",
-  "orgs": {
-    "open": "Abrir catálogo",
-    "noCatalog": "Aún sin catálogo publicado",
-    "role": "Rol",
-    "catalogGroup": "Catálogo",
-    "published": "Publicado",
-    "unpublished": "Sin publicar",
-    "loading": "Cargando…",
-    "provisioners_one": "{{count}} provisioner",
-    "provisioners_other": "{{count}} provisioners"
-  },
+  "yes": "Sí",
+  "no": "No",
   "theme": {
     "auto": "Tema: seguir el sistema",
     "light": "Tema: claro",
@@ -94,7 +83,6 @@
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",
-    "placeholderOrgs": "Buscar organizaciones por nombre o descripción…",
     "open": "Buscar",
     "filters": "Filtros",
     "clear": "Borrar búsqueda y filtros",
@@ -104,31 +92,13 @@
     "tier": "Nivel",
     "provider": "Proveedor"
   },
-  "sections": {
-    "publicTitle": "Catálogo público",
-    "publicSubtitle": "Actualizado {{updated}} — se regenera cada ~2 horas a partir de los repositorios admitidos.",
-    "publicEmpty": "El catálogo público está vacío.",
-    "privateSubtitle": "Catálogo privado — visible solo para los miembros de {{org}}.",
-    "orgEmpty": "Esta organización aún no tiene provisioners publicados.",
-    "privateListTitle": "Catálogos privados",
-    "privateListSubtitle": "Las organizaciones de tu cuenta. Abre una para ver su catálogo privado.",
-    "noOrgs": "Tu cuenta no tiene organizaciones.",
-    "noMatches": "Ningún provisioner coincide.",
-    "publicLoadFailed": "No se pudo cargar el catálogo público: {{message}}"
-  },
   "card": {
-    "version_one": "{{count}} versión",
-    "version_other": "{{count}} versiones",
     "released": "publicado hace {{count}} días",
     "downloads_one": "{{count}} descarga",
     "downloads_other": "{{count}} descargas",
-    "download": "descargar",
     "homepage": "Página web",
     "viewOnGithub": "Ver en GitHub",
     "reportIssue": "Informar de un problema",
-    "noDescription": "Sin descripción.",
-    "showAll": "Mostrar las {{count}} versiones",
-    "showFewer": "Mostrar menos versiones",
     "quality": "Calidad: {{tier}}",
     "allRulesPass": "Todas las reglas de calidad se cumplen.",
     "unmetRules": "Reglas incumplidas:",
@@ -158,5 +128,98 @@
     "clockSkew": "es posible que su hora esté desajustada; inténtelo de nuevo",
     "returnLink": "vuelva al catálogo",
     "tryAgain": "e inténtelo de nuevo."
+  },
+  "collections": {
+    "provisioners": "Provisioners",
+    "boxes": "Boxes",
+    "isos": "ISOs"
+  },
+  "pages": {
+    "loading": "Cargando…",
+    "notFound": "No encontrado.",
+    "empty": "Aún no hay nada aquí.",
+    "noMatches": "Nada coincide.",
+    "all": "Todos: {{collection}}",
+    "countOf": "{{count}} {{collection}}",
+    "searchAll": "Buscar…",
+    "table": {
+      "name": "Nombre",
+      "os": "SO",
+      "status": "Estado",
+      "public": "Público",
+      "visibility": "Visibilidad",
+      "organization": "Organización",
+      "created": "Creado",
+      "released": "Último lanzamiento",
+      "downloads": "Descargas",
+      "versions": "# Versiones",
+      "providers": "Proveedores",
+      "architectures": "Arquitecturas",
+      "actions": "Acciones",
+      "size": "Tamaño",
+      "checksum": "Suma de comprobación",
+      "uploaded": "Subido",
+      "version": "Versión",
+      "details": "Detalles",
+      "download": "Descargar",
+      "defaultBox": "Box predeterminada",
+      "fileSize": "Tamaño de archivo",
+      "checksumType": "Tipo de checksum"
+    },
+    "status": {
+      "published": "Publicado",
+      "pending": "Pendiente",
+      "public": "Público",
+      "private": "Privado",
+      "deprecated": "Obsoleta"
+    },
+    "item": {
+      "details": "Detalles",
+      "facts": "Datos",
+      "readme": "README",
+      "versions": "Versiones"
+    },
+    "facts": {
+      "os": "SO",
+      "type": "Tipo",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "communicator": "Comunicador",
+      "cpus": "CPUs",
+      "memory": "Memoria",
+      "disks": "Discos",
+      "providers": "Proveedores",
+      "built": "Compilada",
+      "driver": "Driver",
+      "desktop": "Escritorio",
+      "server": "Servidor",
+      "show": "Mostrar",
+      "hide": "Ocultar"
+    },
+    "version": {
+      "title": "Versión {{version}}",
+      "edit": "Editar versión",
+      "releaseNotes": "Notas de la versión",
+      "deprecatedBanner": "Esta versión está obsoleta",
+      "description": "Descripción",
+      "createdAt": "Creado",
+      "updatedAt": "Actualizado",
+      "providersFor": "Proveedores para la versión {{version}}",
+      "artifacts": "Artefactos"
+    },
+    "provider": {
+      "edit": "Editar proveedor",
+      "architecturesFor": "Arquitecturas para el proveedor {{provider}}",
+      "clickToCopy": "Clic para copiar el checksum",
+      "checksumCopied": "Checksum copiado al portapapeles.",
+      "copyFailed": "No se pudo copiar el checksum."
+    },
+    "watch": {
+      "watch": "Seguir",
+      "unwatch": "Dejar de seguir",
+      "filterWatched": "Seguidas",
+      "watched": "Seguidas",
+      "error": "Error al actualizar el seguimiento. Por favor intenta de nuevo."
+    }
   }
 }

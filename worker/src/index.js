@@ -649,6 +649,26 @@ const handleDispatch = async (request, env, cors) => {
   return jsonResponse(200, { delivered }, cors);
 };
 
+const WORKER_PREFIXES = ['/private/', '/push/', '/admin/'];
+
+const isPageRequest = (request, pathname) =>
+  request.method === 'GET' &&
+  !/\.[a-z0-9]+$/i.test(pathname) &&
+  (request.headers.get('Accept') || '').includes('text/html');
+
+const handleSite = async (request, pathname) => {
+  const upstream = await fetch(request);
+  if (upstream.status !== 404 || !isPageRequest(request, pathname)) {
+    return upstream;
+  }
+  const index = await fetch(new URL('/index.html', request.url), {
+    headers: { Accept: 'text/html' },
+  });
+  const headers = new Headers(index.headers);
+  headers.set('Cache-Control', 'no-cache');
+  return new Response(index.body, { status: 200, headers });
+};
+
 export default {
   async fetch(request, env) {
     const cors = corsFor(request, env);
@@ -683,7 +703,10 @@ export default {
 
     const match = PATH_RE.exec(pathname);
     if (!match) {
-      return jsonResponse(404, { error: 'not found' }, cors);
+      if (WORKER_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+        return jsonResponse(404, { error: 'not found' }, cors);
+      }
+      return handleSite(request, pathname);
     }
     if (request.method !== 'GET') {
       return jsonResponse(405, { error: 'method not allowed' }, cors);

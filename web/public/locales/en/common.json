@@ -21,9 +21,7 @@
     "rebuild": "Rebuild catalog data",
     "favorites": "Favorites",
     "help": "Help",
-    "profileModeTitle": "Switch between identity provider and local profile",
-    "publicCrumb": "Public",
-    "privateCrumb": "Private"
+    "profileModeTitle": "Switch between identity provider and local profile"
   },
   "footer": {
     "health": {
@@ -39,17 +37,8 @@
     }
   },
   "loading": "Loading...",
-  "orgs": {
-    "open": "Open catalog",
-    "noCatalog": "No catalog published yet",
-    "role": "Role",
-    "catalogGroup": "Catalog",
-    "published": "Published",
-    "unpublished": "Not published",
-    "loading": "Loading…",
-    "provisioners_one": "{{count}} provisioner",
-    "provisioners_other": "{{count}} provisioners"
-  },
+  "yes": "Yes",
+  "no": "No",
   "theme": {
     "auto": "Theme: follow system",
     "light": "Theme: light",
@@ -94,7 +83,6 @@
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",
-    "placeholderOrgs": "Search organizations by name or description…",
     "open": "Search",
     "filters": "Filters",
     "clear": "Clear search and filters",
@@ -104,31 +92,13 @@
     "tier": "Tier",
     "provider": "Provider"
   },
-  "sections": {
-    "publicTitle": "Public Catalog",
-    "publicSubtitle": "Updated {{updated}} — regenerates every ~2 hours from admitted repositories.",
-    "publicEmpty": "The public catalog is empty.",
-    "privateSubtitle": "Private catalog — visible to {{org}} members only.",
-    "orgEmpty": "This organization has no published provisioners yet.",
-    "privateListTitle": "Private catalogs",
-    "privateListSubtitle": "The organizations on your account. Open one to see its private catalog.",
-    "noOrgs": "Your account has no organizations.",
-    "noMatches": "No provisioners match.",
-    "publicLoadFailed": "Could not load the public catalog: {{message}}"
-  },
   "card": {
-    "version_one": "{{count}} version",
-    "version_other": "{{count}} versions",
     "released": "released {{count}}d ago",
     "downloads_one": "{{count}} download",
     "downloads_other": "{{count}} downloads",
-    "download": "download",
     "homepage": "Homepage",
     "viewOnGithub": "View on GitHub",
     "reportIssue": "Report an issue",
-    "noDescription": "No description provided.",
-    "showAll": "Show all {{count}} versions",
-    "showFewer": "Show fewer versions",
     "quality": "Quality: {{tier}}",
     "allRulesPass": "All quality rules pass.",
     "unmetRules": "Unmet rules:",
@@ -158,5 +128,98 @@
     "clockSkew": "your time may be off, please try again",
     "returnLink": "return to the catalog",
     "tryAgain": "and try again."
+  },
+  "collections": {
+    "provisioners": "Provisioners",
+    "boxes": "Boxes",
+    "isos": "ISOs"
+  },
+  "pages": {
+    "loading": "Loading…",
+    "notFound": "Not found.",
+    "empty": "Nothing here yet.",
+    "noMatches": "Nothing matches.",
+    "all": "All {{collection}}",
+    "countOf": "{{count}} {{collection}}",
+    "searchAll": "Search…",
+    "table": {
+      "name": "Name",
+      "os": "OS",
+      "status": "Status",
+      "public": "Public",
+      "visibility": "Visibility",
+      "organization": "Organization",
+      "created": "Created",
+      "released": "Latest release",
+      "downloads": "Downloads",
+      "versions": "# Versions",
+      "providers": "Providers",
+      "architectures": "Architectures",
+      "actions": "Actions",
+      "size": "Size",
+      "checksum": "Checksum",
+      "uploaded": "Uploaded",
+      "version": "Version",
+      "details": "Details",
+      "download": "Download",
+      "defaultBox": "Default box",
+      "fileSize": "File size",
+      "checksumType": "Checksum type"
+    },
+    "status": {
+      "published": "Published",
+      "pending": "Pending",
+      "public": "Public",
+      "private": "Private",
+      "deprecated": "Deprecated"
+    },
+    "item": {
+      "details": "Details",
+      "facts": "Facts",
+      "readme": "README",
+      "versions": "Versions"
+    },
+    "facts": {
+      "os": "OS",
+      "type": "Type",
+      "username": "Username",
+      "password": "Password",
+      "communicator": "Communicator",
+      "cpus": "CPUs",
+      "memory": "Memory",
+      "disks": "Disks",
+      "providers": "Providers",
+      "built": "Built",
+      "driver": "Driver",
+      "desktop": "Desktop",
+      "server": "Server",
+      "show": "Show",
+      "hide": "Hide"
+    },
+    "version": {
+      "title": "Version {{version}}",
+      "edit": "Edit version",
+      "releaseNotes": "Release notes",
+      "deprecatedBanner": "This version is deprecated",
+      "description": "Description",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "providersFor": "Providers for version {{version}}",
+      "artifacts": "Artifacts"
+    },
+    "provider": {
+      "edit": "Edit provider",
+      "architecturesFor": "Architectures for provider {{provider}}",
+      "clickToCopy": "Click to copy checksum",
+      "checksumCopied": "Checksum copied to clipboard.",
+      "copyFailed": "Could not copy the checksum."
+    },
+    "watch": {
+      "watch": "Watch",
+      "unwatch": "Stop watching",
+      "filterWatched": "Watched",
+      "watched": "Watched",
+      "error": "Failed to update the watch. Please try again."
+    }
   }
 }

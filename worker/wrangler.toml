@@ -15,9 +15,7 @@ account_id = "acf886f02cfaa9a43340cdf96462b71c"
 # flowing to GitHub Pages. Requires the provisioner-catalog DNS record to be
 # PROXIED (orange cloud) in Cloudflare.
 routes = [
-  { pattern = "provisioner-catalog.startcloud.com/private/*", zone_name = "startcloud.com" },
-  { pattern = "provisioner-catalog.startcloud.com/push/*", zone_name = "startcloud.com" },
-  { pattern = "provisioner-catalog.startcloud.com/admin/*", zone_name = "startcloud.com" }
+  { pattern = "provisioner-catalog.startcloud.com/*", zone_name = "startcloud.com" }
 ]
 
 [[kv_namespaces]]

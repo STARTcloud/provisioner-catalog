@@ -37,28 +37,45 @@ SignInButton.propTypes = {
   LinkComponent: PropTypes.elementType,
 };
 
-const UserMenu = ({
-  displayName,
-  email,
-  renderAvatar,
-  oidc = true,
-  issuerUrl = '',
-  localProfile = null,
-  organizations = [],
-  activeOrgUuid = '',
-  onPickOrg,
-  loadOrganizations = null,
-  orgMark = null,
-  favorites = [],
-  appName,
-  appRows = null,
-  notifications = null,
-  push = null,
-  viewAllUrl = '',
-  ticketUrl = '',
-  onSignOut,
-  onSignOutEverywhere,
-}) => {
+const USER_MENU_DEFAULTS = {
+  oidc: true,
+  issuerUrl: '',
+  localProfile: null,
+  organizations: [],
+  activeOrgUuid: '',
+  loadOrganizations: null,
+  orgMark: null,
+  favorites: [],
+  appRows: null,
+  notifications: null,
+  push: null,
+  viewAllUrl: '',
+  ticketUrl: '',
+};
+
+const UserMenu = props => {
+  const {
+    displayName,
+    email,
+    renderAvatar,
+    oidc,
+    issuerUrl,
+    localProfile,
+    organizations,
+    activeOrgUuid,
+    onPickOrg,
+    loadOrganizations,
+    orgMark,
+    favorites,
+    appName,
+    appRows,
+    notifications,
+    push,
+    viewAllUrl,
+    ticketUrl,
+    onSignOut,
+    onSignOutEverywhere,
+  } = { ...USER_MENU_DEFAULTS, ...props };
   const { t } = useTranslation();
   const [showOrgs, setShowOrgs] = useState(false);
   const [loadedOrgs, setLoadedOrgs] = useState(null);

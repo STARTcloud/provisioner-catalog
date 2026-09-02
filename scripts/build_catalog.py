@@ -127,12 +127,19 @@ def extract_manifest_lenient(data: bytes, family: str, version: str) -> dict | N
 
 
 def build_provisioners(
-    repos: list[str], token: str | None, rep: Reporter
+    repos: list[str], token: str | None, rep: Reporter, previous: dict[str, dict] | None = None
 ) -> tuple[list[dict], dict[str, dict]]:
-    """Catalog provisioner entries plus the per-family health/quality map."""
+    """Catalog provisioner entries plus the per-family health/quality map.
+
+    ``previous`` is the ``provisioners`` map of the currently published
+    health.json: answers that cannot be measured this run are carried from
+    it, and older versions' provider data is never re-measured.
+    """
     provisioners: list[dict] = []
     health_map: dict[str, dict] = {}
     seen_families: dict[str, str] = {}
+    previous = previous or {}
+    box_cache: dict = {}
 
     for repo in repos:
         try:
@@ -231,13 +238,29 @@ def build_provisioners(
                         "versions": version_entries,
                     }
                 )
-                evidence = (
-                    quality.molecule_evidence(
-                        latest_data, family, latest, repo, versions[latest]["tag"], token
+                prev = previous.get(family) if isinstance(previous.get(family), dict) else None
+                prev_health = (prev or {}).get("health") or {}
+                fields = quality.collect_config_fields(manifest or {})
+                tag = versions[latest]["tag"]
+                if latest_data is not None:
+                    evidence = quality.molecule_evidence(
+                        latest_data, family, latest, repo, tag, token
                     )
-                    if latest_data is not None
-                    else {}
+                    verified = quality.verify_providers(
+                        latest_data, family, latest, fields, box_cache
+                    )
+                else:
+                    evidence = {}
+                    verified = {}
+                latest_providers, complete = quality.version_providers(
+                    verified, (prev_health.get("versions") or {}).get(latest)
                 )
+                boot = quality.booted_providers(repo, tag, token) if tag else {}
+                if None in evidence.values() or not complete or boot is None:
+                    rep.warning(
+                        f"{repo} {family}-{latest}: some answers could not be measured this "
+                        "run — carrying the previously published values"
+                    )
                 rules = quality.evaluate_rules(
                     family,
                     manifest,
@@ -247,9 +270,24 @@ def build_provisioners(
                     workflows_text,
                     latest,
                     evidence,
+                    latest_providers,
+                    complete,
+                    boot,
+                    prev,
+                )
+                version_data = quality.merged_versions(
+                    list(versions), latest, latest_providers, prev_health
                 )
                 health_map[family] = quality.health_entry(
-                    family, repo, rules, manifest, latest, releases, artifacts_ok, sidecars_ok
+                    family,
+                    repo,
+                    rules,
+                    manifest,
+                    latest,
+                    releases,
+                    artifacts_ok,
+                    sidecars_ok,
+                    version_data,
                 )
             else:
                 rep.warning(f"{repo} {family}: no recordable versions — family omitted")
@@ -344,7 +382,11 @@ def main() -> int:
 
     rep = Reporter()
     repos = active_repos(args.sources, args.removed, rep)
-    provisioners, health_map = build_provisioners(repos, args.token or None, rep)
+    published_health_url = f"{args.published_url.rsplit('/', 1)[0]}/health.json"
+    published_health = fetch_published(published_health_url, rep)
+    provisioners, health_map = build_provisioners(
+        repos, args.token or None, rep, (published_health or {}).get("provisioners") or {}
+    )
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     catalog = {
@@ -372,9 +414,6 @@ def main() -> int:
     if run_tripwire(published, catalog, rep):
         rep.info("IMMUTABILITY TRIPWIRE tripped — failing loudly, nothing will be published")
         return 2
-
-    published_health_url = f"{args.published_url.rsplit('/', 1)[0]}/health.json"
-    published_health = fetch_published(published_health_url, rep)
 
     changed = normalized(published) != normalized(catalog) or normalized(
         published_health

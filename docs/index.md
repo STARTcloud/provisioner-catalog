@@ -29,7 +29,7 @@ Agents fetch exactly one document, `https://provisioner-catalog.startcloud.com/c
 - **One-line admission**: getting listed is one reviewed pull request adding a repository to `sources.yml`; `removed.yml` is the post-admission blacklist for malicious or broken repositories
 - **Private per-organization catalogs**: a Cloudflare Worker on `/private/*` verifies the caller's Bearer JWT against the IdP's JWKS and serves `orgs/<org-uuid>/catalog.json` only to members of that organization
 - **Immutability tripwire**: an already-published version whose asset hashes differently fails the build loudly; rebuilt artifacts must ship as a new version
-- **Measured quality tiers**: `health.json` carries a machine-measured tier per family (Unrated, Bronze, Silver, Gold, Platinum) recomputed on every data run and never author-declared; agents never read it
+- **Measured quality tiers**: `health.json` carries a machine-measured tier per family (Unrated, Bronze, Silver, Gold, Platinum, Diamond) recomputed on every data run and never author-declared; agents never read it
 - **Notifications**: new versions dispatch Web Push events through the Worker, private-catalog releases post hub notifications through the IdP, and the web UI shows an inbox bell
 - **Admin rebuild**: users with `ROLE_ADMIN` trigger the data job from the web UI through `/admin/rebuild` and poll its run status
 - **Validation GitHub Action**: `uses: STARTcloud/provisioner-catalog@main` validates a repository's published releases against the artifact contract in the author's own CI, and `--tree` mode checks a working-tree manifest before a release exists

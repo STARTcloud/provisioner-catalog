@@ -62,6 +62,37 @@ The archive must contain `<name>/<version>/provisioner.yml`, and it must be pars
 
 `<name>/<version>/templates/Hosts.template.yml` must exist in the archive. A missing template is an error.
 
+### Provider verification
+
+The catalog does not take a provider's word for it. For every value the manifest offers on its `VAGRANT_PROVIDER` field it renders the shipped `Hosts.template.yml` with a fixed context and asks the box catalog the render points at whether an image exists. The result feeds `health.providers`, the per-version `health.versions`, the provider chips on the card, and the `platinum.multi_provider` rule; see [Quality Tiers](../quality-tiers/).
+
+The render context stands in for what the agents supply at machine-create time, and is deliberately the smallest thing that lets the template's own `default(...)` filters apply:
+
+| Variable | Value |
+| --- | --- |
+| `settings` | `{ hostname: "catalog", domain: "example.invalid", server_id: "1", vcpus: 2, memory: 4096 }` — every other `settings.*` key is undefined, so the template's defaults (box, box_url, box_version, box_arch, provider_type, os_type, …) are what get rendered |
+| `networks` | `[]` |
+| `disks` | undefined — the template's package-default branch renders |
+| `roles` | `[]` |
+| every configuration field | its declared `default`, under the field's `name`; a field without a `default` is undefined and renders empty |
+| `VAGRANT_PROVIDER` | the provider under test |
+
+Provider names are not a catalog list: a provider is any name a box catalog serves an image under, spelled the way its Vagrant plugin registers it (`zone`, not `zones`; `digital_ocean`; `docker`), and the manifest's option values must use that exact spelling or nothing ever verifies. Undefined variables render as empty strings rather than failing, matching Jinja's default behaviour. The rendered text must parse as YAML to a mapping whose `hosts[0].settings` carries `box` (`<org>/<name>`), an `https://` `box_url`, `box_version` and `box_arch`; `provider_type`, when present, must equal the provider under test. The catalog then requests `<box_url>/<box>` with a `Vagrant/` user agent — the Vagrant box metadata document BoxVault and every Vagrant-compatible catalog serve — and requires an entry under the matching `version` whose provider `name` is the provider under test and whose `architecture` is `box_arch`.
+
+| Outcome | Meaning |
+| --- | --- |
+| verified image | the render worked and the box catalog lists the image — the provider counts |
+| no image found | the template does not render for that provider, names no box, or the box catalog has no such version/provider/architecture — the provider does not count |
+| box catalog did not answer | network failure, `5xx`, `401` or `403` — could not measure; the previously published answer for that version is kept |
+
+Run it before you release:
+
+```bash
+python3 -m scripts.validate_repo --tree /path/to/package/root
+```
+
+prints one line per listed provider with the outcome and the box it resolved.
+
 ### The `.sha256` sidecar
 
 Every archive asset carries a companion asset named `<asset>.sha256` in `sha256sum` format:
@@ -189,7 +220,7 @@ python3 -m scripts.validate_repo --tree /path/to/package/root
 | Mode | What it validates | When |
 | --- | --- | --- |
 | `--repo` | Published releases: assets, sidecars, archive shape, safety scan, manifest match | After a release exists |
-| `--tree` | The working-tree manifest: `provisioner.yml` present at the package root, `name` is a slug, `version` is semver-shaped, `description` and `label` filled (warnings), `templates/Hosts.template.yml` present; reports undocumented configuration fields and roles | Before a release exists, in a pull request |
+| `--tree` | The working-tree manifest: `provisioner.yml` present at the package root, `name` is a slug, `version` is semver-shaped, `description` and `label` filled (warnings), `templates/Hosts.template.yml` present; reports undocumented configuration fields and roles; renders the template per listed provider and checks the box catalog for each | Before a release exists, in a pull request |
 
 Archive shape, sidecars and checksums can only be checked against published releases, so `--tree` catches a malformed manifest early and `--repo` remains the gate. Both flags may be given together. The token defaults to `$GITHUB_TOKEN`.
 
@@ -224,6 +255,7 @@ Once admitted, the data job rebuilds `catalog.json` and `health.json` every ~2 h
 - **Per-version release dates**: each version carries `released_at`, the publish time of the GitHub release that shipped it, rendered as a localized date in the version list. The list shows the newest ten versions with a control to show all.
 - **Checksums and download links**: every version lists its versioned asset URL and `sha256:` digest.
 - **Health**: days since the latest release, total GitHub download count of the family's versioned assets, a stale chip when the last release is older than 365 days, and chips for artifact errors or incomplete sidecars from the current run.
+- **Providers**: one chip per provider with a verified image in any recorded version, coloured by how many versions verify it; each version row lists the providers verified for that exact version. See [Provider verification](#provider-verification).
 - **Quality**: the measured tier badge and the list of unmet rules; see [Quality Tiers](../quality-tiers/).
 - **Search** matches name, description, repository and label.
 

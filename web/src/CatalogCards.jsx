@@ -39,9 +39,36 @@ export const healthEntryShape = PropTypes.shape({
     artifacts_ok: PropTypes.bool.isRequired,
     sidecars_ok: PropTypes.bool.isRequired,
     providers: PropTypes.arrayOf(PropTypes.string),
+    versions: PropTypes.objectOf(
+      PropTypes.shape({ providers: PropTypes.arrayOf(PropTypes.string) })
+    ),
     downloads: PropTypes.number,
   }).isRequired,
 });
+
+const providerCoverage = entry => {
+  const versions = entry?.health?.versions || {};
+  const measured = Object.values(versions).filter(item => Array.isArray(item?.providers));
+  const counts = {};
+  measured.forEach(item => {
+    item.providers.forEach(provider => {
+      counts[provider] = (counts[provider] || 0) + 1;
+    });
+  });
+  return { counts, total: measured.length };
+};
+
+const coverageClass = (count, total) => {
+  if (count === total) {
+    return 'provider-all';
+  }
+  if (count === 1) {
+    return 'provider-one';
+  }
+  return 'provider-some';
+};
+
+const versionProviders = (entry, version) => entry?.health?.versions?.[version]?.providers || [];
 
 const TierBadge = ({ entry }) => {
   const { t } = useTranslation();
@@ -123,17 +150,23 @@ CardMeta.propTypes = {
 };
 
 const ProviderChips = ({ entry }) => {
+  const { t } = useTranslation();
   if (!entry) {
     return null;
   }
-  const { providers = [] } = entry.health;
+  const { counts, total } = providerCoverage(entry);
+  const providers = Object.keys(counts).sort();
   if (providers.length === 0) {
     return null;
   }
   return (
     <div className="d-flex flex-wrap gap-1 mb-2">
       {providers.map(provider => (
-        <Badge key={provider} bg="secondary">
+        <Badge
+          key={provider}
+          className={`provider-chip ${coverageClass(counts[provider], total)}`}
+          title={t('card.providerCoverage', { count: counts[provider], total })}
+        >
           {provider}
         </Badge>
       ))}
@@ -275,13 +308,18 @@ const ProvisionerCard = ({ provisioner, healthEntry = null }) => {
                   {versions.map(entry => (
                     <ListGroup.Item key={entry.version}>
                       <div className="d-flex justify-content-between align-items-center gap-2">
-                        <span className="d-inline-flex align-items-baseline gap-2">
+                        <span className="d-inline-flex align-items-baseline gap-2 flex-wrap">
                           <strong>{entry.version}</strong>
                           {entry.released_at ? (
                             <span className="small text-body-secondary">
                               {new Date(entry.released_at).toLocaleDateString(i18n.language)}
                             </span>
                           ) : null}
+                          {versionProviders(healthEntry, entry.version).map(provider => (
+                            <Badge key={provider} bg="secondary" className="badge-xs">
+                              {provider}
+                            </Badge>
+                          ))}
                         </span>
                         <span>
                           {entry.artifacts.map(artifact => (

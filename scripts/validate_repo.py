@@ -395,7 +395,11 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
 
         # Informational: the measured quality tier this family would show in
         # the catalog. Grading never gates admission — the checks above do.
+        fields = quality.collect_config_fields(manifest or {})
         evidence = quality.molecule_evidence(data, family, latest, repo, entry["tag"], token)
+        verified = quality.verify_providers(data, family, latest, fields, {})
+        latest_providers, complete = quality.version_providers(verified, None)
+        boot = quality.booted_providers(repo, entry["tag"], token) if entry["tag"] else {}
         rules = quality.evaluate_rules(
             family,
             manifest,
@@ -405,10 +409,20 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
             workflows_text,
             latest,
             evidence,
+            latest_providers,
+            complete,
+            boot,
         )
         tier = quality.measured_tier(rules)
         failed = quality.failed_rules(rules)
         rep.info(f"{ctx}: measured quality tier: {tier}")
+        for provider, answer in sorted(verified.items()):
+            state = (
+                "verified image"
+                if answer
+                else ("box catalog did not answer" if answer is None else "no image found")
+            )
+            rep.info(f"{ctx}: provider {provider}: {state}")
         if failed:
             rep.info(f"{ctx}: unmet quality rules: {', '.join(failed)}")
 
@@ -470,6 +484,31 @@ def validate_tree(path: str, rep: Reporter) -> None:
         rep.info(f"{path}: undocumented fields: {', '.join(undocumented)}")
     if undocumented_roles:
         rep.info(f"{path}: undocumented roles: {', '.join(undocumented_roles)}")
+
+    template_path = os.path.join(path, "templates", "Hosts.template.yml")
+    if os.path.isfile(template_path):
+        with open(template_path, "r", encoding="utf-8") as handle:
+            template_text = handle.read(quality.MAX_TEMPLATE_BYTES)
+        cache: dict = {}
+        for provider in sorted(quality.listed_providers(fields)):
+            hosts = quality.render_hosts(template_text, fields, provider)
+            box = quality.rendered_box(hosts) if hosts else None
+            if box is None:
+                rep.info(f"{path}: provider {provider}: template does not render a box for it")
+                continue
+            metadata = quality.fetch_box_metadata(box["box_url"], box["box"], cache)
+            if metadata is None:
+                state = "box catalog did not answer"
+            elif metadata is False or not quality.box_has_provider(
+                metadata, box["box_version"], provider, box["box_arch"]
+            ):
+                state = "no image found"
+            else:
+                state = "verified image"
+            rep.info(
+                f"{path}: provider {provider}: {state} "
+                f"({box['box']} {box['box_version']} {box['box_arch']} at {box['box_url']})"
+            )
 
 
 def main() -> int:

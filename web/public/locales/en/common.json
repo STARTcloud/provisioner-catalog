@@ -93,14 +93,16 @@
     "quality": "Quality: {{tier}}",
     "allRulesPass": "All quality rules pass.",
     "unmetRules": "Unmet rules:",
-    "tierTooltip": "Measured quality tier — recomputed every data run"
+    "tierTooltip": "Measured quality tier — recomputed every data run",
+    "providerCoverage": "Verified image in {{count}} of {{total}} versions"
   },
   "tiers": {
     "unrated": "Unrated",
     "bronze": "Bronze",
     "silver": "Silver",
     "gold": "Gold",
-    "platinum": "Platinum"
+    "platinum": "Platinum",
+    "diamond": "Diamond"
   },
   "health": {
     "stale": "stale — last release {{count}}d ago",

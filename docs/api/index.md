@@ -125,15 +125,20 @@ Only published, non-draft, non-prerelease releases are recorded. A version whose
         "bronze": { "description": true, "label": true, "semver_versions": true, "latest_alias": true },
         "silver": { "changelog": true, "readme": true, "release_within_12_months": true, "lint_ci": true },
         "gold": { "config_fields_documented": false, "roles_documented": true, "example_hosts": false },
-        "platinum": { "automated_tests": false, "multi_provider": true, "release_cadence": true }
+        "platinum": { "automated_tests": false, "multi_provider": true, "release_cadence": true },
+        "diamond": { "booted_providers": false }
       },
-      "failed_rules": ["gold.config_fields_documented", "gold.example_hosts", "platinum.automated_tests"],
+      "failed_rules": ["gold.config_fields_documented", "gold.example_hosts", "platinum.automated_tests", "diamond.booted_providers"],
       "health": {
         "latest_version": "0.1.26",
         "latest_release_at": "2026-07-15T18:04:11Z",
         "artifacts_ok": true,
         "sidecars_ok": true,
         "providers": ["virtualbox", "zones"],
+        "versions": {
+          "0.1.26": { "providers": ["virtualbox", "zones"] },
+          "0.1.25": { "providers": ["virtualbox"] }
+        },
         "downloads": 42
       }
     }
@@ -155,7 +160,7 @@ Only published, non-draft, non-prerelease releases are recorded. A version whose
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
 | `repo` | string, `owner/name` | yes | Source repository |
-| `tier` | enum `unrated`, `bronze`, `silver`, `gold`, `platinum` | yes | Measured tier — the highest tier whose rules and every lower tier's rules all pass. Recomputed every data run, never author-declared |
+| `tier` | enum `unrated`, `bronze`, `silver`, `gold`, `platinum`, `diamond` | yes | Measured tier — the highest tier whose rules and every lower tier's rules all pass. Recomputed every data run, never author-declared |
 | `presentation` | object | yes | UI extras parsed from the packaged `provisioner.yml`; empty strings when omitted |
 | `presentation.label` | string | yes | Display label |
 | `presentation.icon` | string | yes | Icon URL |
@@ -165,12 +170,14 @@ Only published, non-draft, non-prerelease releases are recorded. A version whose
 | `rules.silver` | object | yes | `changelog`, `readme`, `release_within_12_months`, `lint_ci` |
 | `rules.gold` | object | yes | `config_fields_documented`, `roles_documented`, `example_hosts` |
 | `rules.platinum` | object | yes | `automated_tests`, `multi_provider`, `release_cadence` |
-| `failed_rules` | array of string, `^(bronze\|silver\|gold\|platinum)\.[a-z0-9_]+$` | yes | Every failing rule as `tier.rule` |
+| `rules.diamond` | object | yes | `booted_providers` |
+| `failed_rules` | array of string, `^(bronze\|silver\|gold\|platinum\|diamond)\.[a-z0-9_]+$` | yes | Every failing rule as `tier.rule` |
 | `health.latest_version` | string | yes | Highest semantic version recorded |
 | `health.latest_release_at` | string (date-time) or null | yes | Publish time of the newest release, null when unknown |
 | `health.artifacts_ok` | boolean | yes | False when any versioned asset failed to download during the run |
 | `health.sidecars_ok` | boolean | yes | False when any version lacked a sidecar or its sidecar failed |
-| `health.providers` | array of string | yes | Known virtualization providers offered by the manifest's `VAGRANT_PROVIDER` dropdowns |
+| `health.providers` | array of string | yes | Providers with a verified image for the latest version — the rendered `Hosts.yml` names a box the box catalog serves for that provider and architecture at that version |
+| `health.versions` | object keyed by version | yes | Per recorded version, `{ "providers": [...] }` — the providers verified for that version, measured once and carried forward |
 | `health.downloads` | integer ≥ 0 | yes | Total GitHub download count of the family's versioned assets |
 
 Security is never graded here. The archive safety scan, sidecar verification and the immutability tripwire are hard gates — a package that violates them never appears in either document.

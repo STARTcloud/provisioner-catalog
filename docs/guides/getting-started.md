@@ -178,7 +178,7 @@ Add one line to `sources.yml`, alphabetized, with an owner-attribution comment, 
 
 1. **[Publishing a Provisioner](../publishing-a-provisioner/)** — the artifact contract and the release build in full
 2. **[Admission](../admission/)** — the PR checks and the review gate
-3. **[Quality Tiers](../quality-tiers/)** — the Bronze through Platinum rules and how they are measured
+3. **[Quality Tiers](../quality-tiers/)** — the Bronze through Diamond rules and how they are measured
 4. **[Private Catalogs](../private-catalogs/)** — per-organization catalogs, the GitHub App, and the gate
 5. **[Notifications](../notifications/)** — the inbox, push subscriptions, and what triggers them
 

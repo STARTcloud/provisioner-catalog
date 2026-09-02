@@ -93,14 +93,16 @@
     "quality": "Calidad: {{tier}}",
     "allRulesPass": "Todas las reglas de calidad se cumplen.",
     "unmetRules": "Reglas incumplidas:",
-    "tierTooltip": "Nivel de calidad medido — recalculado en cada ejecución de datos"
+    "tierTooltip": "Nivel de calidad medido — recalculado en cada ejecución de datos",
+    "providerCoverage": "Imagen verificada en {{count}} de {{total}} versiones"
   },
   "tiers": {
     "unrated": "Sin calificar",
     "bronze": "Bronce",
     "silver": "Plata",
     "gold": "Oro",
-    "platinum": "Platino"
+    "platinum": "Platino",
+    "diamond": "Diamante"
   },
   "health": {
     "stale": "obsoleto — última versión hace {{count}} días",

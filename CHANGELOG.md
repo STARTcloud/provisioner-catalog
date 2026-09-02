@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.38](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.37...provisioner-catalog-v0.0.38) (2026-09-02)
+
+
+### Features
+
+* live universal navbar mock with search, filters, modals and sign-in states ([6985b3b](https://github.com/STARTcloud/provisioner-catalog/commit/6985b3b60d6f483ace2c0c59e5b4ee0cf8bc1697))
+
 ## [0.0.37](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.36...provisioner-catalog-v0.0.37) (2026-09-02)
 
 

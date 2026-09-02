@@ -21,9 +21,24 @@
     "rebuild": "Rebuild catalog data",
     "favorites": "Favorites",
     "help": "Help",
+    "profileModeTitle": "Switch between identity provider and local profile",
     "publicCrumb": "Public",
     "privateCrumb": "Private"
   },
+  "footer": {
+    "health": {
+      "status": "System Status",
+      "ok": "All systems operational",
+      "error": "A system has an issue",
+      "warning": "One or more systems have warnings",
+      "database": "Database",
+      "storage": "Storage",
+      "storageBoxes": "Storage (Boxes)",
+      "storageIsos": "Storage (ISOs)",
+      "oidcProviders": "OIDC Providers"
+    }
+  },
+  "loading": "Loading...",
   "orgs": {
     "open": "Open catalog",
     "noCatalog": "No catalog published yet",
@@ -53,6 +68,7 @@
   },
   "orgSwitcher": {
     "title": "Switch Organization",
+    "noOrgsFound": "No organizations found. Contact your administrator if this is unexpected.",
     "primaryOrg": "Primary Organization"
   },
   "roles": {

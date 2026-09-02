@@ -3,17 +3,13 @@ import { Alert, Button, Card, Col, Row } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaBuilding } from 'react-icons/fa6';
 
-import { OrgLogo } from './OrgSwitcher.jsx';
+import { OrgLogo, byPersonalLastThenName } from './chrome';
 
 const ROLE_CLASSES = {
   OWNER: 'bg-danger',
   ADMIN: 'bg-warning',
   MEMBER: 'bg-secondary',
 };
-
-const byPersonalLastThenName = (a, b) =>
-  Number(Boolean(a.personal)) - Number(Boolean(b.personal)) ||
-  (a.name || '').localeCompare(b.name || '');
 
 export const matchesOrg = (org, query) => {
   const needle = query.trim().toLowerCase();

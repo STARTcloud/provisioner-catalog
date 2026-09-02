@@ -4,8 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 
 import App from './App';
+import { NavbarSearchProvider } from './chrome';
 import i18n, { i18nPromise } from './i18n';
-import { NavbarSearchProvider } from './NavbarSearch.jsx';
 
 const container = document.getElementById('root');
 const root = createRoot(container);

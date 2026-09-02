@@ -1,22 +1,15 @@
 import axios from 'axios';
 import PropTypes from 'prop-types';
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Alert, Button, Container, Spinner } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
+import { Alert, Container, Dropdown, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import {
-  FaBuilding,
-  FaCircleHalfStroke,
-  FaGithub,
-  FaGlobe,
-  FaMoon,
-  FaSun,
-  FaTriangleExclamation,
-} from 'react-icons/fa6';
+import { FaBook, FaBuilding, FaEnvelope, FaGlobe } from 'react-icons/fa6';
 
 import './css/styles.css';
 import './css/fonts.css';
 import {
   API_ORIGIN,
+  ISSUER,
   authHeaders,
   beginLogin,
   consumeSessionEnded,
@@ -28,25 +21,31 @@ import {
   signOutEverywhere,
 } from './auth';
 import CatalogSection, { filterProvisioners, providerCounts, tierCounts } from './CatalogCards.jsx';
-import Crumbs, { PRIVATE_VIEW } from './Crumbs.jsx';
-import LanguageMenu from './LanguageMenu.jsx';
-import { NavbarSearchControl, NavbarSearchPanel, useNavbarSearchBinding } from './NavbarSearch.jsx';
+import {
+  Footer,
+  Header,
+  OrgLogo,
+  SessionEndedBanner,
+  byPersonalLastThenName,
+  useNavbarSearchBinding,
+  useTheme,
+} from './chrome';
+import {
+  APP_NAME,
+  Avatar,
+  POWERED_BY,
+  REPO_URL,
+  VIEW_ALL_URL,
+  buildTicketUrl,
+  notificationsAdapter,
+  pushAdapter,
+} from './chromeProps.jsx';
+import { getSupportedLanguages } from './i18n';
 import OrgList, { matchesOrg } from './OrgList.jsx';
 import { resyncPushSubscription } from './push';
-import UserMenu from './UserMenu.jsx';
+import RebuildItem from './RebuildItem.jsx';
 
-const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
-
-const subscribeToColorScheme = onChange => {
-  const query = window.matchMedia(DARK_SCHEME_QUERY);
-  query.addEventListener('change', onChange);
-  return () => query.removeEventListener('change', onChange);
-};
-
-const systemPrefersDark = () => window.matchMedia(DARK_SCHEME_QUERY).matches;
-
-const THEME_ICONS = { auto: FaCircleHalfStroke, light: FaSun, dark: FaMoon };
-
+const PRIVATE_VIEW = 'private';
 const ACTIVE_ORG_KEY = 'activeOrganization';
 const PREFS_PREFIX = 'catalog_table_prefs_';
 
@@ -70,7 +69,9 @@ const readPrefs = (key, names) => {
 const writePrefs = (key, filters) => {
   localStorage.setItem(
     `${PREFS_PREFIX}${key}`,
-    JSON.stringify(Object.fromEntries(Object.entries(filters).map(([name, set]) => [name, [...set]])))
+    JSON.stringify(
+      Object.fromEntries(Object.entries(filters).map(([name, set]) => [name, [...set]]))
+    )
   );
 };
 
@@ -104,6 +105,8 @@ const resolveActiveOrg = (organizations, stored) => {
 
 const fetchPrivate = async path =>
   axios.get(path, { headers: await authHeaders('GET', `${API_ORIGIN}${path}`) });
+
+const persistTheme = preference => savePreferences({ theme: preference });
 
 const viewData = (view, orgResults, publicCatalog, publicHealth) => {
   if (!view) {
@@ -195,6 +198,54 @@ const buildGroups = (t, provisioners, health, filters, updateFilters) => [
       updateFilters(current => ({ ...current, providers: toggleIn(current.providers, provider) })),
   },
 ];
+
+const buildCrumbs = ({ t, view, organizations, published, goTo }) => {
+  if (organizations.length === 0) {
+    return [];
+  }
+  const isPublic = view === '';
+  const org = view && view !== PRIVATE_VIEW ? organizations.find(o => o.uuid === view) : null;
+  const crumbs = [
+    {
+      key: 'group',
+      icon: isPublic ? <FaGlobe aria-hidden /> : <FaBuilding aria-hidden />,
+      label: t(isPublic ? 'navbar.publicCrumb' : 'navbar.privateCrumb'),
+      picker: [
+        {
+          key: 'public',
+          icon: <FaGlobe className="me-2" />,
+          label: t('navbar.publicCrumb'),
+          active: isPublic,
+          onPick: () => goTo(''),
+        },
+        {
+          key: 'private',
+          icon: <FaBuilding className="me-2" />,
+          label: t('navbar.privateCrumb'),
+          active: !isPublic,
+          onPick: () => goTo(PRIVATE_VIEW),
+        },
+      ],
+    },
+  ];
+  if (org) {
+    crumbs.push({
+      key: 'org',
+      icon: <OrgLogo org={org} size={16} className="rounded-circle avatar-sm" />,
+      label: org.name,
+      picker: [...organizations].sort(byPersonalLastThenName).map(row => ({
+        key: row.uuid,
+        icon: <OrgLogo org={row} size={16} className="rounded-circle avatar-sm me-2" />,
+        label: row.name,
+        active: row.uuid === org.uuid,
+        disabled: !published(row.uuid),
+        hint: published(row.uuid) ? null : t('orgs.noCatalog'),
+        onPick: () => goTo(row.uuid),
+      })),
+    });
+  }
+  return crumbs;
+};
 
 const OrgIcon = ({ org }) =>
   org.logo ? (
@@ -291,6 +342,63 @@ OrgView.propTypes = {
   filtering: PropTypes.bool.isRequired,
 };
 
+const AppRows = ({ isAdmin }) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      {isAdmin ? <RebuildItem /> : null}
+      <Dropdown.Item
+        href="https://startcloud.com/#contact"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FaEnvelope className="me-2" />
+        {t('navbar.contact')}
+      </Dropdown.Item>
+      <Dropdown.Item href="/docs/">
+        <FaBook className="me-2" />
+        {t('navbar.docs')}
+      </Dropdown.Item>
+    </>
+  );
+};
+
+AppRows.propTypes = {
+  isAdmin: PropTypes.bool.isRequired,
+};
+
+const buildUserMenu = ({
+  t,
+  user,
+  userInfo,
+  organizations,
+  activeOrgUuid,
+  activeOrg,
+  goTo,
+  onSignOut,
+}) => {
+  const displayName = userInfo?.name || user.name || user.email || t('user.unknownUser');
+  const picture = userInfo?.picture || '';
+  return {
+    displayName,
+    email: user.email && user.email !== displayName ? user.email : '',
+    renderAvatar: size => <Avatar picture={picture} size={size} />,
+    issuerUrl: ISSUER,
+    organizations,
+    activeOrgUuid,
+    onPickOrg: goTo,
+    favorites: userInfo?.favorite_apps || [],
+    appName: t('navbar.provisionerCatalog'),
+    appRows: <AppRows isAdmin={Boolean(user.authorities?.includes('ROLE_ADMIN'))} />,
+    notifications: String(user.scope || '').includes('notifications') ? notificationsAdapter : null,
+    push: pushAdapter,
+    viewAllUrl: VIEW_ALL_URL,
+    ticketUrl: buildTicketUrl(user, userInfo, activeOrg),
+    onSignOut,
+    onSignOutEverywhere: signOutEverywhere,
+  };
+};
+
 const App = () => {
   const { t, i18n } = useTranslation(['common', 'auth']);
   const [publicCatalog, setPublicCatalog] = useState(null);
@@ -305,16 +413,11 @@ const App = () => {
   const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
   const [query, setQuery] = useState('');
   const [filtersByView, setFiltersByView] = useState({});
-  const [themePreference, setThemePreference] = useState(
-    () => localStorage.getItem('theme') || 'auto'
-  );
-  const prefersDark = useSyncExternalStore(subscribeToColorScheme, systemPrefersDark);
-  const theme = themePreference === 'auto' ? (prefersDark && 'dark') || 'light' : themePreference;
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    localStorage.setItem('theme', themePreference);
-  }, [theme, themePreference]);
+  const {
+    preference: themePreference,
+    setPreference: setThemePreference,
+    toggleTheme,
+  } = useTheme({ onPersist: persistTheme });
 
   useEffect(() => {
     axios
@@ -339,9 +442,7 @@ const App = () => {
       getUserInfo().then(info => {
         setUserInfo(info);
         const preferences = info?.preferences;
-        if (['auto', 'light', 'dark'].includes(preferences?.theme)) {
-          setThemePreference(preferences.theme);
-        }
+        setThemePreference(preferences?.theme, { persist: false });
         if (preferences?.language && preferences.language !== i18n.language) {
           i18n.changeLanguage(preferences.language);
         }
@@ -396,7 +497,7 @@ const App = () => {
       setLoadingPrivate(false);
     };
     loadPrivate();
-  }, [i18n]);
+  }, [i18n, setThemePreference]);
 
   useEffect(() => {
     resyncPushSubscription();
@@ -410,20 +511,6 @@ const App = () => {
       writePrefs(viewKey, current);
     }
   }, [viewKey, filtersByView]);
-
-  const applyThemePreference = preference => {
-    setThemePreference(preference);
-    savePreferences({ theme: preference });
-  };
-
-  const toggleTheme = () => {
-    const next =
-      (themePreference === 'auto' && 'light') || (themePreference === 'light' && 'dark') || 'auto';
-    applyThemePreference(next);
-  };
-
-  const ThemeIcon = THEME_ICONS[themePreference] || FaCircleHalfStroke;
-  const themeToggleLabel = t(`theme.${themePreference}`);
 
   const handleSignOut = () => {
     signOut();
@@ -440,6 +527,11 @@ const App = () => {
     beginLogin();
   };
 
+  const changeLanguage = async lang => {
+    await i18n.changeLanguage(lang);
+    savePreferences({ language: lang });
+  };
+
   const goTo = target => {
     if (target && target !== PRIVATE_VIEW) {
       setActiveOrgUuid(target);
@@ -451,6 +543,7 @@ const App = () => {
   };
 
   const organizations = user?.organizations || [];
+  const activeOrg = organizations.find(org => org.uuid === activeOrgUuid) || null;
   const names = filterNamesFor(view);
   const filters = filtersByView[viewKey] || readPrefs(viewKey, names);
 
@@ -487,6 +580,19 @@ const App = () => {
     onClearFilters: () => updateFilters(() => emptyFilters(names)),
   });
 
+  const userMenu = user
+    ? buildUserMenu({
+        t,
+        user,
+        userInfo,
+        organizations,
+        activeOrgUuid,
+        activeOrg,
+        goTo,
+        onSignOut: handleSignOut,
+      })
+    : null;
+
   const renderBody = () => {
     if (listing) {
       return (
@@ -521,90 +627,26 @@ const App = () => {
 
   return (
     <div className="App d-flex flex-column min-vh-100">
-      <nav className="navbar navbar-expand-lg sticky-top shadow-sm bg-body-tertiary border-bottom">
-        <div className="container-fluid">
-          <a
-            href="/"
-            className="navbar-brand p-0 d-flex align-items-center"
-            onClick={event => {
-              event.preventDefault();
-              goTo('');
-            }}
-          >
-            <img src="/startcloud.svg" alt="" className="logo-cluster icon-with-margin-sm" />
-            Provisioner Catalog
-          </a>
-          <ul className="nav nav-pills me-auto align-items-center">
-            {user ? (
-              <Crumbs
-                view={currentView}
-                organizations={organizations}
-                published={published}
-                onPick={goTo}
-              />
-            ) : (
-              <>
-                <li className="nav-item">
-                  <a href="https://startcloud.com/#contact" className="nav-link">
-                    {t('navbar.contact')}
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a href="/docs/" className="nav-link">
-                    {t('navbar.docs')}
-                  </a>
-                </li>
-              </>
-            )}
-          </ul>
+      <Header
+        brand={{
+          name: APP_NAME,
+          logo: <img src="/startcloud.svg" alt="" className="logo-cluster icon-with-margin-sm" />,
+          href: '/',
+          onClick: () => goTo(''),
+        }}
+        links={[
+          { key: 'contact', label: t('navbar.contact'), href: 'https://startcloud.com/#contact' },
+          { key: 'docs', label: t('navbar.docs'), href: '/docs/' },
+        ]}
+        crumbs={buildCrumbs({ t, view: currentView, organizations, published, goTo })}
+        theme={{ preference: themePreference, onToggle: toggleTheme }}
+        language={{ languages: getSupportedLanguages(), onPick: changeLanguage }}
+        signedIn={Boolean(user)}
+        onSignIn={handleSignIn}
+        userMenu={userMenu}
+      />
 
-          <ul className="nav nav-pills ms-auto align-items-center">
-            <NavbarSearchControl />
-            <li className="nav-item">
-              <button
-                key={themePreference}
-                type="button"
-                className="btn btn-link nav-link cluster-btn"
-                onClick={toggleTheme}
-                title={themeToggleLabel}
-                aria-label={themeToggleLabel}
-              >
-                <ThemeIcon />
-              </button>
-            </li>
-            <li className="nav-item">
-              <LanguageMenu />
-            </li>
-            <UserMenu
-              user={user}
-              userInfo={userInfo}
-              organizations={organizations}
-              activeOrgUuid={activeOrgUuid}
-              onPickOrg={goTo}
-              onSignIn={handleSignIn}
-              onSignOut={handleSignOut}
-              onSignOutEverywhere={signOutEverywhere}
-            />
-          </ul>
-        </div>
-        <NavbarSearchPanel />
-      </nav>
-
-      {sessionEnded && !user ? (
-        <div
-          className="alert alert-warning d-flex align-items-center gap-3 mx-3 mt-3 mb-0"
-          role="alert"
-        >
-          <FaTriangleExclamation className="flex-shrink-0" />
-          <div className="flex-grow-1">
-            <strong>{t('sessionEnded.title')}</strong>
-            <div className="small">{t('sessionEnded.body')}</div>
-          </div>
-          <Button variant="primary" size="sm" onClick={handleSignIn}>
-            {t('sessionEnded.signIn')}
-          </Button>
-        </div>
-      ) : null}
+      {sessionEnded && !user ? <SessionEndedBanner onSignIn={handleSignIn} /> : null}
 
       <section className="hero">
         <Container>
@@ -618,46 +660,12 @@ const App = () => {
 
       <Container className="py-4 flex-grow-1">{renderBody()}</Container>
 
-      <footer className="footer mt-auto bg-body-tertiary border-top">
-        <div className="container-fluid position-relative d-flex align-items-center">
-          <div className="footer-edge-start">
-            <span className="text-muted">
-              Provisioner Catalog &copy; {new Date().getFullYear()}
-            </span>
-          </div>
-          <div className="mx-auto d-flex align-items-center">
-            <span className="text-muted me-2">{t('auth:login.poweredBy')}</span>
-            <a
-              href="https://startcloud.com"
-              target="_blank"
-              rel="noreferrer"
-              className="text-decoration-none d-flex align-items-center"
-            >
-              <img
-                src="/startcloud-logo40.png"
-                alt="STARTcloud"
-                height="20"
-                className="me-2"
-                onError={event => {
-                  event.currentTarget.style.display = 'none';
-                }}
-              />
-              <span className="text-muted">{t('auth:login.poweredByCompany')}</span>
-            </a>
-          </div>
-          <div className="footer-edge-end d-flex align-items-center">
-            <a
-              href="https://github.com/STARTcloud/provisioner-catalog"
-              target="_blank"
-              rel="noreferrer"
-              className="text-decoration-none text-body-secondary"
-            >
-              <FaGithub className="me-1" />
-              Provisioner Catalog v{__APP_VERSION__}
-            </a>
-          </div>
-        </div>
-      </footer>
+      <Footer
+        appName={APP_NAME}
+        version={__APP_VERSION__}
+        repoUrl={REPO_URL}
+        poweredBy={POWERED_BY}
+      />
     </div>
   );
 };

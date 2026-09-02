@@ -4,7 +4,7 @@ import { Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaBridgeLock, FaHouseLock } from 'react-icons/fa6';
 
-const LogoutItem = ({ onSignOut, onSignOutEverywhere }) => {
+const LogoutItem = ({ oidc = true, onSignOut, onSignOutEverywhere }) => {
   const { t } = useTranslation();
   const [everywhere, setEverywhere] = useState(true);
   const ScopeIcon = everywhere ? FaBridgeLock : FaHouseLock;
@@ -25,25 +25,30 @@ const LogoutItem = ({ onSignOut, onSignOutEverywhere }) => {
     <Dropdown.Item
       as="button"
       type="button"
-      onClick={everywhere ? onSignOutEverywhere : onSignOut}
+      onClick={oidc && everywhere ? onSignOutEverywhere : onSignOut}
       className="d-flex align-items-center text-danger"
     >
-      <span
-        role="button"
-        tabIndex={0}
-        className="d-inline-flex me-2 logout-scope"
-        onClick={toggleScope}
-        onKeyDown={toggleScopeKey}
-        title={everywhere ? t('navbar.logoutEverywhereTitle') : t('navbar.logoutLocalTitle')}
-      >
-        <ScopeIcon />
-      </span>
+      {oidc ? (
+        <span
+          role="button"
+          tabIndex={0}
+          className="d-inline-flex me-2 logout-scope"
+          onClick={toggleScope}
+          onKeyDown={toggleScopeKey}
+          title={everywhere ? t('navbar.logoutEverywhereTitle') : t('navbar.logoutLocalTitle')}
+        >
+          <ScopeIcon />
+        </span>
+      ) : (
+        <FaHouseLock className="me-2" />
+      )}
       <span>{t('navbar.logout')}</span>
     </Dropdown.Item>
   );
 };
 
 LogoutItem.propTypes = {
+  oidc: PropTypes.bool,
   onSignOut: PropTypes.func.isRequired,
   onSignOutEverywhere: PropTypes.func.isRequired,
 };

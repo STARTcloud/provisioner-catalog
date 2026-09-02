@@ -12,16 +12,23 @@ import {
   FaXmark,
 } from 'react-icons/fa6';
 
-import { ISSUER } from './auth';
-import { deleteNotification, fetchNotifications, markAllRead, markRead } from './notifications';
-import {
-  isPushEnabled,
-  isPushSupported,
-  setPushEnabled,
-  subscribePush,
-  unsubscribePush,
-} from './push';
 import { formatRelativeTime } from './relativeTime';
+
+export const notificationsAdapterShape = PropTypes.shape({
+  list: PropTypes.func.isRequired,
+  unreadCount: PropTypes.func.isRequired,
+  markRead: PropTypes.func.isRequired,
+  markAllRead: PropTypes.func.isRequired,
+  remove: PropTypes.func.isRequired,
+});
+
+export const pushAdapterShape = PropTypes.shape({
+  isSupported: PropTypes.func.isRequired,
+  isEnabled: PropTypes.func.isRequired,
+  setEnabled: PropTypes.func.isRequired,
+  subscribe: PropTypes.func.isRequired,
+  unsubscribe: PropTypes.func.isRequired,
+});
 
 const TYPE_ICONS = {
   SECURITY: FaShieldHalved,
@@ -98,14 +105,14 @@ NotificationRow.propTypes = {
   onDismiss: PropTypes.func.isRequired,
 };
 
-const PushSwitch = () => {
+const PushSwitch = ({ push }) => {
   const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(isPushEnabled());
+  const [enabled, setEnabled] = useState(push.isEnabled());
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
 
   const enablePush = async () => {
-    if (!isPushSupported()) {
+    if (!push.isSupported()) {
       setFeedback(t('notifications.notSupported'));
       return;
     }
@@ -114,8 +121,8 @@ const PushSwitch = () => {
       setFeedback(t('notifications.permissionDenied'));
       return;
     }
-    await subscribePush();
-    setPushEnabled(true);
+    await push.subscribe();
+    push.setEnabled(true);
     setEnabled(true);
   };
 
@@ -131,8 +138,8 @@ const PushSwitch = () => {
     setFeedback('');
     try {
       if (enabled) {
-        await unsubscribePush();
-        setPushEnabled(false);
+        await push.unsubscribe();
+        push.setEnabled(false);
         setEnabled(false);
       } else {
         await enablePush();
@@ -159,7 +166,11 @@ const PushSwitch = () => {
   );
 };
 
-const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
+PushSwitch.propTypes = {
+  push: pushAdapterShape.isRequired,
+};
+
+const NotificationsModal = ({ show, onHide, onUnreadDelta, notifications, push, viewAllUrl }) => {
   const { t } = useTranslation();
   const [entries, setEntries] = useState([]);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -168,18 +179,19 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
     if (!show) {
       return;
     }
-    fetchNotifications({ page: 0, size: 20 })
+    notifications
+      .list({ page: 0, size: 20 })
       .then(data => {
         setLoadFailed(false);
         setEntries(extractEntries(data));
       })
       .catch(() => setLoadFailed(true));
-  }, [show]);
+  }, [show, notifications]);
 
   const handleSelect = async entry => {
     if (!entry.readAt) {
       try {
-        await markRead(entry.id);
+        await notifications.markRead(entry.id);
         onUnreadDelta(-1);
         setEntries(prev =>
           prev.map(item =>
@@ -197,7 +209,7 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
 
   const handleDismiss = async entry => {
     try {
-      await deleteNotification(entry.id);
+      await notifications.remove(entry.id);
       setEntries(prev => prev.filter(item => item.id !== entry.id));
       if (!entry.readAt) {
         onUnreadDelta(-1);
@@ -209,7 +221,7 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
 
   const handleMarkAllRead = async () => {
     try {
-      await markAllRead();
+      await notifications.markAllRead();
       onUnreadDelta(-Infinity);
       setEntries(prev =>
         prev.map(item => (item.readAt ? item : { ...item, readAt: new Date().toISOString() }))
@@ -248,16 +260,13 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
         </div>
       </Modal.Body>
       <Modal.Footer className="d-flex justify-content-between align-items-center flex-nowrap gap-3 small">
-        <PushSwitch />
-        <a
-          href={`${ISSUER}/notifications`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-nowrap"
-        >
-          {t('inbox.viewAll')}
-          <FaArrowUpRightFromSquare className="ms-2" />
-        </a>
+        <PushSwitch push={push} />
+        {viewAllUrl ? (
+          <a href={viewAllUrl} target="_blank" rel="noopener noreferrer" className="text-nowrap">
+            {t('inbox.viewAll')}
+            <FaArrowUpRightFromSquare className="ms-2" />
+          </a>
+        ) : null}
       </Modal.Footer>
     </Modal>
   );
@@ -267,6 +276,9 @@ NotificationsModal.propTypes = {
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,
   onUnreadDelta: PropTypes.func.isRequired,
+  notifications: notificationsAdapterShape.isRequired,
+  push: pushAdapterShape.isRequired,
+  viewAllUrl: PropTypes.string.isRequired,
 };
 
 export default NotificationsModal;

@@ -21,9 +21,24 @@
     "rebuild": "Regenerar datos del catálogo",
     "favorites": "Favoritos",
     "help": "Ayuda",
+    "profileModeTitle": "Cambiar entre el perfil del proveedor de identidad y el perfil local",
     "publicCrumb": "Público",
     "privateCrumb": "Privado"
   },
+  "footer": {
+    "health": {
+      "status": "Estado del Sistema",
+      "ok": "Todos los sistemas operativos",
+      "error": "Un sistema tiene un problema",
+      "warning": "Uno o más sistemas tienen advertencias",
+      "database": "Base de Datos",
+      "storage": "Almacenamiento",
+      "storageBoxes": "Almacenamiento (Boxes)",
+      "storageIsos": "Almacenamiento (ISOs)",
+      "oidcProviders": "Proveedores OIDC"
+    }
+  },
+  "loading": "Cargando...",
   "orgs": {
     "open": "Abrir catálogo",
     "noCatalog": "Aún sin catálogo publicado",
@@ -53,6 +68,7 @@
   },
   "orgSwitcher": {
     "title": "Cambiar Organización",
+    "noOrgsFound": "No se encontraron organizaciones. Contacta a tu administrador si esto es inesperado.",
     "primaryOrg": "Organización Principal"
   },
   "roles": {

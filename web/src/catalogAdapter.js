@@ -167,7 +167,11 @@ const listOrg = async org => {
   try {
     data = await fetchOrg(membership.uuid);
   } catch (error) {
-    throw privateError(error);
+    const failure = privateError(error);
+    if (failure.status === 401 || failure.status === 403) {
+      ownItems.notice = { type: 'warning', key: failure.messageKey };
+    }
+    return ownItems;
   }
   const organization = organizationOf(org, membership);
   return [...itemsFrom(data, () => organization, true), ...ownItems];

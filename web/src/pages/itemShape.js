@@ -88,10 +88,12 @@ export const collectionShape = PropTypes.shape({
   hasVersions: PropTypes.bool.isRequired,
   itemRoute: PropTypes.bool.isRequired,
   searchKey: PropTypes.string.isRequired,
+  defaultView: PropTypes.oneOf(['table', 'cards']).isRequired,
   adapter: PropTypes.object.isRequired,
   filterGroups: PropTypes.arrayOf(filterGroupShape).isRequired,
   columns: PropTypes.arrayOf(columnShape).isRequired,
   matches: PropTypes.func,
+  canManage: PropTypes.func,
   slots: PropTypes.object.isRequired,
 });
 

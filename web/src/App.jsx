@@ -313,18 +313,6 @@ const App = () => {
 
       {sessionEnded && !user ? <SessionEndedBanner onSignIn={handleSignIn} /> : null}
 
-      {pathname === '/' ? (
-        <section className="hero">
-          <Container>
-            <img
-              src="https://startcloud.com/assets/images/logos/startCloud-logo-big.svg"
-              className="img-fluid"
-              alt="STARTcloud logo"
-            />
-          </Container>
-        </section>
-      ) : null}
-
       <Container fluid className="mt-3 flex-grow-1">
         <Routes>
           <Route path="/" element={<HomePage collections={collections} context={context} />} />

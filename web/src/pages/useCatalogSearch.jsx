@@ -151,5 +151,8 @@ export const useCatalogSearch = ({
       sort: { ...current.sort, [collectionKey]: nextSort(current.sort[collectionKey], column) },
     }));
 
-  return { filtered, filtering, sort: prefs.sort, setSort };
+  const setView = (collectionKey, view) =>
+    setPrefs(current => ({ ...current, view: { ...current.view, [collectionKey]: view } }));
+
+  return { filtered, filtering, sort: prefs.sort, setSort, view: prefs.view, setView };
 };

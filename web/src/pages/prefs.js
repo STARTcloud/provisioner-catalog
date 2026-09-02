@@ -10,6 +10,7 @@ export const readPrefs = (key, collections) => {
   const saved = parse(key);
   const filters = {};
   const sort = {};
+  const view = {};
   collections.forEach(collection => {
     filters[collection.key] = Object.fromEntries(
       collection.filterGroups.map(group => [
@@ -18,18 +19,19 @@ export const readPrefs = (key, collections) => {
       ])
     );
     sort[collection.key] = saved.sort?.[collection.key] || { column: '', direction: 'asc' };
+    view[collection.key] = saved.view?.[collection.key] || collection.defaultView;
   });
-  return { filters, sort };
+  return { filters, sort, view };
 };
 
-export const writePrefs = (key, { filters, sort }) => {
+export const writePrefs = (key, { filters, sort, view }) => {
   const plain = Object.fromEntries(
     Object.entries(filters).map(([collectionKey, groups]) => [
       collectionKey,
       Object.fromEntries(Object.entries(groups).map(([groupKey, set]) => [groupKey, [...set]])),
     ])
   );
-  localStorage.setItem(key, JSON.stringify({ filters: plain, sort }));
+  localStorage.setItem(key, JSON.stringify({ filters: plain, sort, view }));
 };
 
 export const emptyFilters = collections =>

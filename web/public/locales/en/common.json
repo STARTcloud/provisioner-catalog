@@ -93,6 +93,11 @@
     "provider": "Provider"
   },
   "card": {
+    "version_one": "{{count}} version",
+    "version_other": "{{count}} versions",
+    "download": "download",
+    "showAll": "Show all {{count}} versions",
+    "showFewer": "Show fewer versions",
     "released": "released {{count}}d ago",
     "downloads_one": "{{count}} download",
     "downloads_other": "{{count}} downloads",
@@ -142,6 +147,11 @@
     "all": "All {{collection}}",
     "countOf": "{{count}} {{collection}}",
     "searchAll": "Search…",
+    "view": {
+      "label": "View",
+      "table": "List view",
+      "cards": "Card view"
+    },
     "table": {
       "name": "Name",
       "os": "OS",

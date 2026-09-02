@@ -93,6 +93,11 @@
     "provider": "Proveedor"
   },
   "card": {
+    "version_one": "{{count}} versión",
+    "version_other": "{{count}} versiones",
+    "download": "descargar",
+    "showAll": "Mostrar las {{count}} versiones",
+    "showFewer": "Mostrar menos versiones",
     "released": "publicado hace {{count}} días",
     "downloads_one": "{{count}} descarga",
     "downloads_other": "{{count}} descargas",
@@ -142,6 +147,11 @@
     "all": "Todos: {{collection}}",
     "countOf": "{{count}} {{collection}}",
     "searchAll": "Buscar…",
+    "view": {
+      "label": "Vista",
+      "table": "Vista de lista",
+      "cards": "Vista de tarjetas"
+    },
     "table": {
       "name": "Nombre",
       "os": "SO",

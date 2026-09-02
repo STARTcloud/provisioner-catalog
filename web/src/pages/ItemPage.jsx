@@ -122,17 +122,41 @@ const mediaFor = item => {
   return null;
 };
 
+const shortChecksum = artifact =>
+  `${artifact.checksumType}:${artifact.checksum.slice(0, 4)}…${artifact.checksum.slice(-4)}`;
+
+const ArtifactLinks = ({ artifacts }) => {
+  const { t } = useTranslation();
+  return artifacts.map(artifact => (
+    <div key={artifact.downloadUrl} className="d-flex align-items-center gap-2 flex-wrap">
+      <a href={artifact.downloadUrl}>{t('pages.table.download')}</a>
+      <code className="checksum" title={`${artifact.checksumType}:${artifact.checksum}`}>
+        {shortChecksum(artifact)}
+      </code>
+    </div>
+  ));
+};
+
+ArtifactLinks.propTypes = {
+  artifacts: PropTypes.arrayOf(PropTypes.object).isRequired,
+};
+
 const VersionsTable = ({ collection, item, org, ctx }) => {
   const { t } = useTranslation();
   const { VersionRowActions } = collection.slots;
   const versions = sortVersionsNewestFirst(item.versions || []);
+  const hasReleased = versions.some(version => version.createdAt);
+  const hasDetails = versions.some(version => version.description);
+  const hasArtifacts = versions.some(version => (version.artifacts || []).length > 0);
   return (
     <Table striped className="table">
       <thead>
         <tr>
           <th>{t('pages.table.version')}</th>
-          <th>{t('pages.table.details')}</th>
+          {hasReleased ? <th>{t('pages.table.released')}</th> : null}
+          {hasDetails ? <th>{t('pages.table.details')}</th> : null}
           <th>{t('pages.table.providers')}</th>
+          {hasArtifacts ? <th>{t('pages.version.artifacts')}</th> : null}
           {VersionRowActions ? <th>{t('pages.table.actions')}</th> : null}
         </tr>
       </thead>
@@ -147,18 +171,26 @@ const VersionsTable = ({ collection, item, org, ctx }) => {
                 <span className="badge bg-danger ms-2">{t('pages.status.deprecated')}</span>
               ) : null}
             </td>
-            <td>{version.description}</td>
+            {hasReleased ? (
+              <td>{version.createdAt ? new Date(version.createdAt).toLocaleDateString() : ''}</td>
+            ) : null}
+            {hasDetails ? <td>{version.description}</td> : null}
             <td>
               {(version.providers || []).map(provider => (
-                <div key={provider.name}>
-                  <Link
-                    to={providerPath(collection, org, item.name, version.version, provider.name)}
-                  >
-                    {provider.name}
-                  </Link>
-                </div>
+                <Link
+                  key={provider.name}
+                  to={providerPath(collection, org, item.name, version.version, provider.name)}
+                  className="badge bg-secondary bg-opacity-50 text-body text-decoration-none me-1"
+                >
+                  {provider.name}
+                </Link>
               ))}
             </td>
+            {hasArtifacts ? (
+              <td>
+                <ArtifactLinks artifacts={version.artifacts || []} />
+              </td>
+            ) : null}
             {VersionRowActions ? (
               <td>
                 <VersionRowActions item={item} version={version} ctx={ctx} />

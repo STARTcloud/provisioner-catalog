@@ -2,10 +2,12 @@ import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
+import { FaList, FaTableCellsLarge } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 
 import { OrgLogo, collectionPath } from '../chrome';
 
+import ItemCards from './ItemCards';
 import { collectionShape, pageContextShape } from './itemShape';
 import ItemsTable from './ItemsTable';
 import { useCatalogSearch } from './useCatalogSearch';
@@ -68,7 +70,37 @@ const useWatches = ({ collections, user, notify }) => {
   return { ids, toggle, available: signedIn && Boolean(watchable) };
 };
 
-const CollectionHeading = ({ collection, count, org, linkAll, small }) => {
+const ViewToggle = ({ view, onChange }) => {
+  const { t } = useTranslation();
+  const options = [
+    { key: 'table', icon: <FaList />, label: t('pages.view.table') },
+    { key: 'cards', icon: <FaTableCellsLarge />, label: t('pages.view.cards') },
+  ];
+  return (
+    <div className="btn-group btn-group-sm" role="group" aria-label={t('pages.view.label')}>
+      {options.map(option => (
+        <button
+          key={option.key}
+          type="button"
+          className={`btn ${view === option.key ? 'btn-secondary' : 'btn-outline-secondary'}`}
+          onClick={() => onChange(option.key)}
+          title={option.label}
+          aria-label={option.label}
+          aria-pressed={view === option.key}
+        >
+          {option.icon}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+ViewToggle.propTypes = {
+  view: PropTypes.oneOf(['table', 'cards']).isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+const CollectionHeading = ({ collection, count, org, linkAll, small, toggle }) => {
   const { t } = useTranslation();
   const Tag = small ? 'h3' : 'h2';
   return (
@@ -78,11 +110,14 @@ const CollectionHeading = ({ collection, count, org, linkAll, small }) => {
         {t(collection.labelKey)}
         <span className="badge bg-secondary bg-opacity-50">{count}</span>
       </Tag>
-      {linkAll ? (
-        <Link to={collectionPath(collection, org)} className="small">
-          {t('pages.all', { collection: t(collection.labelKey) })} ›
-        </Link>
-      ) : null}
+      <div className="d-flex align-items-center gap-3">
+        {linkAll ? (
+          <Link to={collectionPath(collection, org)} className="small">
+            {t('pages.all', { collection: t(collection.labelKey) })} ›
+          </Link>
+        ) : null}
+        {toggle}
+      </div>
     </div>
   );
 };
@@ -93,6 +128,7 @@ CollectionHeading.propTypes = {
   org: PropTypes.string.isRequired,
   linkAll: PropTypes.bool.isRequired,
   small: PropTypes.bool.isRequired,
+  toggle: PropTypes.node,
 };
 
 const Listing = ({ collections, org, member, grouped, context, header }) => {
@@ -109,7 +145,12 @@ const Listing = ({ collections, org, member, grouped, context, header }) => {
     Promise.all(
       collections.map(collection =>
         (org ? collection.adapter.listOrg(org, { member }) : collection.adapter.listAll())
-          .then(items => [collection.key, items])
+          .then(items => {
+            if (items.notice && mounted) {
+              notify(items.notice.type, t(items.notice.key));
+            }
+            return [collection.key, items];
+          })
           .catch(error => {
             notify('danger', error.messageKey ? t(error.messageKey) : error.message);
             return [collection.key, []];
@@ -126,7 +167,7 @@ const Listing = ({ collections, org, member, grouped, context, header }) => {
   }, [key, collections, org, member, notify, t]);
 
   const watches = useWatches({ collections, user: context.user, notify });
-  const { filtered, filtering, sort, setSort } = useCatalogSearch({
+  const { filtered, filtering, sort, setSort, view, setView } = useCatalogSearch({
     collections,
     itemsByCollection: data.byCollection,
     org,
@@ -147,16 +188,28 @@ const Listing = ({ collections, org, member, grouped, context, header }) => {
     notify,
   });
 
-  const table = (collection, items) => (
-    <ItemsTable
-      collection={collection}
-      items={items}
-      sort={sort[collection.key]}
-      onSort={column => setSort(collection.key, column)}
-      watches={watches.available && collection.adapter.watches ? watches : null}
-      ctx={ctxFor(collection)}
-    />
+  const toggleFor = collection => (
+    <ViewToggle view={view[collection.key]} onChange={next => setView(collection.key, next)} />
   );
+
+  const listOf = (collection, items) => {
+    const shared = {
+      collection,
+      items,
+      watches: watches.available && collection.adapter.watches ? watches : null,
+      ctx: ctxFor(collection),
+    };
+    if (view[collection.key] === 'cards') {
+      return <ItemCards {...shared} />;
+    }
+    return (
+      <ItemsTable
+        {...shared}
+        sort={sort[collection.key]}
+        onSort={column => setSort(collection.key, column)}
+      />
+    );
+  };
 
   const renderGrouped = () => {
     const sections = new Map();
@@ -168,48 +221,55 @@ const Listing = ({ collections, org, member, grouped, context, header }) => {
         sections.get(group.organization.name).parts.push({ collection, items: group.items });
       });
     });
-    if (sections.size === 0) {
-      return (
-        <Alert variant="secondary">{filtering ? t('pages.noMatches') : t('pages.empty')}</Alert>
-      );
-    }
-    return [...sections.values()].map(section => (
-      <div className="mb-4" key={section.organization.name}>
-        <div className="d-flex align-items-center gap-2 mb-2">
-          <OrgLogo
-            org={section.organization}
-            size={30}
-            className="rounded-circle avatar-lg"
-            fallback={context.orgMark}
-          />
-          <h5 className="mb-0">
-            <Link to={`/${section.organization.name}`}>{section.organization.name}</Link>
-          </h5>
-          {section.parts.map(part => (
-            <span key={part.collection.key} className="badge bg-secondary bg-opacity-50">
-              {t('pages.countOf', {
-                count: part.items.length,
-                collection: t(part.collection.labelKey),
-              })}
-            </span>
-          ))}
-        </div>
-        {section.parts.map(part => (
-          <div key={part.collection.key} className="mb-3">
-            {collections.length > 1 ? (
-              <CollectionHeading
-                collection={part.collection}
-                count={part.items.length}
-                org={section.organization.name}
-                linkAll
-                small
+    const single = collections.length === 1;
+    return (
+      <>
+        {single ? (
+          <div className="d-flex justify-content-end mb-2">{toggleFor(collections[0])}</div>
+        ) : null}
+        {sections.size === 0 ? (
+          <Alert variant="secondary">{filtering ? t('pages.noMatches') : t('pages.empty')}</Alert>
+        ) : null}
+        {[...sections.values()].map(section => (
+          <div className="mb-4" key={section.organization.name}>
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <OrgLogo
+                org={section.organization}
+                size={30}
+                className="rounded-circle avatar-lg"
+                fallback={context.orgMark}
               />
-            ) : null}
-            {table(part.collection, part.items)}
+              <h5 className="mb-0">
+                <Link to={`/${section.organization.name}`}>{section.organization.name}</Link>
+              </h5>
+              {section.parts.map(part => (
+                <span key={part.collection.key} className="badge bg-secondary bg-opacity-50">
+                  {t('pages.countOf', {
+                    count: part.items.length,
+                    collection: t(part.collection.labelKey),
+                  })}
+                </span>
+              ))}
+            </div>
+            {section.parts.map(part => (
+              <div key={part.collection.key} className="mb-3">
+                {single ? null : (
+                  <CollectionHeading
+                    collection={part.collection}
+                    count={part.items.length}
+                    org={section.organization.name}
+                    linkAll
+                    small
+                    toggle={toggleFor(part.collection)}
+                  />
+                )}
+                {listOf(part.collection, part.items)}
+              </div>
+            ))}
           </div>
         ))}
-      </div>
-    ));
+      </>
+    );
   };
 
   const renderFlat = () =>
@@ -224,13 +284,14 @@ const Listing = ({ collections, org, member, grouped, context, header }) => {
             org={org}
             linkAll={collections.length > 1 && Boolean(collection.segment)}
             small={false}
+            toggle={toggleFor(collection)}
           />
           {ListActions ? (
             <div className="d-flex justify-content-end align-items-center mb-3 gap-2 flex-wrap">
               <ListActions ctx={ctxFor(collection)} />
             </div>
           ) : null}
-          {table(collection, items)}
+          {listOf(collection, items)}
         </div>
       );
     });

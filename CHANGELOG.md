@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.41](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.40...provisioner-catalog-v0.0.41) (2026-09-02)
+
+
+### Bug Fixes
+
+* stop account preferences from overriding a pick after load, mark all read beside the close button ([d31f15c](https://github.com/STARTcloud/provisioner-catalog/commit/d31f15c6e0665911af306d6668a77806e748d897))
+* stop account preferences from overriding a pick after load, mark all read beside the close button ([cefbab2](https://github.com/STARTcloud/provisioner-catalog/commit/cefbab286e591d6bd88e4dcb38eb40569dcedbc7))
+
 ## [0.0.40](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.39...provisioner-catalog-v0.0.40) (2026-09-02)
 
 

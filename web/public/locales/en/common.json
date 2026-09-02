@@ -20,7 +20,16 @@
     "provisionerCatalog": "Provisioner Catalog",
     "rebuild": "Rebuild catalog data",
     "favorites": "Favorites",
-    "help": "Help"
+    "help": "Help",
+    "publicCrumb": "Public",
+    "privateCrumb": "Private"
+  },
+  "orgs": {
+    "open": "Open catalog",
+    "noCatalog": "No catalog published yet",
+    "loading": "Loading…",
+    "provisioners_one": "{{count}} provisioner",
+    "provisioners_other": "{{count}} provisioners"
   },
   "theme": {
     "auto": "Theme: follow system",
@@ -65,6 +74,7 @@
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",
+    "placeholderOrgs": "Search organizations by name or description…",
     "open": "Search",
     "filters": "Filters",
     "clear": "Clear search and filters",
@@ -80,6 +90,9 @@
     "publicEmpty": "The public catalog is empty.",
     "privateSubtitle": "Private catalog — visible to {{org}} members only.",
     "orgEmpty": "This organization has no published provisioners yet.",
+    "privateListTitle": "Private catalogs",
+    "privateListSubtitle": "The organizations on your account. Open one to see its private catalog.",
+    "noOrgs": "Your account has no organizations.",
     "noMatches": "No provisioners match.",
     "publicLoadFailed": "Could not load the public catalog: {{message}}"
   },

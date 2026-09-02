@@ -20,7 +20,16 @@
     "provisionerCatalog": "Provisioner Catalog",
     "rebuild": "Regenerar datos del catálogo",
     "favorites": "Favoritos",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "publicCrumb": "Público",
+    "privateCrumb": "Privado"
+  },
+  "orgs": {
+    "open": "Abrir catálogo",
+    "noCatalog": "Aún sin catálogo publicado",
+    "loading": "Cargando…",
+    "provisioners_one": "{{count}} provisioner",
+    "provisioners_other": "{{count}} provisioners"
   },
   "theme": {
     "auto": "Tema: seguir el sistema",
@@ -65,6 +74,7 @@
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",
+    "placeholderOrgs": "Buscar organizaciones por nombre o descripción…",
     "open": "Buscar",
     "filters": "Filtros",
     "clear": "Borrar búsqueda y filtros",
@@ -80,6 +90,9 @@
     "publicEmpty": "El catálogo público está vacío.",
     "privateSubtitle": "Catálogo privado — visible solo para los miembros de {{org}}.",
     "orgEmpty": "Esta organización aún no tiene provisioners publicados.",
+    "privateListTitle": "Catálogos privados",
+    "privateListSubtitle": "Las organizaciones de tu cuenta. Abre una para ver su catálogo privado.",
+    "noOrgs": "Tu cuenta no tiene organizaciones.",
     "noMatches": "Ningún provisioner coincide.",
     "publicLoadFailed": "No se pudo cargar el catálogo público: {{message}}"
   },

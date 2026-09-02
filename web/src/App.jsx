@@ -28,9 +28,10 @@ import {
   signOutEverywhere,
 } from './auth';
 import CatalogSection, { filterProvisioners, providerCounts, tierCounts } from './CatalogCards.jsx';
+import Crumbs, { PRIVATE_VIEW } from './Crumbs.jsx';
 import LanguageMenu from './LanguageMenu.jsx';
 import { NavbarSearchControl, NavbarSearchPanel, useNavbarSearchBinding } from './NavbarSearch.jsx';
-import { OrgLogo } from './OrgSwitcher.jsx';
+import OrgList, { matchesOrg } from './OrgList.jsx';
 import { resyncPushSubscription } from './push';
 import UserMenu from './UserMenu.jsx';
 
@@ -101,6 +102,9 @@ const fetchPrivate = async path =>
 const viewData = (view, orgResults, publicCatalog, publicHealth) => {
   if (!view) {
     return { org: null, provisioners: publicCatalog?.provisioners || [], health: publicHealth };
+  }
+  if (view === PRIVATE_VIEW) {
+    return { org: null, provisioners: [], health: null };
   }
   const org = orgResults.find(entry => entry.uuid === view) || null;
   return { org, provisioners: org?.catalog?.provisioners || [], health: org?.health || null };
@@ -376,15 +380,17 @@ const App = () => {
     beginLogin();
   };
 
-  const pickOrg = uuid => {
-    setActiveOrgUuid(uuid);
-    localStorage.setItem(ACTIVE_ORG_KEY, uuid);
-    setView(uuid);
+  const goTo = target => {
+    if (target && target !== PRIVATE_VIEW) {
+      setActiveOrgUuid(target);
+      localStorage.setItem(ACTIVE_ORG_KEY, target);
+    }
+    setView(target);
+    setQuery('');
     window.scrollTo({ top: 0 });
   };
 
   const organizations = user?.organizations || [];
-  const activeOrg = organizations.find(org => org.uuid === activeOrgUuid) || null;
   const filters = filtersByView[viewKey] || readPrefs(viewKey);
 
   const updateFilters = updater => {
@@ -394,19 +400,57 @@ const App = () => {
     }));
   };
 
-  const shown = viewData(user ? view : '', orgResults, publicCatalog, publicHealth);
-  const filtered = filterProvisioners(shown.provisioners, shown.health, query, filters);
+  const currentView = user ? view : '';
+  const shown = viewData(currentView, orgResults, publicCatalog, publicHealth);
+  const listing = currentView === PRIVATE_VIEW;
+  const filtered = listing
+    ? []
+    : filterProvisioners(shown.provisioners, shown.health, query, filters);
+  const filteredOrgs = listing ? organizations.filter(org => matchesOrg(org, query)) : [];
   const filtering = hasFilters(query, filters);
+  const published = uuid => Boolean(orgResults.find(result => result.uuid === uuid)?.catalog);
 
   useNavbarSearchBinding({
     query,
     onQueryChange: setQuery,
-    placeholder: t('search.placeholder'),
-    matched: filtered.length,
-    total: shown.provisioners.length,
-    groups: buildGroups(t, shown.provisioners, shown.health, filters, updateFilters),
+    placeholder: t(listing ? 'search.placeholderOrgs' : 'search.placeholder'),
+    matched: listing ? filteredOrgs.length : filtered.length,
+    total: listing ? organizations.length : shown.provisioners.length,
+    groups: listing ? [] : buildGroups(t, shown.provisioners, shown.health, filters, updateFilters),
     onClearFilters: () => updateFilters(() => emptyFilters()),
   });
+
+  const renderBody = () => {
+    if (listing) {
+      return (
+        <OrgList
+          organizations={filteredOrgs}
+          results={orgResults}
+          filtering={query.trim() !== ''}
+          onOpen={goTo}
+        />
+      );
+    }
+    if (currentView) {
+      return (
+        <OrgView
+          org={shown.org}
+          loading={loadingPrivate}
+          provisioners={filtered}
+          filtering={filtering}
+        />
+      );
+    }
+    return (
+      <PublicView
+        catalog={publicCatalog}
+        health={publicHealth}
+        error={publicError}
+        provisioners={filtered}
+        filtering={filtering}
+      />
+    );
+  };
 
   return (
     <div className="App d-flex flex-column min-vh-100">
@@ -417,27 +461,21 @@ const App = () => {
             className="navbar-brand p-0 d-flex align-items-center"
             onClick={event => {
               event.preventDefault();
-              setView('');
+              goTo('');
             }}
           >
             <img src="/startcloud.svg" alt="" className="logo-cluster icon-with-margin-sm" />
             Provisioner Catalog
           </a>
-          <ul className="nav nav-pills me-auto">
-            {user && activeOrg ? (
-              <li className="nav-item">
-                <button
-                  type="button"
-                  className="nav-link py-0 px-2 d-inline-flex align-items-center gap-2 org-pill"
-                  onClick={() => setView(activeOrg.uuid)}
-                  aria-current={view === activeOrg.uuid ? 'page' : undefined}
-                >
-                  <OrgLogo org={activeOrg} size={16} className="rounded-circle avatar-sm" />
-                  <span>{activeOrg.name}</span>
-                </button>
-              </li>
-            ) : null}
-            {!user ? (
+          <ul className="nav nav-pills me-auto align-items-center">
+            {user ? (
+              <Crumbs
+                view={currentView}
+                organizations={organizations}
+                published={published}
+                onPick={goTo}
+              />
+            ) : (
               <>
                 <li className="nav-item">
                   <a href="https://startcloud.com/#contact" className="nav-link">
@@ -450,7 +488,7 @@ const App = () => {
                   </a>
                 </li>
               </>
-            ) : null}
+            )}
           </ul>
 
           <ul className="nav nav-pills ms-auto align-items-center">
@@ -475,7 +513,7 @@ const App = () => {
               userInfo={userInfo}
               organizations={organizations}
               activeOrgUuid={activeOrgUuid}
-              onPickOrg={pickOrg}
+              onPickOrg={goTo}
               onSignIn={handleSignIn}
               onSignOut={handleSignOut}
               onSignOutEverywhere={signOutEverywhere}
@@ -511,24 +549,7 @@ const App = () => {
         </Container>
       </section>
 
-      <Container className="py-4 flex-grow-1">
-        {view && user ? (
-          <OrgView
-            org={shown.org}
-            loading={loadingPrivate}
-            provisioners={filtered}
-            filtering={filtering}
-          />
-        ) : (
-          <PublicView
-            catalog={publicCatalog}
-            health={publicHealth}
-            error={publicError}
-            provisioners={filtered}
-            filtering={filtering}
-          />
-        )}
-      </Container>
+      <Container className="py-4 flex-grow-1">{renderBody()}</Container>
 
       <footer className="footer mt-auto bg-body-tertiary border-top">
         <div className="container-fluid position-relative d-flex align-items-center">

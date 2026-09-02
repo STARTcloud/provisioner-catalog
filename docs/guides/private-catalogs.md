@@ -156,17 +156,18 @@ After sign-in the UI decodes the access token, reads its `organizations` claim, 
 
 A multi-org user can drill into every org they belong to. That is the cross-sharing mechanism: an organization shares a provisioner by adding the repository to its own entry, and members of that org see it wherever else they belong.
 
-### Organization pages
+### The breadcrumb and organization pages
 
 - The brand is the public root and always shows the **Public Catalog** section.
-- Signed in with organizations in the token, an organization pill beside the brand names the active organization; clicking it drills into that organization alone. The page then shows one section: the org's logo (or a building icon), its name, the subtitle "Private catalog — visible to `<org>` members only.", and the same provisioner cards as the public catalog, including tier badges and provider chips from the org's `health.json`.
-- The active organization uuid is stored in the browser under `activeOrganization`, validated against the token's `organizations` claim on every load, and falls back to the primary membership, then the first.
+- Signed in with organizations in the token, a breadcrumb follows the brand: the first crumb picks the group, **Public** or **Private**. **Private** lists one card per organization in the token with its logo, description, role badges, and its provisioner count, "No catalog published yet" (gate `404`), or "Access denied by the catalog gate." (gate `401`/`403`); **Open catalog** drills into that organization and the breadcrumb becomes `Private › <org>`, the org crumb being a picker across the organizations with a published catalog.
+- An organization's page shows one section: the org's logo (or a building icon), its name, the subtitle "Private catalog — visible to `<org>` members only.", and the same provisioner cards as the public catalog, including tier badges and provider chips from the org's `health.json`.
+- The last opened organization's uuid is stored in the browser under `activeOrganization`, validated against the token's `organizations` claim on every load, and falls back to the primary membership, then the first.
 - An organization whose catalog exists but lists no provisioners shows "This organization has no published provisioners yet."
-- The header search and its tier and provider filters apply to whichever page is shown, with filter picks persisted per page.
+- The header search and its tier and provider filters apply to whichever page is shown, with filter picks persisted per page; on the **Private** list the search matches organization names and descriptions.
 
 ### The org switcher
 
-The user menu gains an active-organization entry when the token carries at least two organizations. It opens a modal listing each org with logo, name, description, a "Primary" marker, and role badges. Choosing one makes it the active organization and drills into it.
+The user menu gains an active-organization entry when the token carries at least two organizations. It opens a modal listing each org with logo, name, description, a "Primary" marker, and role badges. Choosing one drills straight into that organization's catalog.
 
 ## Notifications for private catalogs
 

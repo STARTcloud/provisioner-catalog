@@ -50,17 +50,17 @@ The header's theme button cycles **Auto → Light → Dark**. The user menu's fi
 
 The user menu's **Sign in** entry starts an OIDC authorization-code + PKCE flow against the STARTcloud IdP. The catalog is a public client with no secret. After the IdP redirects back to `/callback`, the page exchanges the code, syncs your account preferences, and returns you to the catalog. Sign-in state is stored in the browser, and access tokens are refreshed automatically shortly before they expire.
 
-### Public root and organization pages
+### Public, Private, and the breadcrumb
 
-The brand is the root: it always shows the **Public Catalog**, the same data everyone sees, and hovering the section title shows when it was last regenerated.
+The brand is the root and always shows the **Public Catalog**, the same data everyone sees; hovering the section title shows when it was last regenerated.
 
-Signed in with organizations in your token, an organization pill sits beside the brand naming your active organization. Clicking it drills into that organization alone: the page then shows only that organization's private catalog, fetched from `/private/<org-uuid>/catalog.json` with your bearer token, and the search and filters apply to it. The brand takes you back to the public root.
+Signed in with organizations in your token, a breadcrumb follows the brand. Its first crumb is the group, **Public** or **Private**, and clicking it opens a picker between the two. **Private** shows one card per organization on your account with its logo, description, roles, and either its provisioner count or "No catalog published yet"; **Open catalog** drills into that organization, and the breadcrumb becomes `Private › <org>`, where the org crumb is a picker across your organizations. Each organization's catalog is fetched from `/private/<org-uuid>/catalog.json` with your bearer token, and the header search and filters apply to whichever page is shown. The brand takes you back to the public root.
 
-The active organization is remembered in the browser, validated against your token on every load, and falls back to your primary organization, then the first. An organization with no private catalog published shows "No private catalog published for this organization yet."; one the gate refuses shows "Access denied by the catalog gate."
+The last organization you opened is remembered in the browser, validated against your token on every load, and falls back to your primary organization, then the first. An organization whose catalog the gate refuses shows "Access denied by the catalog gate."
 
 ### Organization switcher
 
-When your token carries at least two organizations, the user menu gains an active-organization entry. It opens a modal listing every organization with its logo, description, roles, and primary flag; selecting one makes it the active organization and drills into it.
+When your token carries at least two organizations, the user menu gains an active-organization entry. It opens a modal listing every organization with its logo, description, roles, and primary flag; selecting one drills straight into that organization's catalog.
 
 ### Notifications bell
 
@@ -149,7 +149,7 @@ Add one line to `sources.yml`, alphabetized, with an owner-attribution comment, 
 
 ## Troubleshooting
 
-**No organization pill after sign-in** — your token carries no organizations, so there is nothing to drill into. An organization that is in your token but has no published catalog still has a pill; drilling into it shows "No private catalog published for this organization yet." because the gate answered `404 no catalog published for this organization`.
+**No breadcrumb after sign-in** — your token carries no organizations, so there is nothing private to show. An organization that is in your token but has no published catalog still appears under **Private**, marked "No catalog published yet", because the gate answered `404 no catalog published for this organization`.
 
 **"Access denied by the catalog gate"** — the gate returned `403 not a member of this organization` (the organization uuid is not in your token's `organizations` claim) or `401`. Membership is the only thing that grants read access; there is no other route in.
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.35](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.34...provisioner-catalog-v0.0.35) (2026-09-02)
+
+
+### Bug Fixes
+
+* language and organization modal titles match BoxVault, orgs sorted by name ([de75f2a](https://github.com/STARTcloud/provisioner-catalog/commit/de75f2a2d42899dd695a04971c0f75eaf3669a4a))
+
 ## [0.0.34](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.33...provisioner-catalog-v0.0.34) (2026-09-02)
 
 

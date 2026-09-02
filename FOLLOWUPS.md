@@ -2,32 +2,9 @@
 
 Estate-level work that starts here but is decided across BoxVault and the
 catalog together. Nothing in this file is scheduled; it records intent so it
-is not lost.
-
-## Global search scope
-
-The navbar search module searches the page it is on. The contract reserves
-a scope row in its filter panel (Search in: This page · Everywhere · a named
-app) and the binding fields `scopes`, `activeScope` and `onScopeChange`;
-nothing draws it yet.
-
-- **Scope row**: the panel's first row, pills like the filter pills without
-  counts, "This page" first and active by default; present only while the
-  binding offers a scope beyond the page. Picking a scope hands the query to
-  that scope and hides the count and the filter groups, which belong to the
-  page scope.
-- **Global results**: a dropdown under the input, grouped by app with the
-  app's icon (BoxVault boxes, catalog provisioners, hyperweaver and
-  zoneweaver machines), each row with a title, a subline and a right-hand
-  action (open in a new tab, console, an SSH launcher), arrow keys and
-  Enter, Escape back to the page scope.
-- **Data**: each app publishes a small `/api/search?q=` over its own data,
-  read with the user's token; the IdP's userinfo favorites list says which
-  apps to fan out to, so the module needs no registry beyond what the menu
-  already knows.
-- **Contract**: a "Global scope" section and a checklist row per app that
-  exposes a search endpoint; the module file stays byte-identical, the
-  scope row and result list are added to it once.
+is not lost. Chrome-level work (search scope, breadcrumbs, the shared
+folder) is recorded in the universal navbar contract in the auth server,
+not here.
 
 ## Merging the catalog into BoxVault
 

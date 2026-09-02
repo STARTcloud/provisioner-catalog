@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.42](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.41...provisioner-catalog-v0.0.42) (2026-09-02)
+
+
+### Bug Fixes
+
+* upload zone rules in the shared stylesheet ([69fd90a](https://github.com/STARTcloud/provisioner-catalog/commit/69fd90aef864e9e2d5458b727a412bba7276e427))
+
 ## [0.0.41](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.40...provisioner-catalog-v0.0.41) (2026-09-02)
 
 

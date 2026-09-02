@@ -58,7 +58,7 @@ const LanguageMenu = () => {
 
       <Modal show={show} onHide={() => setShow(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>
+          <Modal.Title as="h5">
             <FaGlobe className="me-2" />
             {t('language.changeLanguage')}
           </Modal.Title>

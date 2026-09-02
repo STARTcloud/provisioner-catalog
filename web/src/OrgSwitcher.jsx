@@ -31,16 +31,18 @@ OrgLogo.propTypes = {
   className: PropTypes.string,
 };
 
-const byPersonalLast = (a, b) => Number(Boolean(a.personal)) - Number(Boolean(b.personal));
+const byPersonalLastThenName = (a, b) =>
+  Number(Boolean(a.personal)) - Number(Boolean(b.personal)) ||
+  (a.name || '').localeCompare(b.name || '');
 
 const OrgSwitcher = ({ show, onHide, organizations, activeUuid = '', onPick }) => {
   const { t } = useTranslation();
-  const rows = [...organizations].sort(byPersonalLast);
+  const rows = [...organizations].sort(byPersonalLastThenName);
 
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title>
+        <Modal.Title as="h5">
           <FaBuilding className="me-2" />
           {t('orgSwitcher.title')}
         </Modal.Title>

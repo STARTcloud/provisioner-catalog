@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.45](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.44...provisioner-catalog-v0.0.45) (2026-09-02)
+
+
+### Features
+
+* private catalogs of every membership on the home page, grouped Private then Public ([9fc535e](https://github.com/STARTcloud/provisioner-catalog/commit/9fc535e84ffd6b81a1b208e96cec68e364ccefe8))
+
 ## [0.0.44](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.43...provisioner-catalog-v0.0.44) (2026-09-02)
 
 

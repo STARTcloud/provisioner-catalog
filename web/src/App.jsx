@@ -413,11 +413,7 @@ const App = () => {
   const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
   const [query, setQuery] = useState('');
   const [filtersByView, setFiltersByView] = useState({});
-  const {
-    preference: themePreference,
-    setPreference: setThemePreference,
-    toggleTheme,
-  } = useTheme({ onPersist: persistTheme });
+  const { preference: themePreference, toggleTheme } = useTheme({ onPersist: persistTheme });
 
   useEffect(() => {
     axios
@@ -439,14 +435,7 @@ const App = () => {
       }
       const claims = getClaims();
       setUser(claims);
-      getUserInfo().then(info => {
-        setUserInfo(info);
-        const preferences = info?.preferences;
-        setThemePreference(preferences?.theme, { persist: false });
-        if (preferences?.language && preferences.language !== i18n.language) {
-          i18n.changeLanguage(preferences.language);
-        }
-      });
+      getUserInfo().then(info => setUserInfo(info));
       const organizations = claims?.organizations || [];
       const resolved = resolveActiveOrg(organizations, localStorage.getItem(ACTIVE_ORG_KEY));
       setActiveOrgUuid(resolved);
@@ -497,7 +486,7 @@ const App = () => {
       setLoadingPrivate(false);
     };
     loadPrivate();
-  }, [i18n, setThemePreference]);
+  }, []);
 
   useEffect(() => {
     resyncPushSubscription();

@@ -234,12 +234,10 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta, notifications, push, 
   return (
     <Modal show={show} onHide={onHide} centered dialogClassName="notifications-modal">
       <Modal.Header closeButton>
-        <Modal.Title as="h5">{t('inbox.title')}</Modal.Title>
-        <button
-          type="button"
-          className="btn btn-link btn-sm p-0 ms-auto me-3"
-          onClick={handleMarkAllRead}
-        >
+        <Modal.Title as="h5" className="flex-grow-1">
+          {t('inbox.title')}
+        </Modal.Title>
+        <button type="button" className="btn btn-link btn-sm p-0 me-3" onClick={handleMarkAllRead}>
           {t('inbox.markAllRead')}
         </button>
       </Modal.Header>

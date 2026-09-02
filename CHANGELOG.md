@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.37](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.36...provisioner-catalog-v0.0.37) (2026-09-02)
+
+
+### Features
+
+* live universal navbar mock with search, filters, modals and sign-in states ([4d66b4b](https://github.com/STARTcloud/provisioner-catalog/commit/4d66b4b28d05656a9fa10292619e39133b95a05b))
+* verify providers against box catalogs, add diamond tier, carry unmeasured answers forward ([791e4c9](https://github.com/STARTcloud/provisioner-catalog/commit/791e4c930c1059383c5236c82dca6b9618d25e8a))
+
 ## [0.0.36](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.35...provisioner-catalog-v0.0.36) (2026-09-02)
 
 

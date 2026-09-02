@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.46](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.45...provisioner-catalog-v0.0.46) (2026-09-02)
+
+
+### Features
+
+* one aligned table per collection with foldable organization rows, foldable Private and Public groups, shared Visibility filter ([eee70c2](https://github.com/STARTcloud/provisioner-catalog/commit/eee70c2068dbb8cd2d083a00c761d0aee8b8db14))
+
 ## [0.0.45](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.44...provisioner-catalog-v0.0.45) (2026-09-02)
 
 

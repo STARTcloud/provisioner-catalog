@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.36](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.35...provisioner-catalog-v0.0.36) (2026-09-02)
+
+
+### Features
+
+* prove automated tests from the pinned collections' check run ([7d79078](https://github.com/STARTcloud/provisioner-catalog/commit/7d79078f0b4bd06ec645d3aa1c781228249da800))
+
 ## [0.0.35](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.34...provisioner-catalog-v0.0.35) (2026-09-02)
 
 

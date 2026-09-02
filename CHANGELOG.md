@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.33](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.32...provisioner-catalog-v0.0.33) (2026-09-02)
+
+
+### Bug Fixes
+
+* converging theme with boxvault more to prove its possible ([5ff98de](https://github.com/STARTcloud/provisioner-catalog/commit/5ff98de5e22e49090538e86d36eba789d05cacdc))
+
 ## [0.0.32](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.31...provisioner-catalog-v0.0.32) (2026-09-02)
 
 

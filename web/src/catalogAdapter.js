@@ -157,6 +157,31 @@ const organizationOf = (org, membership) =>
       }
     : { name: org, logo: ownerLogo(org) };
 
+const privateItemsFor = async membership => {
+  try {
+    const data = await fetchOrg(membership.uuid);
+    const organization = organizationOf(membership.name, membership);
+    return { items: itemsFrom(data, () => organization, true), noticeKey: '' };
+  } catch (error) {
+    const failure = privateError(error);
+    const denied = failure.status === 401 || failure.status === 403;
+    return { items: [], noticeKey: denied ? failure.messageKey : '' };
+  }
+};
+
+const listAll = async () => {
+  const [ownItems, privateResults] = await Promise.all([
+    publicItems(),
+    Promise.all(memberships.map(privateItemsFor)),
+  ]);
+  const items = [...privateResults.flatMap(result => result.items), ...ownItems];
+  const denied = privateResults.find(result => result.noticeKey);
+  if (denied) {
+    items.notice = { type: 'warning', key: denied.noticeKey };
+  }
+  return items;
+};
+
 const listOrg = async org => {
   const ownItems = (await publicItems()).filter(item => item.organization.name === org);
   const membership = membershipFor(org);
@@ -203,7 +228,7 @@ const getProvider = async (org, name, version, provider) => {
 const getOrganization = org => Promise.resolve(organizationOf(org, membershipFor(org)));
 
 export const catalogAdapter = {
-  listAll: publicItems,
+  listAll,
   listOrg,
   getItem,
   getItemSummary: getItem,

@@ -98,7 +98,6 @@ ItemChips.propTypes = {
 
 const ItemHeaderExtra = ({ item }) => (
   <div className="d-flex flex-wrap align-items-center gap-3 mt-2 small text-body-secondary">
-    <span>{item.extras.repo}</span>
     <CoverageChips item={item} />
   </div>
 );

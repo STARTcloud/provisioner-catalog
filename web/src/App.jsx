@@ -3,15 +3,15 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import {
-  FaAdjust,
   FaBuilding,
-  FaExclamationTriangle,
+  FaCircleHalfStroke,
   FaGithub,
   FaGlobe,
+  FaMagnifyingGlass,
   FaMoon,
-  FaSearch,
   FaSun,
-} from 'react-icons/fa';
+  FaTriangleExclamation,
+} from 'react-icons/fa6';
 
 import {
   API_ORIGIN,
@@ -30,7 +30,7 @@ import LanguageMenu from './LanguageMenu.jsx';
 import { resyncPushSubscription } from './push';
 import UserMenu from './UserMenu.jsx';
 
-const THEME_ICONS = { auto: FaAdjust, light: FaSun, dark: FaMoon };
+const THEME_ICONS = { auto: FaCircleHalfStroke, light: FaSun, dark: FaMoon };
 
 const privateErrorKey = requestError => {
   const { status } = requestError.response || {};
@@ -134,7 +134,7 @@ const App = () => {
     resyncPushSubscription();
   }, []);
 
-  const ThemeIcon = THEME_ICONS[theme] || FaAdjust;
+  const ThemeIcon = THEME_ICONS[theme] || FaCircleHalfStroke;
   const themeLabel = `${t('header.theme')}: ${getThemeDisplay()}`;
 
   const handleSignOut = () => {
@@ -214,40 +214,44 @@ const App = () => {
 
   return (
     <>
-      <header className="sticky-top sc-header shadow-sm">
-        <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-          <a className="navbar-brand p-0 me-0 me-lg-2 d-flex align-items-center gap-2" href="/">
-            <img src="/startcloud.svg" width="34" height="34" alt="" />
+      <nav className="navbar navbar-expand-lg sticky-top shadow-sm bg-body-tertiary border-bottom">
+        <div className="container-fluid">
+          <a href="/" className="navbar-brand p-0 d-flex align-items-center">
+            <img src="/startcloud.svg" alt="" className="logo-cluster icon-with-margin-sm" />
             {t('header.brand')}
           </a>
-          <ul className="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+          <ul className="nav nav-pills me-auto">
             {!user ? (
               <>
-                <li>
-                  <a href="https://startcloud.com/#contact" className="nav-link px-2">
+                <li className="nav-item">
+                  <a href="https://startcloud.com/#contact" className="nav-link">
                     {t('header.contact')}
                   </a>
                 </li>
-                <li>
-                  <a href="/docs/" className="nav-link px-2">
+                <li className="nav-item">
+                  <a href="/docs/" className="nav-link">
                     {t('header.docs')}
                   </a>
                 </li>
               </>
             ) : null}
           </ul>
-          <div className="d-flex align-items-center gap-2">
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              className="header-icon-btn"
-              onClick={toggleTheme}
-              title={themeLabel}
-              aria-label={themeLabel}
-            >
-              <ThemeIcon aria-hidden />
-            </Button>
-            <LanguageMenu />
+
+          <ul className="nav nav-pills ms-auto align-items-center">
+            <li className="nav-item">
+              <button
+                type="button"
+                className="btn btn-link nav-link cluster-btn"
+                onClick={toggleTheme}
+                title={themeLabel}
+                aria-label={themeLabel}
+              >
+                <ThemeIcon />
+              </button>
+            </li>
+            <li className="nav-item">
+              <LanguageMenu />
+            </li>
             <UserMenu
               user={user}
               userInfo={userInfo}
@@ -258,9 +262,9 @@ const App = () => {
               onSignOut={handleSignOut}
               onSignOutEverywhere={signOutEverywhere}
             />
-          </div>
+          </ul>
         </div>
-      </header>
+      </nav>
 
       {sessionEnded && !user ? (
         <Container className="pt-3">
@@ -270,7 +274,7 @@ const App = () => {
             onClose={() => setSessionEnded(false)}
             className="d-flex align-items-center gap-3 mb-0"
           >
-            <FaExclamationTriangle className="flex-shrink-0" aria-hidden />
+            <FaTriangleExclamation className="flex-shrink-0" aria-hidden />
             <span className="flex-grow-1">
               <strong className="d-block">{t('session.endedTitle')}</strong>
               <span className="small">{t('session.endedBody')}</span>
@@ -295,7 +299,7 @@ const App = () => {
       <Container className="py-4">
         <InputGroup className="mb-4 catalog-search">
           <InputGroup.Text>
-            <FaSearch aria-hidden />
+            <FaMagnifyingGlass aria-hidden />
           </InputGroup.Text>
           <Form.Control
             type="search"
@@ -343,9 +347,9 @@ const App = () => {
         {loadingPrivate ? <Spinner animation="border" role="status" /> : null}
       </Container>
 
-      <footer className="footer mt-auto sc-footer bg-body-tertiary border-top">
-        <div className="position-relative d-flex align-items-center">
-          <div className="position-absolute start-0">
+      <footer className="footer mt-auto bg-body-tertiary border-top">
+        <div className="container-fluid position-relative d-flex align-items-center">
+          <div className="footer-edge-start">
             <span className="text-muted">
               {t('header.brand')} &copy; {new Date().getFullYear()}
             </span>
@@ -370,10 +374,12 @@ const App = () => {
               <span className="text-muted">{t('footer.poweredByCompany')}</span>
             </a>
           </div>
-          <div className="position-absolute end-0">
+          <div className="footer-edge-end d-flex align-items-center">
             <a
-              className="text-decoration-none text-body-secondary"
               href="https://github.com/STARTcloud/provisioner-catalog"
+              target="_blank"
+              rel="noreferrer"
+              className="text-decoration-none text-body-secondary"
             >
               <FaGithub className="me-1" />
               {t('header.brand')} v{__APP_VERSION__}

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { Dropdown, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaSyncAlt } from 'react-icons/fa';
+import { FaArrowsRotate } from 'react-icons/fa6';
 
 import { API_ORIGIN, authHeaders } from './auth';
 
@@ -84,19 +84,13 @@ const RebuildItem = () => {
 
   return (
     <>
-      <Dropdown.Item
-        as="button"
-        type="button"
-        onClick={rebuild}
-        disabled={running}
-        className="d-flex align-items-center gap-2"
-      >
+      <Dropdown.Item as="button" type="button" onClick={rebuild} disabled={running}>
         {running ? (
-          <Spinner animation="border" size="sm" role="status" />
+          <Spinner animation="border" size="sm" role="status" className="me-2" />
         ) : (
-          <FaSyncAlt aria-hidden />
+          <FaArrowsRotate className="me-2" />
         )}
-        <span>{t('header.rebuild')}</span>
+        {t('header.rebuild')}
       </Dropdown.Item>
       {feedback ? <Dropdown.ItemText className="small">{feedback}</Dropdown.ItemText> : null}
     </>

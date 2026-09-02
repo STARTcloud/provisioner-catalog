@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaStar } from 'react-icons/fa';
+import { FaStar } from 'react-icons/fa6';
 
 const AppIcon = ({ app }) => {
   const [failed, setFailed] = useState(false);
@@ -15,9 +15,16 @@ const AppIcon = ({ app }) => {
     }
   }
   if (!iconUrl || failed) {
-    return <FaStar className="text-warning" aria-hidden />;
+    return <FaStar className="text-warning logo-md icon-with-margin" />;
   }
-  return <img src={iconUrl} alt="" width="16" height="16" onError={() => setFailed(true)} />;
+  return (
+    <img
+      src={iconUrl}
+      className="logo-md icon-with-margin"
+      alt=""
+      onError={() => setFailed(true)}
+    />
+  );
 };
 
 AppIcon.propTypes = {
@@ -37,17 +44,16 @@ const FavoriteApps = ({ apps }) => {
   return (
     <>
       <Dropdown.Divider />
-      <Dropdown.Header>{t('header.favorites')}</Dropdown.Header>
+      <Dropdown.Header className="py-0">{t('header.favorites')}</Dropdown.Header>
       {[...apps].sort(byOrder).map(app => (
         <Dropdown.Item
           key={app.clientId}
           href={app.homeUrl || '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className="d-flex align-items-center gap-2"
         >
           <AppIcon app={app} />
-          <span className="text-truncate">{app.customLabel || app.clientName || app.clientId}</span>
+          {app.customLabel || app.clientName || app.clientId}
         </Dropdown.Item>
       ))}
     </>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Badge, Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaBell } from 'react-icons/fa';
+import { FaBell } from 'react-icons/fa6';
 
 import { fetchUnreadCount } from './notifications';
 import NotificationsModal from './NotificationsModal.jsx';
@@ -34,15 +34,11 @@ const NotificationsItem = () => {
         as="button"
         type="button"
         onClick={() => setShow(true)}
-        className="d-flex align-items-center gap-2"
+        className="d-flex align-items-center"
       >
-        <FaBell aria-hidden />
+        <FaBell className="me-2" />
         <span className="flex-grow-1">{t('inbox.title')}</span>
-        {unread > 0 ? (
-          <Badge bg="danger" pill>
-            {unread}
-          </Badge>
-        ) : null}
+        {unread > 0 ? <span className="badge rounded-pill bg-danger ms-2">{unread}</span> : null}
       </Dropdown.Item>
       <NotificationsModal show={show} onHide={() => setShow(false)} onUnreadDelta={adjustUnread} />
     </>

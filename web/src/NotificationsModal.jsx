@@ -4,12 +4,12 @@ import { Button, Form, Modal } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import {
   FaBell,
-  FaCog,
   FaEnvelope,
-  FaExclamationTriangle,
-  FaShieldAlt,
-  FaTimes,
-} from 'react-icons/fa';
+  FaGear,
+  FaShieldHalved,
+  FaTriangleExclamation,
+  FaXmark,
+} from 'react-icons/fa6';
 
 import { ISSUER } from './auth';
 import { deleteNotification, fetchNotifications, markAllRead, markRead } from './notifications';
@@ -22,12 +22,12 @@ import {
 } from './push';
 
 const TYPE_ICONS = {
-  SECURITY: FaShieldAlt,
-  OAUTH: FaShieldAlt,
+  SECURITY: FaShieldHalved,
+  OAUTH: FaShieldHalved,
   ACCOUNT: FaEnvelope,
-  ADMIN: FaCog,
-  SYSTEM: FaCog,
-  ALERT: FaExclamationTriangle,
+  ADMIN: FaGear,
+  SYSTEM: FaGear,
+  ALERT: FaTriangleExclamation,
 };
 
 const SEVERITY_CLASSES = {
@@ -195,7 +195,7 @@ const NotificationsModal = ({ show, onHide, onUnreadDelta }) => {
                   title={t('inbox.dismiss')}
                   aria-label={t('inbox.dismiss')}
                 >
-                  <FaTimes aria-hidden />
+                  <FaXmark aria-hidden />
                 </button>
               </div>
             );

@@ -26,17 +26,17 @@ const LogoutItem = ({ onSignOut, onSignOutEverywhere }) => {
       as="button"
       type="button"
       onClick={everywhere ? onSignOutEverywhere : onSignOut}
-      className="d-flex align-items-center gap-2 text-danger"
+      className="d-flex align-items-center text-danger"
     >
       <span
         role="button"
         tabIndex={0}
-        className="d-inline-flex logout-scope"
+        className="d-inline-flex me-2 logout-scope"
         onClick={toggleScope}
         onKeyDown={toggleScopeKey}
         title={everywhere ? t('header.logoutEverywhereTitle') : t('header.logoutLocalTitle')}
       >
-        <ScopeIcon aria-hidden />
+        <ScopeIcon />
       </span>
       <span>{t('header.logout')}</span>
     </Dropdown.Item>

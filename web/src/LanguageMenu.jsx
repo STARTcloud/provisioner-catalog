@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
 import CountryFlag from 'react-country-flag';
 import { useTranslation } from 'react-i18next';
-import { FaCheckCircle } from 'react-icons/fa';
+import { FaCircleCheck } from 'react-icons/fa6';
 
 import { savePreferences } from './auth';
 import { supportedLanguages } from './i18n';
@@ -45,16 +45,15 @@ const LanguageMenu = () => {
 
   return (
     <>
-      <Button
-        variant="outline-secondary"
-        size="sm"
-        className="header-icon-btn"
+      <button
+        type="button"
+        className="btn btn-link nav-link cluster-btn"
         onClick={() => setShow(true)}
         title={label}
         aria-label={label}
       >
         {getLanguageFlag(i18n.language)}
-      </Button>
+      </button>
 
       <Modal show={show} onHide={() => setShow(false)} centered>
         <Modal.Header closeButton>
@@ -71,12 +70,12 @@ const LanguageMenu = () => {
                 }`}
                 onClick={() => changeLanguage(lang)}
               >
-                <span className="d-inline-flex align-items-center gap-2">
-                  <span className="d-inline-flex fs-5">{getLanguageFlag(lang)}</span>
-                  <span>{getLanguageDisplayName(lang)}</span>
+                <span>
+                  <span className="me-2 flag-icon-lg">{getLanguageFlag(lang)}</span>
+                  {getLanguageDisplayName(lang)}
                 </span>
                 {i18n.language === lang ? (
-                  <FaCheckCircle className="text-success" aria-hidden />
+                  <FaCircleCheck className="text-success" aria-hidden />
                 ) : null}
               </button>
             ))}

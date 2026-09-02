@@ -1,16 +1,16 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
-import { Button, Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import {
   FaBook,
   FaChevronRight,
+  FaCircleUser,
   FaEnvelope,
-  FaSignInAlt,
-  FaTicketAlt,
-  FaUserCircle,
-} from 'react-icons/fa';
-import { FaSliders } from 'react-icons/fa6';
+  FaRightToBracket,
+  FaSliders,
+  FaTicket,
+} from 'react-icons/fa6';
 
 import { ISSUER } from './auth';
 import FavoriteApps from './FavoriteApps.jsx';
@@ -39,7 +39,7 @@ const Avatar = ({ picture = '', size }) =>
   picture ? (
     <img src={picture} alt="" width={size} height={size} className="rounded-circle flex-shrink-0" />
   ) : (
-    <FaUserCircle size={size} className="flex-shrink-0" aria-hidden />
+    <FaCircleUser size={size} className="flex-shrink-0" aria-hidden />
   );
 
 Avatar.propTypes = {
@@ -50,15 +50,16 @@ Avatar.propTypes = {
 const SignInButton = ({ onSignIn }) => {
   const { t } = useTranslation();
   return (
-    <Button
-      variant="primary"
-      size="sm"
-      className="d-inline-flex align-items-center gap-2"
-      onClick={onSignIn}
-    >
-      <FaSignInAlt aria-hidden />
-      {t('header.signIn')}
-    </Button>
+    <li className="nav-item">
+      <button
+        type="button"
+        className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+        onClick={onSignIn}
+      >
+        <FaRightToBracket />
+        {t('header.signIn')}
+      </button>
+    </li>
   );
 };
 
@@ -78,7 +79,7 @@ const IdentityCard = ({ displayName, email, picture }) => (
       <span className="d-block fw-semibold text-truncate">{displayName}</span>
       {email ? <small className="d-block text-body-secondary text-truncate">{email}</small> : null}
     </span>
-    <FaChevronRight className="text-body-secondary flex-shrink-0" aria-hidden />
+    <FaChevronRight className="text-body-secondary flex-shrink-0" />
   </Dropdown.Item>
 );
 
@@ -114,14 +115,15 @@ const UserMenu = ({
 
   return (
     <>
-      <Dropdown align="end" className="user-menu">
+      <Dropdown as="li" align="end" className="nav-item user-menu">
         <Dropdown.Toggle
-          bsPrefix="btn"
-          variant="link"
-          className="d-flex align-items-center gap-2 text-decoration-none p-1 user-menu-toggle"
+          as="button"
+          type="button"
+          bsPrefix="nav-link"
+          className="py-0 d-flex align-items-center gap-2 text-body"
           aria-label={t('header.menuAria')}
         >
-          <span className="text-truncate user-menu-name fw-semibold">{displayName}</span>
+          <span className="fw-semibold">{displayName}</span>
           <Avatar picture={picture} size={34} />
         </Dropdown.Toggle>
         <Dropdown.Menu>
@@ -132,9 +134,9 @@ const UserMenu = ({
               as="button"
               type="button"
               onClick={() => setShowOrgs(true)}
-              className="d-flex align-items-center gap-2"
+              className="d-flex align-items-center"
             >
-              <OrgLogo org={activeOrg} />
+              <OrgLogo org={activeOrg} size={16} className="rounded-circle avatar-sm me-2" />
               <span className="text-truncate">{activeOrg.name}</span>
             </Dropdown.Item>
           ) : null}
@@ -143,29 +145,27 @@ const UserMenu = ({
             href={`${ISSUER}/user/profile#preferences`}
             target="_blank"
             rel="noopener noreferrer"
-            className="d-flex align-items-center gap-2"
           >
-            <FaSliders aria-hidden />
-            <span>{t('header.preferences')}</span>
+            <FaSliders className="me-2" />
+            {t('header.preferences')}
           </Dropdown.Item>
 
           <FavoriteApps apps={userInfo?.favorite_apps || []} />
 
           <Dropdown.Divider />
-          <Dropdown.Header>{t('header.brand')}</Dropdown.Header>
+          <Dropdown.Header className="py-0">{t('header.brand')}</Dropdown.Header>
           {isAdmin ? <RebuildItem /> : null}
           <Dropdown.Item
             href="https://startcloud.com/#contact"
             target="_blank"
             rel="noopener noreferrer"
-            className="d-flex align-items-center gap-2"
           >
-            <FaEnvelope aria-hidden />
-            <span>{t('header.contact')}</span>
+            <FaEnvelope className="me-2" />
+            {t('header.contact')}
           </Dropdown.Item>
-          <Dropdown.Item href="/docs/" className="d-flex align-items-center gap-2">
-            <FaBook aria-hidden />
-            <span>{t('header.docs')}</span>
+          <Dropdown.Item href="/docs/">
+            <FaBook className="me-2" />
+            {t('header.docs')}
           </Dropdown.Item>
 
           <Dropdown.Divider />
@@ -174,10 +174,9 @@ const UserMenu = ({
             href={buildTicketUrl(user, userInfo, activeOrg)}
             target="_blank"
             rel="noopener noreferrer"
-            className="d-flex align-items-center gap-2"
           >
-            <FaTicketAlt aria-hidden />
-            <span>{t('header.help')}</span>
+            <FaTicket className="me-2" />
+            {t('header.help')}
           </Dropdown.Item>
 
           <Dropdown.Divider />

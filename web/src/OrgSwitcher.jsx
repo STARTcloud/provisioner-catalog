@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaBuilding, FaCheck, FaCrown } from 'react-icons/fa';
+import { FaBuilding, FaCheck, FaCrown } from 'react-icons/fa6';
 
 const ROLE_CLASSES = {
   OWNER: 'bg-danger',
@@ -9,25 +9,26 @@ const ROLE_CLASSES = {
   MEMBER: 'bg-secondary',
 };
 
-export const OrgLogo = ({ org, size = 20 }) =>
+export const OrgLogo = ({ org, size = 20, className = 'rounded-circle me-2' }) =>
   org.logo ? (
     <img
       src={org.logo}
       alt=""
       width={size}
       height={size}
-      className="rounded-circle flex-shrink-0"
+      className={className}
       onError={event => {
         event.currentTarget.style.display = 'none';
       }}
     />
   ) : (
-    <FaBuilding className="flex-shrink-0" aria-hidden />
+    <FaBuilding className="logo-md icon-with-margin" aria-hidden />
   );
 
 OrgLogo.propTypes = {
   org: PropTypes.shape({ logo: PropTypes.string }).isRequired,
   size: PropTypes.number,
+  className: PropTypes.string,
 };
 
 const byPersonalLast = (a, b) => Number(Boolean(a.personal)) - Number(Boolean(b.personal));
@@ -57,7 +58,7 @@ const OrgSwitcher = ({ show, onHide, organizations, activeUuid = '', onPick }) =
                 }`}
                 onClick={() => onPick(org.uuid)}
               >
-                <span className="d-inline-flex align-items-center gap-2 min-width-0">
+                <span className="d-inline-flex align-items-center min-width-0">
                   <OrgLogo org={org} />
                   <span className="min-width-0">
                     <span className="fw-bold d-block text-truncate">{org.name}</span>

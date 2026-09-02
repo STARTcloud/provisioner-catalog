@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.34](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.33...provisioner-catalog-v0.0.34) (2026-09-02)
+
+
+### Features
+
+* share the native theme files with BoxVault byte for byte ([a9f88f8](https://github.com/STARTcloud/provisioner-catalog/commit/a9f88f868a43c148b9e16458c772109a75441a22))
+
 ## [0.0.33](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.32...provisioner-catalog-v0.0.33) (2026-09-02)
 
 

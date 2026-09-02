@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.44](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.43...provisioner-catalog-v0.0.44) (2026-09-02)
+
+
+### Features
+
+* shared pages, react-router routes, the route-driven breadcrumb and the Worker SPA fallback ([f64e500](https://github.com/STARTcloud/provisioner-catalog/commit/f64e5009a671fcaccdfd4fb93a69e187fc8f73b0))
+
 ## [0.0.43](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.42...provisioner-catalog-v0.0.43) (2026-09-02)
 
 

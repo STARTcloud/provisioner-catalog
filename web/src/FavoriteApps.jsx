@@ -44,7 +44,7 @@ const FavoriteApps = ({ apps }) => {
   return (
     <>
       <Dropdown.Divider />
-      <Dropdown.Header className="py-0">{t('header.favorites')}</Dropdown.Header>
+      <Dropdown.Header className="py-0">{t('navbar.favorites')}</Dropdown.Header>
       {[...apps].sort(byOrder).map(app => (
         <Dropdown.Item
           key={app.clientId}

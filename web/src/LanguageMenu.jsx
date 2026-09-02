@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 import CountryFlag from 'react-country-flag';
 import { useTranslation } from 'react-i18next';
-import { FaCircleCheck } from 'react-icons/fa6';
+import { FaCircleCheck, FaGlobe } from 'react-icons/fa6';
 
 import { savePreferences } from './auth';
-import { supportedLanguages } from './i18n';
+import { getSupportedLanguages } from './i18n';
 
 export const getLanguageFlag = languageCode => {
   const code = languageCode || 'en';
@@ -35,7 +35,8 @@ export const getLanguageDisplayName = languageCode => {
 const LanguageMenu = () => {
   const { t, i18n } = useTranslation();
   const [show, setShow] = useState(false);
-  const label = `${t('header.language')}: ${getLanguageDisplayName(i18n.language)}`;
+  const supportedLanguages = getSupportedLanguages();
+  const label = `${t('language.changeLanguage')}: ${getLanguageDisplayName(i18n.language)}`;
 
   const changeLanguage = async lang => {
     await i18n.changeLanguage(lang);
@@ -57,7 +58,10 @@ const LanguageMenu = () => {
 
       <Modal show={show} onHide={() => setShow(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>{t('languageModal.title')}</Modal.Title>
+          <Modal.Title>
+            <FaGlobe className="me-2" />
+            {t('language.changeLanguage')}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="list-group">

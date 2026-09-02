@@ -1,26 +1,36 @@
 {
   "app": {
-    "title": "Catálogo de Provisioners de STARTcloud",
-    "themeContext": {
-      "autoStatus": "Automático ({{mode}})"
-    }
+    "title": "Catálogo de Provisioners de STARTcloud"
   },
-  "header": {
-    "brand": "Catálogo de Provisioners",
+  "language": {
+    "changeLanguage": "Cambiar Idioma"
+  },
+  "user": {
+    "unknownUser": "Usuario Desconocido"
+  },
+  "navbar": {
+    "logout": "Cerrar Sesión",
+    "logoutEverywhereTitle": "Cerrando sesión en todas partes — haz clic para cerrar solo esta aplicación",
+    "logoutLocalTitle": "Cerrando sesión solo en esta aplicación — haz clic para cerrar en todas partes",
+    "signIn": "Iniciar sesión",
+    "accountMenu": "Menú de cuenta",
     "contact": "Contacto",
     "docs": "Documentación",
-    "menuAria": "Menú de usuario",
-    "signIn": "Iniciar sesión",
-    "signedIn": "Sesión iniciada",
-    "theme": "Tema",
-    "language": "Idioma",
     "preferences": "Preferencias",
-    "favorites": "Favoritos",
-    "help": "Ayuda",
+    "provisionerCatalog": "Provisioner Catalog",
     "rebuild": "Regenerar datos del catálogo",
-    "logout": "Cerrar sesión",
-    "logoutEverywhereTitle": "Cerrando sesión en todas partes — haga clic para cerrarla solo en el catálogo",
-    "logoutLocalTitle": "Cerrando sesión solo en el catálogo — haga clic para cerrar también su sesión de STARTcloud"
+    "favorites": "Favoritos",
+    "help": "Ayuda"
+  },
+  "theme": {
+    "auto": "Tema: seguir el sistema",
+    "light": "Tema: claro",
+    "dark": "Tema: oscuro"
+  },
+  "sessionEnded": {
+    "title": "Se cerró tu sesión.",
+    "body": "Tu sesión de inicio único terminó en otro dispositivo o aplicación. Inicia sesión de nuevo para continuar donde estabas.",
+    "signIn": "Iniciar sesión"
   },
   "rebuild": {
     "queued": "Regeneración en cola.",
@@ -28,35 +38,30 @@
     "done": "Regeneración terminada.",
     "failed": "Error al regenerar: {{message}}"
   },
-  "orgs": {
-    "switchTitle": "Cambiar de organización",
-    "primary": "Organización principal",
-    "active": "Organización activa",
-    "roles": {
-      "owner": "Propietario",
-      "admin": "Administrador",
-      "member": "Miembro"
-    }
+  "orgSwitcher": {
+    "title": "Cambiar Organización",
+    "primaryOrg": "Organización Principal"
+  },
+  "roles": {
+    "member": "Miembro",
+    "admin": "Administrador",
+    "owner": "Propietario"
   },
   "inbox": {
     "title": "Notificaciones",
-    "empty": "Sin notificaciones.",
-    "markAllRead": "Marcar todo como leído",
+    "empty": "Aún no hay notificaciones.",
+    "markAllRead": "Marcar todas como leídas",
     "dismiss": "Descartar",
-    "loadError": "No se pudieron cargar las notificaciones.",
-    "viewAll": "Ver todas las notificaciones"
+    "viewAll": "Ver todas las notificaciones",
+    "loadError": "Error al cargar las notificaciones. Por favor intenta de nuevo."
   },
   "notifications": {
     "pushSwitch": "Notificaciones del navegador en este dispositivo",
-    "notSupported": "Este navegador no admite notificaciones.",
-    "permissionDenied": "Se denegó el permiso de notificaciones.",
-    "scopeMissing": "Su cuenta aún no está autorizada para recibir notificaciones.",
-    "enableError": "No se pudieron activar las notificaciones.",
-    "disableError": "No se pudieron desactivar las notificaciones."
-  },
-  "session": {
-    "endedTitle": "Se cerró su sesión.",
-    "endedBody": "Su sesión de STARTcloud terminó en otro dispositivo o aplicación. Inicie sesión de nuevo para continuar."
+    "enableError": "Error al activar las notificaciones. Por favor intenta de nuevo.",
+    "disableError": "Error al desactivar las notificaciones. Por favor intenta de nuevo.",
+    "permissionDenied": "El navegador denegó el permiso de notificaciones.",
+    "scopeMissing": "Tu cuenta aún no está autorizada para notificaciones. Pide a tu administrador que habilite el alcance de notificaciones.",
+    "notSupported": "Este navegador no soporta notificaciones push."
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",
@@ -105,13 +110,6 @@
   "errors": {
     "noPrivateCatalog": "Aún no se ha publicado un catálogo privado para esta organización.",
     "accessDenied": "Acceso denegado por la puerta del catálogo."
-  },
-  "footer": {
-    "poweredBy": "Con tecnología de",
-    "poweredByCompany": "STARTcloud"
-  },
-  "languageModal": {
-    "title": "Seleccionar idioma"
   },
   "callback": {
     "completing": "Completando el inicio de sesión…",

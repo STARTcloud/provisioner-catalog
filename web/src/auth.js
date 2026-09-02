@@ -242,7 +242,7 @@ const applyAccountPreferences = preferences => {
     return;
   }
   if (THEME_VALUES.includes(preferences.theme)) {
-    localStorage.setItem('catalog.theme', preferences.theme);
+    localStorage.setItem('theme', preferences.theme);
   }
   if (preferences.language) {
     localStorage.setItem('i18nextLng', preferences.language);

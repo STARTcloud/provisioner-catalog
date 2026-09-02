@@ -57,7 +57,7 @@ const SignInButton = ({ onSignIn }) => {
         onClick={onSignIn}
       >
         <FaRightToBracket />
-        {t('header.signIn')}
+        {t('navbar.signIn')}
       </button>
     </li>
   );
@@ -109,7 +109,7 @@ const UserMenu = ({
   const hasNotifications = String(user.scope || '').includes('notifications');
   const isAdmin = Boolean(user.authorities?.includes('ROLE_ADMIN'));
   const activeOrg = organizations.find(org => org.uuid === activeOrgUuid) || null;
-  const displayName = userInfo?.name || user.name || user.email || t('header.signedIn');
+  const displayName = userInfo?.name || user.name || user.email || t('user.unknownUser');
   const email = user.email && user.email !== displayName ? user.email : '';
   const picture = userInfo?.picture || '';
 
@@ -121,7 +121,7 @@ const UserMenu = ({
           type="button"
           bsPrefix="nav-link"
           className="py-0 d-flex align-items-center gap-2 text-body"
-          aria-label={t('header.menuAria')}
+          aria-label={t('navbar.accountMenu')}
         >
           <span className="fw-semibold">{displayName}</span>
           <Avatar picture={picture} size={34} />
@@ -147,13 +147,13 @@ const UserMenu = ({
             rel="noopener noreferrer"
           >
             <FaSliders className="me-2" />
-            {t('header.preferences')}
+            {t('navbar.preferences')}
           </Dropdown.Item>
 
           <FavoriteApps apps={userInfo?.favorite_apps || []} />
 
           <Dropdown.Divider />
-          <Dropdown.Header className="py-0">{t('header.brand')}</Dropdown.Header>
+          <Dropdown.Header className="py-0">{t('navbar.provisionerCatalog')}</Dropdown.Header>
           {isAdmin ? <RebuildItem /> : null}
           <Dropdown.Item
             href="https://startcloud.com/#contact"
@@ -161,11 +161,11 @@ const UserMenu = ({
             rel="noopener noreferrer"
           >
             <FaEnvelope className="me-2" />
-            {t('header.contact')}
+            {t('navbar.contact')}
           </Dropdown.Item>
           <Dropdown.Item href="/docs/">
             <FaBook className="me-2" />
-            {t('header.docs')}
+            {t('navbar.docs')}
           </Dropdown.Item>
 
           <Dropdown.Divider />
@@ -176,7 +176,7 @@ const UserMenu = ({
             rel="noopener noreferrer"
           >
             <FaTicket className="me-2" />
-            {t('header.help')}
+            {t('navbar.help')}
           </Dropdown.Item>
 
           <Dropdown.Divider />

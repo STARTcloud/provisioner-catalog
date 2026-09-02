@@ -1,26 +1,36 @@
 {
   "app": {
-    "title": "STARTcloud Provisioner Catalog",
-    "themeContext": {
-      "autoStatus": "Auto ({{mode}})"
-    }
+    "title": "STARTcloud Provisioner Catalog"
   },
-  "header": {
-    "brand": "Provisioner Catalog",
+  "language": {
+    "changeLanguage": "Change Language"
+  },
+  "user": {
+    "unknownUser": "Unknown User"
+  },
+  "navbar": {
+    "logout": "Logout",
+    "logoutEverywhereTitle": "Logging out everywhere — click to log out of this app only",
+    "logoutLocalTitle": "Logging out of this app only — click to log out everywhere",
+    "signIn": "Sign in",
+    "accountMenu": "Account menu",
     "contact": "Contact",
     "docs": "Docs",
-    "menuAria": "User menu",
-    "signIn": "Sign in",
-    "signedIn": "Signed in",
-    "theme": "Theme",
-    "language": "Language",
     "preferences": "Preferences",
-    "favorites": "Favorites",
-    "help": "Help",
+    "provisionerCatalog": "Provisioner Catalog",
     "rebuild": "Rebuild catalog data",
-    "logout": "Logout",
-    "logoutEverywhereTitle": "Logging out everywhere — click to log out of the catalog only",
-    "logoutLocalTitle": "Logging out of the catalog only — click to also end your STARTcloud session"
+    "favorites": "Favorites",
+    "help": "Help"
+  },
+  "theme": {
+    "auto": "Theme: follow system",
+    "light": "Theme: light",
+    "dark": "Theme: dark"
+  },
+  "sessionEnded": {
+    "title": "You were signed out.",
+    "body": "Your single sign-on session ended on another device or app. Sign in again to continue where you were.",
+    "signIn": "Sign in"
   },
   "rebuild": {
     "queued": "Rebuild queued.",
@@ -28,35 +38,30 @@
     "done": "Rebuild finished.",
     "failed": "Rebuild failed: {{message}}"
   },
-  "orgs": {
-    "switchTitle": "Switch Organization",
-    "primary": "Primary organization",
-    "active": "Active organization",
-    "roles": {
-      "owner": "Owner",
-      "admin": "Administrator",
-      "member": "Member"
-    }
+  "orgSwitcher": {
+    "title": "Switch Organization",
+    "primaryOrg": "Primary Organization"
+  },
+  "roles": {
+    "member": "Member",
+    "admin": "Administrator",
+    "owner": "Owner"
   },
   "inbox": {
     "title": "Notifications",
-    "empty": "No notifications.",
+    "empty": "No notifications yet.",
     "markAllRead": "Mark all read",
     "dismiss": "Dismiss",
-    "loadError": "Could not load notifications.",
-    "viewAll": "View all notifications"
+    "viewAll": "View all notifications",
+    "loadError": "Failed to load notifications. Please try again."
   },
   "notifications": {
     "pushSwitch": "Browser notifications on this device",
-    "notSupported": "Notifications are not supported in this browser.",
-    "permissionDenied": "Notification permission was denied.",
-    "scopeMissing": "Your account is not yet authorized for notifications.",
-    "enableError": "Could not enable notifications.",
-    "disableError": "Could not disable notifications."
-  },
-  "session": {
-    "endedTitle": "You were signed out.",
-    "endedBody": "Your STARTcloud session ended on another device or app. Sign in again to continue."
+    "enableError": "Failed to enable notifications. Please try again.",
+    "disableError": "Failed to disable notifications. Please try again.",
+    "permissionDenied": "Notification permission was denied by the browser.",
+    "scopeMissing": "Your account is not yet authorized for notifications. Ask your administrator to enable the notifications scope.",
+    "notSupported": "Push notifications are not supported by this browser."
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",
@@ -105,13 +110,6 @@
   "errors": {
     "noPrivateCatalog": "No private catalog published for this organization yet.",
     "accessDenied": "Access denied by the catalog gate."
-  },
-  "footer": {
-    "poweredBy": "Powered by",
-    "poweredByCompany": "STARTcloud"
-  },
-  "languageModal": {
-    "title": "Select Language"
   },
   "callback": {
     "completing": "Completing sign-in…",

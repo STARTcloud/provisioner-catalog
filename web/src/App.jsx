@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Alert, Button, Container, Form, InputGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,6 +13,8 @@ import {
   FaTriangleExclamation,
 } from 'react-icons/fa6';
 
+import './css/styles.css';
+import './css/fonts.css';
 import {
   API_ORIGIN,
   authHeaders,
@@ -21,14 +23,24 @@ import {
   getAccessToken,
   getClaims,
   getUserInfo,
+  savePreferences,
   signOut,
   signOutEverywhere,
 } from './auth';
 import CatalogSection from './CatalogCards.jsx';
-import { useTheme } from './contexts/ThemeContext.jsx';
 import LanguageMenu from './LanguageMenu.jsx';
 import { resyncPushSubscription } from './push';
 import UserMenu from './UserMenu.jsx';
+
+const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
+
+const subscribeToColorScheme = onChange => {
+  const query = window.matchMedia(DARK_SCHEME_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+
+const systemPrefersDark = () => window.matchMedia(DARK_SCHEME_QUERY).matches;
 
 const THEME_ICONS = { auto: FaCircleHalfStroke, light: FaSun, dark: FaMoon };
 
@@ -50,8 +62,7 @@ const fetchPrivate = async path =>
   axios.get(path, { headers: await authHeaders('GET', `${API_ORIGIN}${path}`) });
 
 const App = () => {
-  const { t } = useTranslation();
-  const { theme, toggleTheme, getThemeDisplay } = useTheme();
+  const { t, i18n } = useTranslation(['common', 'auth']);
   const [publicCatalog, setPublicCatalog] = useState(null);
   const [publicHealth, setPublicHealth] = useState(null);
   const [publicError, setPublicError] = useState('');
@@ -62,6 +73,16 @@ const App = () => {
   const [loadingPrivate, setLoadingPrivate] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
   const [query, setQuery] = useState('');
+  const [themePreference, setThemePreference] = useState(
+    () => localStorage.getItem('theme') || 'auto'
+  );
+  const prefersDark = useSyncExternalStore(subscribeToColorScheme, systemPrefersDark);
+  const theme = themePreference === 'auto' ? (prefersDark && 'dark') || 'light' : themePreference;
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('theme', themePreference);
+  }, [theme, themePreference]);
 
   useEffect(() => {
     axios
@@ -83,7 +104,16 @@ const App = () => {
       }
       const claims = getClaims();
       setUser(claims);
-      getUserInfo().then(setUserInfo);
+      getUserInfo().then(info => {
+        setUserInfo(info);
+        const preferences = info?.preferences;
+        if (['auto', 'light', 'dark'].includes(preferences?.theme)) {
+          setThemePreference(preferences.theme);
+        }
+        if (preferences?.language && preferences.language !== i18n.language) {
+          i18n.changeLanguage(preferences.language);
+        }
+      });
       const organizations = claims?.organizations || [];
       setActiveOrgUuid(defaultOrgUuid(organizations));
       if (organizations.length === 0) {
@@ -128,14 +158,25 @@ const App = () => {
       setLoadingPrivate(false);
     };
     loadPrivate();
-  }, []);
+  }, [i18n]);
 
   useEffect(() => {
     resyncPushSubscription();
   }, []);
 
-  const ThemeIcon = THEME_ICONS[theme] || FaCircleHalfStroke;
-  const themeLabel = `${t('header.theme')}: ${getThemeDisplay()}`;
+  const applyThemePreference = preference => {
+    setThemePreference(preference);
+    savePreferences({ theme: preference });
+  };
+
+  const toggleTheme = () => {
+    const next =
+      (themePreference === 'auto' && 'light') || (themePreference === 'light' && 'dark') || 'auto';
+    applyThemePreference(next);
+  };
+
+  const ThemeIcon = THEME_ICONS[themePreference] || FaCircleHalfStroke;
+  const themeToggleLabel = t(`theme.${themePreference}`);
 
   const handleSignOut = () => {
     signOut();
@@ -213,24 +254,24 @@ const App = () => {
   ));
 
   return (
-    <>
+    <div className="App d-flex flex-column min-vh-100">
       <nav className="navbar navbar-expand-lg sticky-top shadow-sm bg-body-tertiary border-bottom">
         <div className="container-fluid">
           <a href="/" className="navbar-brand p-0 d-flex align-items-center">
             <img src="/startcloud.svg" alt="" className="logo-cluster icon-with-margin-sm" />
-            {t('header.brand')}
+            Provisioner Catalog
           </a>
           <ul className="nav nav-pills me-auto">
             {!user ? (
               <>
                 <li className="nav-item">
                   <a href="https://startcloud.com/#contact" className="nav-link">
-                    {t('header.contact')}
+                    {t('navbar.contact')}
                   </a>
                 </li>
                 <li className="nav-item">
                   <a href="/docs/" className="nav-link">
-                    {t('header.docs')}
+                    {t('navbar.docs')}
                   </a>
                 </li>
               </>
@@ -240,11 +281,12 @@ const App = () => {
           <ul className="nav nav-pills ms-auto align-items-center">
             <li className="nav-item">
               <button
+                key={themePreference}
                 type="button"
                 className="btn btn-link nav-link cluster-btn"
                 onClick={toggleTheme}
-                title={themeLabel}
-                aria-label={themeLabel}
+                title={themeToggleLabel}
+                aria-label={themeToggleLabel}
               >
                 <ThemeIcon />
               </button>
@@ -267,23 +309,19 @@ const App = () => {
       </nav>
 
       {sessionEnded && !user ? (
-        <Container className="pt-3">
-          <Alert
-            variant="warning"
-            dismissible
-            onClose={() => setSessionEnded(false)}
-            className="d-flex align-items-center gap-3 mb-0"
-          >
-            <FaTriangleExclamation className="flex-shrink-0" aria-hidden />
-            <span className="flex-grow-1">
-              <strong className="d-block">{t('session.endedTitle')}</strong>
-              <span className="small">{t('session.endedBody')}</span>
-            </span>
-            <Button variant="primary" size="sm" onClick={handleSignIn}>
-              {t('header.signIn')}
-            </Button>
-          </Alert>
-        </Container>
+        <div
+          className="alert alert-warning d-flex align-items-center gap-3 mx-3 mt-3 mb-0"
+          role="alert"
+        >
+          <FaTriangleExclamation className="flex-shrink-0" />
+          <div className="flex-grow-1">
+            <strong>{t('sessionEnded.title')}</strong>
+            <div className="small">{t('sessionEnded.body')}</div>
+          </div>
+          <Button variant="primary" size="sm" onClick={handleSignIn}>
+            {t('sessionEnded.signIn')}
+          </Button>
+        </div>
       ) : null}
 
       <section className="hero">
@@ -296,7 +334,7 @@ const App = () => {
         </Container>
       </section>
 
-      <Container className="py-4">
+      <Container className="py-4 flex-grow-1">
         <InputGroup className="mb-4 catalog-search">
           <InputGroup.Text>
             <FaMagnifyingGlass aria-hidden />
@@ -351,11 +389,11 @@ const App = () => {
         <div className="container-fluid position-relative d-flex align-items-center">
           <div className="footer-edge-start">
             <span className="text-muted">
-              {t('header.brand')} &copy; {new Date().getFullYear()}
+              Provisioner Catalog &copy; {new Date().getFullYear()}
             </span>
           </div>
           <div className="mx-auto d-flex align-items-center">
-            <span className="text-muted me-2">{t('footer.poweredBy')}</span>
+            <span className="text-muted me-2">{t('auth:login.poweredBy')}</span>
             <a
               href="https://startcloud.com"
               target="_blank"
@@ -371,7 +409,7 @@ const App = () => {
                   event.currentTarget.style.display = 'none';
                 }}
               />
-              <span className="text-muted">{t('footer.poweredByCompany')}</span>
+              <span className="text-muted">{t('auth:login.poweredByCompany')}</span>
             </a>
           </div>
           <div className="footer-edge-end d-flex align-items-center">
@@ -382,12 +420,12 @@ const App = () => {
               className="text-decoration-none text-body-secondary"
             >
               <FaGithub className="me-1" />
-              {t('header.brand')} v{__APP_VERSION__}
+              Provisioner Catalog v{__APP_VERSION__}
             </a>
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 };
 

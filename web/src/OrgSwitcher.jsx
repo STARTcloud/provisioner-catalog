@@ -5,7 +5,7 @@ import { FaBuilding, FaCheck, FaCrown } from 'react-icons/fa6';
 
 const ROLE_CLASSES = {
   OWNER: 'bg-danger',
-  ADMIN: 'bg-warning text-dark',
+  ADMIN: 'bg-warning',
   MEMBER: 'bg-secondary',
 };
 
@@ -40,9 +40,9 @@ const OrgSwitcher = ({ show, onHide, organizations, activeUuid = '', onPick }) =
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title className="d-flex align-items-center gap-2">
-          <FaBuilding aria-hidden />
-          {t('orgs.switchTitle')}
+        <Modal.Title>
+          <FaBuilding className="me-2" />
+          {t('orgSwitcher.title')}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -53,37 +53,40 @@ const OrgSwitcher = ({ show, onHide, organizations, activeUuid = '', onPick }) =
               <button
                 key={org.uuid}
                 type="button"
-                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-3 ${
+                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
                   active ? 'border-primary border-2' : ''
                 }`}
                 onClick={() => onPick(org.uuid)}
               >
-                <span className="d-inline-flex align-items-center min-width-0">
-                  <OrgLogo org={org} />
-                  <span className="min-width-0">
-                    <span className="fw-bold d-block text-truncate">{org.name}</span>
-                    {org.description ? (
-                      <small className="text-body-secondary d-block">{org.description}</small>
-                    ) : null}
-                  </span>
-                </span>
-                <span className="d-inline-flex align-items-center gap-2 flex-shrink-0">
+                <div>
+                  <div className="d-flex align-items-center">
+                    <OrgLogo org={org} />
+                    <div>
+                      <div className="fw-bold">{org.name}</div>
+                      {org.description ? (
+                        <small className="text-muted">{org.description}</small>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+                <div className="d-flex align-items-center">
                   {(org.roles || []).map(role => (
-                    <span key={role} className={`badge ${ROLE_CLASSES[role] || 'bg-secondary'}`}>
-                      {t(`orgs.roles.${role.toLowerCase()}`, { defaultValue: role })}
+                    <span
+                      key={role}
+                      className={`badge ${ROLE_CLASSES[role] || 'bg-secondary'} me-2`}
+                    >
+                      {t(`roles.${role.toLowerCase()}`, { defaultValue: role })}
                     </span>
                   ))}
                   {org.primary ? (
                     <FaCrown
-                      className="text-warning"
-                      title={t('orgs.primary')}
-                      aria-label={t('orgs.primary')}
+                      className="text-warning me-2"
+                      title={t('orgSwitcher.primaryOrg')}
+                      aria-label={t('orgSwitcher.primaryOrg')}
                     />
                   ) : null}
-                  {active ? (
-                    <FaCheck className="text-success" aria-label={t('orgs.active')} />
-                  ) : null}
-                </span>
+                  {active ? <FaCheck className="text-success" /> : null}
+                </div>
               </button>
             );
           })}

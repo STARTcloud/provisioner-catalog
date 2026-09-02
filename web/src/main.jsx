@@ -1,17 +1,20 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { StrictMode } from 'react';
+import { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import { I18nextProvider } from 'react-i18next';
 
 import App from './App';
-import { ThemeProvider } from './contexts/ThemeContext.jsx';
+import i18n, { i18nPromise } from './i18n';
 
-import './i18n';
-import './styles.css';
+const container = document.getElementById('root');
+const root = createRoot(container);
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </StrictMode>
-);
+i18nPromise.then(() => {
+  root.render(
+    <I18nextProvider i18n={i18n}>
+      <Suspense fallback="Loading...">
+        <App />
+      </Suspense>
+    </I18nextProvider>
+  );
+});

@@ -90,7 +90,7 @@ const RebuildItem = () => {
         ) : (
           <FaArrowsRotate className="me-2" />
         )}
-        {t('header.rebuild')}
+        {t('navbar.rebuild')}
       </Dropdown.Item>
       {feedback ? <Dropdown.ItemText className="small">{feedback}</Dropdown.ItemText> : null}
     </>

@@ -1,22 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/startcloud.svg" />
-    <title>STARTcloud Provisioner Catalog</title>
-    <meta
-      name="description"
-      content="Provisioner packages for hyperweaver-agent and zoneweaver-agent — public catalog plus per-organization private catalogs."
-    />
+    <meta charset="utf-8" />
     <script>
       (function () {
         try {
-          var theme = localStorage.getItem('catalog.theme');
-          if (theme !== 'light' && theme !== 'dark') {
-            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          document.documentElement.setAttribute('data-bs-theme', theme);
+          var session = JSON.parse(localStorage.getItem('user') || 'null');
+          var preference =
+            (session && session.preferredTheme) || localStorage.getItem('theme') || 'auto';
+          var resolved =
+            preference === 'auto'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : preference;
+          document.documentElement.setAttribute('data-bs-theme', resolved);
           var lang = localStorage.getItem('i18nextLng');
           if (lang) {
             document.documentElement.lang = lang;
@@ -26,6 +24,13 @@
         }
       })();
     </script>
+    <link rel="icon" type="image/svg+xml" href="/startcloud.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Provisioner packages for hyperweaver-agent and zoneweaver-agent — public catalog plus per-organization private catalogs."
+    />
+    <title>STARTcloud Provisioner Catalog</title>
   </head>
   <body>
     <div id="root"></div>

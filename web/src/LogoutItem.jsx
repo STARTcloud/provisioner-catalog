@@ -34,11 +34,11 @@ const LogoutItem = ({ onSignOut, onSignOutEverywhere }) => {
         className="d-inline-flex me-2 logout-scope"
         onClick={toggleScope}
         onKeyDown={toggleScopeKey}
-        title={everywhere ? t('header.logoutEverywhereTitle') : t('header.logoutLocalTitle')}
+        title={everywhere ? t('navbar.logoutEverywhereTitle') : t('navbar.logoutLocalTitle')}
       >
         <ScopeIcon />
       </span>
-      <span>{t('header.logout')}</span>
+      <span>{t('navbar.logout')}</span>
     </Dropdown.Item>
   );
 };

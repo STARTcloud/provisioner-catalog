@@ -4,8 +4,9 @@
 The grading model (deliberately NOT Home Assistant's author-declared scale):
 every rule is machine-measured from artifacts the data job already downloads —
 the archive members, the packaged provisioner.yml, the repository's releases,
-and its workflow files. Authors never declare anything; the only path to a
-better grade is a better package.
+its workflow files, and the check runs GitHub recorded for the commits its
+pins name. Authors never declare anything; the only path to a better grade is
+a better package.
 
 Tier ladder: unrated < bronze < silver < gold < platinum. A family's measured
 tier is the highest tier whose rules — and all rules below it — pass. Failing
@@ -21,17 +22,20 @@ from __future__ import annotations
 
 import io
 import math
+import re
 import tarfile
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-from scripts.validate_repo import ASSET_RE, SEMVER_RE, gh_api_json, _open_url, API_ROOT
+from scripts.validate_repo import ASSET_RE, REPO_RE, SEMVER_RE, gh_api_json, _open_url, API_ROOT
 
 TIERS = ["bronze", "silver", "gold", "platinum"]
 
 MAX_WORKFLOW_FILES = 20
 MAX_WORKFLOW_BYTES = 256 * 1024
 MAX_MEMBER_SCAN = 200_000
+MAX_PIN_BYTES = 4096
+MAX_MOLECULE_PARENT_WALK = 10
 
 # Provider values that count for platinum.multi_provider — arbitrary strings
 # in a VAGRANT_PROVIDER dropdown must not.
@@ -54,6 +58,13 @@ KNOWN_PROVIDERS = {
 # At least half the declared roles must carry a substantive molecule scenario.
 TESTED_ROLES_RATIO = 0.5
 
+LINT_STEP_RE = re.compile(r"^\s*-?\s*uses:\s*['\"]?ansible/ansible-lint", re.MULTILINE)
+COLLECTION_PIN_RE = re.compile(r"^collections/(?P<namespace>[^/.]+)\.(?P<name>[^/]+)\.version$")
+STAGED_COLLECTION_RE = re.compile(
+    r"/provisioners/ansible_collections/(?P<namespace>[^/]+)/(?P<name>[^/]+)/roles/"
+)
+MOLECULE_CHECK_RE = re.compile(r"^molecule\b", re.IGNORECASE)
+
 
 def archive_member_names(data: bytes) -> list[str]:
     """Member paths of an already-safety-scanned archive (names only)."""
@@ -67,6 +78,91 @@ def archive_member_names(data: bytes) -> list[str]:
     except (tarfile.TarError, EOFError, OSError):
         return []
     return names
+
+
+def archive_collection_pins(data: bytes, family: str, version: str) -> dict[str, tuple[str, str]]:
+    """Collections the archive stages, keyed "<namespace>/<name>" -> (repo, tag).
+
+    Read from the package's own pin files, `<family>/<version>/collections/
+    <namespace>.<name>.version`, each a single line "<owner>/<repo> <tag>".
+    Malformed or unreadable pins are simply absent.
+    """
+    root = f"{family}/{version}/"
+    pins: dict[str, tuple[str, str]] = {}
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
+            for member in archive:
+                name = member.name.rstrip("/")
+                if not member.isreg() or not name.startswith(root):
+                    continue
+                match = COLLECTION_PIN_RE.match(name[len(root):])
+                if not match:
+                    continue
+                extracted = archive.extractfile(member)
+                line = (
+                    extracted.read(MAX_PIN_BYTES).decode("utf-8", "replace").strip()
+                    if extracted
+                    else ""
+                )
+                parts = line.split()
+                if len(parts) == 2 and REPO_RE.match(parts[0]):
+                    pins[f"{match.group('namespace')}/{match.group('name')}"] = (parts[0], parts[1])
+    except (tarfile.TarError, EOFError, OSError):
+        return {}
+    return pins
+
+
+def molecule_run_verified(repo: str, ref: str, token: str | None) -> bool:
+    """True when the ref's history carries a green molecule run.
+
+    GitHub's check runs are the receipt: every "Molecule (…)" leg recorded on
+    the commit must have concluded success. Release commits change only
+    version and changelog and the collection workflows skip molecule there, so
+    a commit whose molecule legs were all skipped is stepped over to its first
+    parent, up to MAX_MOLECULE_PARENT_WALK commits. A failed leg, a missing
+    run within that walk, or an unreadable repository verifies nothing.
+    """
+    sha = ref
+    for _ in range(MAX_MOLECULE_PARENT_WALK):
+        try:
+            commit, _ = gh_api_json(f"{API_ROOT}/repos/{repo}/commits/{sha}", token)
+            runs, _ = gh_api_json(
+                f"{API_ROOT}/repos/{repo}/commits/{commit['sha']}/check-runs?per_page=100",
+                token,
+            )
+        except (urllib.error.URLError, OSError, ValueError, KeyError, TypeError):
+            return False
+        legs = [
+            run
+            for run in runs.get("check_runs", [])
+            if MOLECULE_CHECK_RE.match(str(run.get("name", "")))
+            and not str(run.get("name", "")).strip().lower().endswith("molecule ok")
+        ]
+        conclusions = {str(run.get("conclusion") or "") for run in legs}
+        if legs and conclusions != {"skipped"}:
+            return conclusions == {"success"}
+        parents = commit.get("parents") or []
+        sha = str(parents[0].get("sha", "")) if parents else ""
+        if not sha:
+            return False
+    return False
+
+
+def molecule_evidence(
+    data: bytes, family: str, version: str, repo: str, tag: str, token: str | None
+) -> dict[str, bool]:
+    """Verified molecule runs, keyed by where a scenario can live in the archive.
+
+    "." is the package's own tree at its release tag; "<namespace>/<name>" is a
+    staged collection at the tag its pin file names. A key is True only when
+    molecule_run_verified found a green run for that repository and ref, so a
+    pinned collection release is credited with exactly the tests its own CI
+    ran before it was cut — verified from GitHub, never trusted.
+    """
+    evidence = {".": molecule_run_verified(repo, tag, token) if tag else False}
+    for key, (pin_repo, pin_tag) in archive_collection_pins(data, family, version).items():
+        evidence[key] = molecule_run_verified(pin_repo, pin_tag, token)
+    return evidence
 
 
 def fetch_workflows_text(repo: str, token: str | None) -> str:
@@ -141,13 +237,16 @@ def collect_roles(manifest: dict) -> list[dict]:
     return [r for r in (raw or []) if isinstance(r, dict)]
 
 
-def tested_declared_roles(members: list[str], roles: list[dict]) -> int:
-    """Declared roles carrying a SUBSTANTIVE molecule scenario in the archive.
+def tested_declared_roles(members: list[str], roles: list[dict], evidence: dict[str, bool]) -> int:
+    """Declared roles proven by a shipped molecule scenario AND a green run.
 
-    Anchored on the manifest's own role list, so vendored upstream
-    collections' test trees count for nothing: a role only scores when a
-    member path `…/roles/<name>/molecule/…` holds a molecule.yml AND a
-    converge.yml or verify.yml. An empty `tests/.keep` scores zero.
+    Anchored on the manifest's own role list. A role scores when some member
+    path `…/roles/<name>/molecule/…` holds a molecule.yml AND a converge.yml
+    or verify.yml, and the repository that scenario came from — the staged
+    collection under provisioners/ansible_collections/<namespace>/<name>/ at
+    its pinned release, or the package's own tree at its release tag — carries
+    a verified molecule run (see molecule_evidence). Scenarios shipped but
+    never run, and an empty `tests/.keep`, score zero.
     """
     tested = 0
     for role in roles:
@@ -158,7 +257,13 @@ def tested_declared_roles(members: list[str], roles: list[dict]) -> int:
         scenario = [m for m in members if marker in f"/{m}"]
         has_config = any(m.endswith("/molecule.yml") for m in scenario)
         has_plays = any(m.endswith(("/converge.yml", "/verify.yml")) for m in scenario)
-        if has_config and has_plays:
+        if not (has_config and has_plays):
+            continue
+        sources: set[str] = set()
+        for member in scenario:
+            match = STAGED_COLLECTION_RE.search(f"/{member}")
+            sources.add(f"{match.group('namespace')}/{match.group('name')}" if match else ".")
+        if any(evidence.get(source) for source in sources):
             tested += 1
     return tested
 
@@ -200,8 +305,13 @@ def evaluate_rules(
     releases: list[dict],
     workflows_text: str,
     latest_version: str,
+    molecule_evidence: dict[str, bool] | None = None,
 ) -> dict[str, dict[str, bool]]:
-    """All tier rules, measured. Every value is a plain bool."""
+    """All tier rules, measured. Every value is a plain bool.
+
+    ``molecule_evidence`` is the map molecule_evidence() builds for the latest
+    archive; without it no declared role can count as tested.
+    """
     manifest = manifest if isinstance(manifest, dict) else {}
     root = f"{family}/{latest_version}"
     member_set = set(members)
@@ -218,7 +328,7 @@ def evaluate_rules(
     fields = collect_config_fields(manifest)
     roles = collect_roles(manifest)
 
-    tested_roles = tested_declared_roles(members, roles)
+    tested_roles = tested_declared_roles(members, roles, molecule_evidence or {})
     tests_required = max(1, math.ceil(len(roles) * TESTED_ROLES_RATIO)) if roles else 0
 
     return {
@@ -235,7 +345,7 @@ def evaluate_rules(
             "release_within_12_months": bool(
                 latest_release_at and latest_release_at >= year_ago
             ),
-            "lint_ci": "ansible-lint" in workflows_text,
+            "lint_ci": bool(LINT_STEP_RE.search(workflows_text)),
         },
         "gold": {
             "config_fields_documented": bool(fields)
@@ -246,12 +356,7 @@ def evaluate_rules(
             or f"{root}/examples/Hosts.yml" in member_set,
         },
         "platinum": {
-            # Coverage of the manifest's OWN roles + CI evidence the tests
-            # run — vendored collections' test trees and empty tests/ dirs
-            # count for nothing.
-            "automated_tests": bool(roles)
-            and tested_roles >= tests_required
-            and "molecule" in workflows_text,
+            "automated_tests": bool(roles) and tested_roles >= tests_required,
             "multi_provider": len(known_provider_values(fields)) >= 2,
             "release_cadence": spaced_releases_within_year(release_times, year_ago),
         },

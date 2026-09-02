@@ -395,6 +395,7 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
 
         # Informational: the measured quality tier this family would show in
         # the catalog. Grading never gates admission — the checks above do.
+        evidence = quality.molecule_evidence(data, family, latest, repo, entry["tag"], token)
         rules = quality.evaluate_rules(
             family,
             manifest,
@@ -403,6 +404,7 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
             releases,
             workflows_text,
             latest,
+            evidence,
         )
         tier = quality.measured_tier(rules)
         failed = quality.failed_rules(rules)

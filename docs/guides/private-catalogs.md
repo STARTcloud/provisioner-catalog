@@ -60,8 +60,8 @@ An entry that fails any of these checks is reported as an error and the whole ru
 Source repositories are private, so the builder reads them with a **GitHub App installation token**, not a PAT:
 
 1. The owning organization installs the **STARTcloud Provisioner Catalog** GitHub App.
-2. The App needs only **Contents: read**.
-3. Select the provisioner repositories the catalog should read.
+2. The App needs **Contents: read** and **Checks: read**.
+3. Select the provisioner repositories the catalog should read, plus every private collection repository those provisioners pin in `collections/*.version` — the `platinum.automated_tests` rule reads the check runs of the pinned collection release, and a collection the App cannot read is graded as untested.
 
 The builder mints one installation token per account the App is installed on and matches it to each repository by its `owner` segment. A repository whose owner has no installation fails with:
 
@@ -78,7 +78,7 @@ Private repositories follow the same contract as public ones: published (non-dra
 The only differences from the public builder are in how bytes are read:
 
 - **Installation tokens per owner.** The job signs a short-lived App JWT (RS256, from `CATALOG_APP_ID` and `CATALOG_APP_PRIVATE_KEY`), lists the App's installations, and requests an access token for each. Tokens are keyed by the installation account's login.
-- **Releases and workflow files** are listed through the GitHub API with that token. Workflow text feeds only the `lint_ci` quality rule.
+- **Releases, workflow files and check runs** are read through the GitHub API with that token. Workflow text feeds only the `lint_ci` quality rule; check runs of the pinned collection releases feed `automated_tests`.
 - **Assets go through the API asset endpoint**, not the browser download URL. GitHub answers the API endpoint with a redirect to a signed CDN URL that rejects an `Authorization` header, so the builder disables automatic redirects, catches the `301`/`302`/`303`/`307`/`308`, and follows the `Location` bare. A redirect without a `Location` header is an error.
 - **Size caps** are unchanged: 2 GiB per archive download, 64 KiB per sidecar.
 

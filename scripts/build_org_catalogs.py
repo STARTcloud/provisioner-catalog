@@ -181,6 +181,7 @@ def build_org_provisioners(
             version_entries: list[dict] = []
             manifest = None
             members: list[str] = []
+            latest_data: bytes | None = None
             artifacts_ok = True
             sidecars_ok = True
 
@@ -196,6 +197,7 @@ def build_org_provisioners(
                     continue
                 digest = sha256_hex(data)
                 if version == latest:
+                    latest_data = data
                     members = quality.archive_member_names(data)
                     manifest = extract_manifest_lenient(data, family, version)
                     if manifest is None:
@@ -252,8 +254,22 @@ def build_org_provisioners(
                         "versions": version_entries,
                     }
                 )
+                evidence = (
+                    quality.molecule_evidence(
+                        latest_data, family, latest, repo, versions[latest]["tag"], token
+                    )
+                    if latest_data is not None
+                    else {}
+                )
                 rules = quality.evaluate_rules(
-                    family, manifest, members, list(versions), releases, workflows_text, latest
+                    family,
+                    manifest,
+                    members,
+                    list(versions),
+                    releases,
+                    workflows_text,
+                    latest,
+                    evidence,
                 )
                 health_map[family] = quality.health_entry(
                     family, repo, rules, manifest, latest, releases, artifacts_ok, sidecars_ok

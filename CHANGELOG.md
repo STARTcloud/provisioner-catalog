@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.39](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.38...provisioner-catalog-v0.0.39) (2026-09-02)
+
+
+### Features
+
+* live universal navbar mock with search, filters, modals and sign-in states ([f6b94d0](https://github.com/STARTcloud/provisioner-catalog/commit/f6b94d0dff793a10ebb845b89eae6f981b6290ea))
+* shared chrome folder for header, menu, modals, footer and search ([523a2e7](https://github.com/STARTcloud/provisioner-catalog/commit/523a2e75e99a95f25d3ffb928ca088f7a717e58b))
+
 ## [0.0.38](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.37...provisioner-catalog-v0.0.38) (2026-09-02)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.47](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.46...provisioner-catalog-v0.0.47) (2026-09-03)
+
+
+### Features
+
+* one listing path with collection and visibility filters, per-page view, artifact facts, quality under versions, switcher stays put ([db8a28b](https://github.com/STARTcloud/provisioner-catalog/commit/db8a28bc8eda8700fffa95c2dbb06115371a00e6))
+
 ## [0.0.46](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.45...provisioner-catalog-v0.0.46) (2026-09-02)
 
 

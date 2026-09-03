@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.50](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.49...provisioner-catalog-v0.0.50) (2026-09-03)
+
+
+### Features
+
+* footer links name, year and version to the repo, Worker health heart on the right, gap before each organization group ([0a7f5ba](https://github.com/STARTcloud/provisioner-catalog/commit/0a7f5ba326690960c2f1f51316335246cc6e467d))
+
 ## [0.0.49](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.48...provisioner-catalog-v0.0.49) (2026-09-03)
 
 

@@ -19,15 +19,7 @@ import {
   signOutEverywhere,
 } from './auth';
 import { resetCatalogCache, setMemberships } from './catalogAdapter';
-import {
-  Footer,
-  Header,
-  OrgLogo,
-  SessionEndedBanner,
-  buildRouteCrumbs,
-  parseRoute,
-  useTheme,
-} from './chrome';
+import { Footer, Header, OrgLogo, buildRouteCrumbs, parseRoute, useTheme } from './chrome';
 import {
   APP_NAME,
   Avatar,
@@ -308,9 +300,8 @@ const App = () => {
         signedIn={Boolean(user)}
         onSignIn={handleSignIn}
         userMenu={userMenu}
+        sessionEnded={Boolean(sessionEnded && !user)}
       />
-
-      {sessionEnded && !user ? <SessionEndedBanner onSignIn={handleSignIn} /> : null}
 
       <Container fluid className="mt-3 flex-grow-1">
         <Routes>

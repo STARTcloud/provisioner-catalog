@@ -12,6 +12,7 @@ import {
   labelColumn,
   releasedColumn,
   versionsColumn,
+  visibilityColumn,
 } from './pages';
 
 export const TIER_ORDER = ['diamond', 'platinum', 'gold', 'silver', 'bronze', 'unrated'];
@@ -304,6 +305,14 @@ export const provisioners = {
   adapter: catalogAdapter,
   filterGroups: [
     {
+      key: 'watched',
+      labelKey: 'pages.watch.filterWatched',
+      values: (item, ctx) => (ctx.watchedIds.has(item.id) ? ['watched'] : []),
+      activeClass: 'bg-warning text-dark',
+      labelFor: (value, t) => t(`pages.watch.${value}`),
+      signedInOnly: true,
+    },
+    {
       key: 'tier',
       labelKey: 'search.tier',
       values: item => [item.extras.tier],
@@ -321,9 +330,10 @@ export const provisioners = {
   ],
   columns: [
     labelColumn,
+    visibilityColumn,
+    downloadsColumn,
     tierColumn,
     releasedColumn,
-    downloadsColumn,
     versionsColumn,
     coverageColumn,
   ],

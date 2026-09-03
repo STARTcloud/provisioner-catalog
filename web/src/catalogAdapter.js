@@ -100,7 +100,7 @@ const toItem = (provisioner, healthEntry, organization, isPrivate) => {
     description: provisioner.description || '',
     icon: presentation.icon || '',
     artwork: '',
-    isPublic: isPrivate ? false : null,
+    isPublic: !isPrivate,
     published: null,
     createdAt: null,
     latestReleaseAt: health.latest_release_at || null,
@@ -227,6 +227,24 @@ const getProvider = async (org, name, version, provider) => {
 
 const getOrganization = org => Promise.resolve(organizationOf(org, membershipFor(org)));
 
+const WATCHES_KEY = 'catalog_watches';
+
+const readWatches = () => new Set(JSON.parse(localStorage.getItem(WATCHES_KEY) || '[]'));
+
+const watches = {
+  list: () => Promise.resolve(readWatches()),
+  toggle: (item, next) => {
+    const ids = readWatches();
+    if (next) {
+      ids.add(item.id);
+    } else {
+      ids.delete(item.id);
+    }
+    localStorage.setItem(WATCHES_KEY, JSON.stringify([...ids]));
+    return Promise.resolve();
+  },
+};
+
 export const catalogAdapter = {
   listAll,
   listOrg,
@@ -235,4 +253,5 @@ export const catalogAdapter = {
   getVersion,
   getProvider,
   getOrganization,
+  watches,
 };

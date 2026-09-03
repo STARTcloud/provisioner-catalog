@@ -2,55 +2,58 @@
   "app": {
     "title": "STARTcloud Provisioner Catalog"
   },
-  "language": {
-    "changeLanguage": "Change Language"
-  },
   "user": {
     "unknownUser": "Unknown User"
   },
   "navbar": {
-    "logout": "Logout",
-    "logoutEverywhereTitle": "Logging out everywhere — click to log out of this app only",
-    "logoutLocalTitle": "Logging out of this app only — click to log out everywhere",
-    "signIn": "Sign in",
-    "accountMenu": "Account menu",
+    "about": "About",
     "contact": "Contact",
     "docs": "Docs",
-    "preferences": "Preferences",
     "provisionerCatalog": "Provisioner Catalog",
-    "rebuild": "Rebuild catalog data",
-    "favorites": "Favorites",
-    "help": "Help",
-    "profileModeTitle": "Switch between identity provider and local profile"
+    "rebuild": "Rebuild catalog data"
   },
-  "footer": {
-    "health": {
-      "status": "System Status",
-      "ok": "All systems operational",
-      "error": "A system has an issue",
-      "warning": "One or more systems have warnings",
-      "database": "Database",
-      "storage": "Storage",
-      "storageBoxes": "Storage (Boxes)",
-      "storageIsos": "Storage (ISOs)",
-      "oidcProviders": "OIDC Providers",
-      "worker": "Worker",
-      "idp": "Identity provider",
-      "pages": "Public catalog",
-      "store": "Private store"
+  "about": {
+    "description": "The public catalog of provisioner packages for hyperweaver-agent and zoneweaver-agent, with per-organization private catalogs behind STARTcloud sign-in.",
+    "goal": "One place to find, trust and deploy every provisioner an organization publishes.",
+    "features": {
+      "catalogs": "Public catalog plus private catalogs per organization",
+      "tiers": "Quality tiers measured on every data run",
+      "artifacts": "Versioned artifacts with sha256 sidecars",
+      "watches": "Watch provisioners and get notified of releases",
+      "deploy": "Deploy a provisioner straight into Hyperweaver"
+    },
+    "components": {
+      "data": {
+        "title": "Data job",
+        "releases": "Publishes catalog.json from each repository's GitHub releases",
+        "validation": "Validation action authors run in their own CI",
+        "tiers": "Measures quality tiers and health every run"
+      },
+      "web": {
+        "title": "Web UI",
+        "pages": "React app served from GitHub Pages",
+        "signIn": "STARTcloud sign-in with PKCE and DPoP",
+        "shared": "Navbar and pages shared byte for byte with BoxVault"
+      },
+      "worker": {
+        "title": "Worker",
+        "gate": "Gates private catalogs behind the organization's token",
+        "push": "Holds browser push subscriptions",
+        "config": "Serves health and estate settings"
+      }
+    },
+    "docs": {
+      "intro": "Learn how the catalog is built, how to publish a provisioner and how to consume it.",
+      "docs": "Documentation",
+      "api": "API reference",
+      "gettingStarted": "Getting started"
+    },
+    "support": {
+      "intro": "The catalog is open source; issues and contributions are welcome.",
+      "repository": "Repository",
+      "issues": "Report an issue",
+      "contact": "Contact STARTcloud"
     }
-  },
-  "loading": "Loading...",
-  "yes": "Yes",
-  "no": "No",
-  "theme": {
-    "auto": "Theme: follow system",
-    "light": "Theme: light",
-    "dark": "Theme: dark"
-  },
-  "sessionEnded": {
-    "title": "You were signed out.",
-    "body": "Your session ended. Sign in again to continue where you were."
   },
   "rebuild": {
     "queued": "Rebuild queued.",
@@ -58,40 +61,8 @@
     "done": "Rebuild finished.",
     "failed": "Rebuild failed: {{message}}"
   },
-  "orgSwitcher": {
-    "title": "Switch Organization",
-    "noOrgsFound": "No organizations found. Contact your administrator if this is unexpected.",
-    "primaryOrg": "Primary Organization"
-  },
-  "roles": {
-    "member": "Member",
-    "admin": "Administrator",
-    "owner": "Owner"
-  },
-  "inbox": {
-    "title": "Notifications",
-    "empty": "No notifications yet.",
-    "markAllRead": "Mark all read",
-    "dismiss": "Dismiss",
-    "viewAll": "View all notifications",
-    "loadError": "Failed to load notifications. Please try again."
-  },
-  "notifications": {
-    "pushSwitch": "Browser notifications on this device",
-    "enableError": "Failed to enable notifications. Please try again.",
-    "disableError": "Failed to disable notifications. Please try again.",
-    "permissionDenied": "Notification permission was denied by the browser.",
-    "scopeMissing": "Your account is not yet authorized for notifications. Ask your administrator to enable the notifications scope.",
-    "notSupported": "Push notifications are not supported by this browser."
-  },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",
-    "open": "Search",
-    "filters": "Filters",
-    "clear": "Clear search and filters",
-    "clearFilters": "Clear filters",
-    "activeFilters_one": "{{count}} filter active",
-    "activeFilters_other": "{{count}} filters active",
     "tier": "Tier"
   },
   "card": {
@@ -138,126 +109,5 @@
     "clockSkew": "your time may be off, please try again",
     "returnLink": "return to the catalog",
     "tryAgain": "and try again."
-  },
-  "collections": {
-    "provisioners": "Provisioners",
-    "provisionersCount_one": "{{count}} provisioner",
-    "provisionersCount_other": "{{count}} provisioners",
-    "boxes": "Boxes",
-    "boxesCount_one": "{{count}} box",
-    "boxesCount_other": "{{count}} boxes",
-    "isos": "ISOs",
-    "isosCount_one": "{{count}} ISO",
-    "isosCount_other": "{{count}} ISOs"
-  },
-  "pages": {
-    "loading": "Loading…",
-    "notFound": "Not found.",
-    "empty": "Nothing here yet.",
-    "noMatches": "Nothing matches.",
-    "searchAll": "Search…",
-    "filter": {
-      "collection": "Collection",
-      "provider": "Provider",
-      "architecture": "Architecture"
-    },
-    "view": {
-      "label": "View",
-      "table": "List view",
-      "cards": "Card view"
-    },
-    "toggle": "Show or hide",
-    "addNew": "Add New",
-    "removeAll": "Remove All",
-    "links": {
-      "repo": "Source repository",
-      "homepage": "Homepage",
-      "issues": "Report an issue",
-      "pipeline": "CI pipeline"
-    },
-    "table": {
-      "name": "Name",
-      "os": "OS",
-      "status": "Status",
-      "visibility": "Visibility",
-      "organization": "Organization",
-      "created": "Created",
-      "updated": "Updated",
-      "released": "Latest release",
-      "downloads": "Downloads",
-      "versions": "# Versions",
-      "providers": "Providers",
-      "architectures": "Architectures",
-      "actions": "Actions",
-      "size": "Size",
-      "checksum": "Checksum",
-      "version": "Version",
-      "details": "Details",
-      "download": "Download",
-      "defaultBox": "Default box",
-      "fileSize": "File size",
-      "checksumType": "Checksum type"
-    },
-    "status": {
-      "published": "Published",
-      "pending": "Pending",
-      "public": "Public",
-      "private": "Private",
-      "deprecated": "Deprecated"
-    },
-    "item": {
-      "details": "Details",
-      "facts": "Facts",
-      "readme": "README",
-      "versions": "Versions"
-    },
-    "facts": {
-      "os": "OS",
-      "type": "Type",
-      "username": "Username",
-      "password": "Password",
-      "communicator": "Communicator",
-      "cpus": "CPUs",
-      "memory": "Memory",
-      "disks": "Disks",
-      "providers": "Providers",
-      "built": "Built",
-      "driver": "Driver",
-      "desktop": "Desktop",
-      "server": "Server",
-      "size": "Size",
-      "checksum": "Checksum",
-      "created": "Created",
-      "updated": "Updated",
-      "downloads": "Downloads",
-      "show": "Show",
-      "hide": "Hide"
-    },
-    "version": {
-      "title": "Version {{version}}",
-      "released": "Released",
-      "edit": "Edit version",
-      "releaseNotes": "Release notes",
-      "deprecatedBanner": "This version is deprecated",
-      "description": "Description",
-      "createdAt": "Created",
-      "updatedAt": "Updated",
-      "providersFor": "Providers for version {{version}}",
-      "artifacts": "Artifacts"
-    },
-    "provider": {
-      "edit": "Edit provider",
-      "architecturesFor": "Architectures for provider {{provider}}",
-      "clickToCopy": "Click to copy checksum",
-      "checksumCopied": "Checksum copied to clipboard.",
-      "copyFailed": "Could not copy the checksum."
-    },
-    "watch": {
-      "watch": "Watch",
-      "unwatch": "Stop watching",
-      "filterWatched": "Watched",
-      "watched": "Watched",
-      "error": "Failed to update the watch. Please try again."
-    }
   }
 }

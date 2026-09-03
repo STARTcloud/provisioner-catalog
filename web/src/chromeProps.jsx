@@ -3,13 +3,6 @@ import { FaCircleUser } from 'react-icons/fa6';
 
 import { API_ORIGIN, ISSUER } from './auth';
 import {
-  deleteNotification,
-  fetchNotifications,
-  fetchUnreadCount,
-  markAllRead,
-  markRead,
-} from './notifications';
-import {
   isPushEnabled,
   isPushSupported,
   setPushEnabled,
@@ -27,13 +20,7 @@ const TICKET_REQ_TYPE = 'sso';
 const TICKET_CONTEXT = `provisioner-catalog|${__APP_VERSION__}`;
 const FALLBACK_CUSTOMER_ID = 'A55DF1';
 
-export const notificationsAdapter = {
-  list: fetchNotifications,
-  unreadCount: fetchUnreadCount,
-  markRead,
-  markAllRead,
-  remove: deleteNotification,
-};
+export { notificationsAdapter } from './notifications';
 
 export const pushAdapter = {
   isSupported: isPushSupported,

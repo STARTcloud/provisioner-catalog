@@ -75,6 +75,10 @@ export default defineConfig(({ command }) => ({
         target: apiTarget,
         changeOrigin: true,
       },
+      '/watches': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
     },
   },
   build: {

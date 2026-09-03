@@ -93,6 +93,55 @@ def send_hub_notification(rep, recipient, title, body, navigate, tag, idempotenc
         rep.warning(f"hub notification failed ({exc}): {idempotency_key}")
 
 
+def fetch_watchers(rep, item: str) -> list[str]:
+    url = os.environ.get(
+        "CATALOG_WATCHERS_URL", "https://provisioner-catalog.startcloud.com/watches/watchers"
+    )
+    key = os.environ.get("CATALOG_PUSH_DISPATCH_KEY", "")
+    if not key:
+        return []
+    try:
+        request = urllib.request.Request(
+            f"{url}?{urllib.parse.urlencode({'item': item})}",
+            headers={"User-Agent": USER_AGENT, "X-Dispatch-Key": key},
+        )
+        with urllib.request.urlopen(request, timeout=60) as response:
+            uuids = json.loads(response.read().decode("utf-8")).get("uuids") or []
+            return [str(uuid) for uuid in uuids]
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        rep.warning(f"watchers lookup failed ({exc}): {item}")
+        return []
+
+
+def notify_watchers(rep, item: str, family: str, version: str) -> list[dict]:
+    title = f"{family} {version} released"
+    body = f"New version of {item}, a provisioner you watch."
+    navigate = f"https://provisioner-catalog.startcloud.com/{item}"
+    tag = f"catalog-{family}"
+    events = []
+    for uuid in fetch_watchers(rep, item):
+        send_hub_notification(
+            rep,
+            {"user_uuid": uuid},
+            title,
+            body,
+            navigate,
+            tag,
+            f"catalog:watch:{uuid}:{item}:{version}",
+        )
+        events.append(
+            {
+                "scope": "user",
+                "uuid": uuid,
+                "title": title,
+                "body": body,
+                "navigate": navigate,
+                "tag": tag,
+            }
+        )
+    return events
+
+
 def send_push_dispatch(rep, events: list[dict]) -> None:
     if not events:
         return

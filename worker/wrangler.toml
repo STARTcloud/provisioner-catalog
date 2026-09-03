@@ -36,3 +36,4 @@ VAPID_PUBLIC_KEY = "BJupS8RY1OiRw2AbYwo_VnhUkFGjzHiJr4L4W1gVTJA70BmT-2zDAyzOKjBL
 VAPID_SUBJECT = "mailto:vagrantup-startcloud@prominic.net"
 DISPATCH_REPO = "STARTcloud/provisioner-catalog"
 DISPATCH_WORKFLOW = "generate-catalog-data.yml"
+HYPERWEAVER_URL = "https://host-1162.m4kr.net"

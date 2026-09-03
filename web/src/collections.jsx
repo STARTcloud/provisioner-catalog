@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { FaBug, FaCubes, FaGithub, FaHouse } from 'react-icons/fa6';
 
 import { catalogAdapter } from './catalogAdapter';
+import { DeployButton, ProvisionerQuickActions, deployableVersion } from './deploy';
 import {
   CollapseButton,
   downloadsColumn,
@@ -114,10 +115,11 @@ ItemHeaderExtra.propTypes = {
   item: itemShape.isRequired,
 };
 
-const ItemActions = ({ item }) => {
+const ItemActions = ({ item, ctx }) => {
   const { t } = useTranslation();
   return (
     <>
+      <DeployButton user={ctx.user} item={item} version={deployableVersion(item.versions)} />
       <a
         href={item.links.repo}
         target="_blank"
@@ -153,6 +155,7 @@ const ItemActions = ({ item }) => {
 
 ItemActions.propTypes = {
   item: itemShape.isRequired,
+  ctx: PropTypes.shape({ user: PropTypes.object }).isRequired,
 };
 
 const QualityRules = ({ item }) => {
@@ -334,7 +337,14 @@ export const provisioners = {
     [item.name, item.label || '', item.description || '', item.extras.repo].some(text =>
       text.toLowerCase().includes(needle)
     ),
-  slots: { ItemChips, ItemHeaderExtra, ItemActions, ItemSections: QualitySection, CardExtras },
+  slots: {
+    ItemChips,
+    ItemHeaderExtra,
+    ItemActions,
+    ItemQuickActions: ProvisionerQuickActions,
+    ItemSections: QualitySection,
+    CardExtras,
+  },
 };
 
 export const collections = [provisioners];

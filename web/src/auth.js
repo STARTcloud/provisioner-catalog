@@ -14,7 +14,7 @@ import { clearDpopKey, dpopProof } from './dpop';
 export const ISSUER = 'https://dev-auth.startcloud.com';
 export const API_ORIGIN = __API_ORIGIN__ || window.location.origin;
 const CLIENT_ID = 'provisioner-catalog';
-const SCOPES = 'openid profile email organizations notifications';
+const SCOPES = 'openid profile email organizations notifications entitlements';
 const REDIRECT_URI = `${window.location.origin}/callback`;
 
 const STORE = {

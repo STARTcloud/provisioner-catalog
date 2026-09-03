@@ -704,7 +704,114 @@ const handleHealth = async (request, env, cors) => {
   return jsonResponse(200, healthCache.body, cors);
 };
 
-const WORKER_PREFIXES = ['/private/', '/push/', '/admin/'];
+const handleConfig = (env, cors) =>
+  jsonResponse(200, { hyperweaver: { url: env.HYPERWEAVER_URL || '' } }, cors);
+
+const WATCH_PREFIX = 'watch:';
+const WATCH_ID_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+
+const watchKey = payload => `${WATCH_PREFIX}${String(payload.UUID || payload.sub || '')}`;
+
+const readWatches = async (env, key) => {
+  const value = await env.SUBS.get(key);
+  return value ? JSON.parse(value) : [];
+};
+
+const handleWatchList = async (request, env, cors) => {
+  let payload;
+  try {
+    payload = await authPayload(request, env);
+  } catch (verifyError) {
+    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+  }
+  if (!payload) {
+    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+  }
+  return jsonResponse(200, { items: await readWatches(env, watchKey(payload)) }, cors);
+};
+
+const handleWatch = async (request, env, cors) => {
+  let payload;
+  try {
+    payload = await authPayload(request, env);
+  } catch (verifyError) {
+    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+  }
+  if (!payload) {
+    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse(400, { error: 'invalid watch' }, cors);
+  }
+  const id = typeof body?.id === 'string' ? body.id : '';
+  if (!WATCH_ID_RE.test(id)) {
+    return jsonResponse(400, { error: 'invalid watch' }, cors);
+  }
+  const key = watchKey(payload);
+  const items = await readWatches(env, key);
+  if (!items.includes(id)) {
+    items.push(id);
+    await env.SUBS.put(key, JSON.stringify(items));
+  }
+  return new Response(null, { status: 204, headers: cors });
+};
+
+const handleUnwatch = async (request, env, cors) => {
+  let payload;
+  try {
+    payload = await authPayload(request, env);
+  } catch (verifyError) {
+    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+  }
+  if (!payload) {
+    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+  }
+  const id = new URL(request.url).searchParams.get('id') || '';
+  if (!id) {
+    return jsonResponse(400, { error: 'id required' }, cors);
+  }
+  const key = watchKey(payload);
+  const items = (await readWatches(env, key)).filter(entry => entry !== id);
+  if (items.length > 0) {
+    await env.SUBS.put(key, JSON.stringify(items));
+  } else {
+    await env.SUBS.delete(key);
+  }
+  return new Response(null, { status: 204, headers: cors });
+};
+
+const listWatchers = async (env, item) => {
+  const uuids = [];
+  let cursor;
+  do {
+    const page = await env.SUBS.list({ prefix: WATCH_PREFIX, cursor });
+    for (const key of page.keys) {
+      const value = await env.SUBS.get(key.name);
+      if (value && JSON.parse(value).includes(item)) {
+        uuids.push(key.name.slice(WATCH_PREFIX.length));
+      }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return uuids;
+};
+
+const handleWatchers = async (request, env, cors) => {
+  const dispatchKey = request.headers.get('X-Dispatch-Key') || '';
+  if (!env.DISPATCH_KEY || dispatchKey !== env.DISPATCH_KEY) {
+    return jsonResponse(401, { error: 'bad dispatch key' }, cors);
+  }
+  const item = new URL(request.url).searchParams.get('item') || '';
+  if (!WATCH_ID_RE.test(item)) {
+    return jsonResponse(400, { error: 'item required' }, cors);
+  }
+  return jsonResponse(200, { uuids: await listWatchers(env, item) }, cors);
+};
+
+const WORKER_PREFIXES = ['/private/', '/push/', '/admin/', '/watches/'];
 
 const isPageRequest = (request, pathname) =>
   request.method === 'GET' &&
@@ -737,6 +844,9 @@ export default {
     if (pathname === '/health' && request.method === 'GET') {
       return handleHealth(request, env, cors);
     }
+    if (pathname === '/config' && request.method === 'GET') {
+      return handleConfig(env, cors);
+    }
     if (pathname === '/admin/rebuild' && request.method === 'POST') {
       return handleRebuild(request, env, cors);
     }
@@ -757,6 +867,18 @@ export default {
     }
     if (pathname === '/push/dispatch' && request.method === 'POST') {
       return handleDispatch(request, env, cors);
+    }
+    if (pathname === '/watches' && request.method === 'GET') {
+      return handleWatchList(request, env, cors);
+    }
+    if (pathname === '/watches' && request.method === 'POST') {
+      return handleWatch(request, env, cors);
+    }
+    if (pathname === '/watches' && request.method === 'DELETE') {
+      return handleUnwatch(request, env, cors);
+    }
+    if (pathname === '/watches/watchers' && request.method === 'GET') {
+      return handleWatchers(request, env, cors);
     }
 
     const match = PATH_RE.exec(pathname);

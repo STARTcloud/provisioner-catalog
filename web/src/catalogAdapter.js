@@ -227,21 +227,24 @@ const getProvider = async (org, name, version, provider) => {
 
 const getOrganization = org => Promise.resolve(organizationOf(org, membershipFor(org)));
 
-const WATCHES_KEY = 'catalog_watches';
+const WATCHES_PATH = '/watches';
 
-const readWatches = () => new Set(JSON.parse(localStorage.getItem(WATCHES_KEY) || '[]'));
+const watchHeaders = method => authHeaders(method, `${API_ORIGIN}${WATCHES_PATH}`);
 
 const watches = {
-  list: () => Promise.resolve(readWatches()),
-  toggle: (item, next) => {
-    const ids = readWatches();
+  list: async () => {
+    const { data } = await axios.get(WATCHES_PATH, { headers: await watchHeaders('GET') });
+    return new Set(data.items || []);
+  },
+  toggle: async (item, next) => {
     if (next) {
-      ids.add(item.id);
-    } else {
-      ids.delete(item.id);
+      await axios.post(WATCHES_PATH, { id: item.id }, { headers: await watchHeaders('POST') });
+      return;
     }
-    localStorage.setItem(WATCHES_KEY, JSON.stringify([...ids]));
-    return Promise.resolve();
+    await axios.delete(WATCHES_PATH, {
+      params: { id: item.id },
+      headers: await watchHeaders('DELETE'),
+    });
   },
 };
 

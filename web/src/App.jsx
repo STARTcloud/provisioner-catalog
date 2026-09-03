@@ -2,11 +2,12 @@ import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { Container, Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { FaBook, FaEnvelope } from 'react-icons/fa6';
+import { FaBook, FaCircleInfo, FaEnvelope } from 'react-icons/fa6';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import './css/styles.css';
 import './css/fonts.css';
+import About from './About.jsx';
 import {
   ISSUER,
   beginLogin,
@@ -33,12 +34,20 @@ import {
 } from './chromeProps.jsx';
 import { collections, provisioners } from './collections.jsx';
 import { getSupportedLanguages } from './i18n';
-import { HomePage, ItemPage, OrgPage, ProviderPage, VersionPage, pageContextShape } from './pages';
-import { resyncPushSubscription } from './push';
+import {
+  HomePage,
+  ItemPage,
+  OrgPage,
+  ProviderPage,
+  VersionPage,
+  formatFileSize,
+  pageContextShape,
+} from './pages';
+import { isPushEnabled, listenForSubscriptionChange, syncSubscription } from './push';
 import RebuildItem from './RebuildItem.jsx';
 
 const ACTIVE_ORG_KEY = 'activeOrganization';
-const RESERVED_ROUTES = ['callback', 'docs', 'schema', 'private', 'push', 'admin'];
+const RESERVED_ROUTES = ['about', 'callback', 'docs', 'schema', 'private', 'push', 'admin'];
 const PREFS_PREFIX = 'catalog_table_prefs';
 
 const resolveActiveOrg = (organizations, stored) => {
@@ -50,22 +59,15 @@ const resolveActiveOrg = (organizations, stored) => {
 
 const persistTheme = preference => savePreferences({ theme: preference });
 
-const formatFileSize = bytes => {
-  const size = Number(bytes) || 0;
-  if (size === 0) {
-    return '0 Bytes';
-  }
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(size) / Math.log(k));
-  return `${parseFloat((size / k ** i).toFixed(2))} ${sizes[i]}`;
-};
-
 const AppRows = ({ isAdmin }) => {
   const { t } = useTranslation();
   return (
     <>
       {isAdmin ? <RebuildItem /> : null}
+      <Dropdown.Item as={Link} to="/about">
+        <FaCircleInfo className="me-2" />
+        {t('navbar.about')}
+      </Dropdown.Item>
       <Dropdown.Item
         href="https://startcloud.com/#contact"
         target="_blank"
@@ -222,8 +224,12 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    resyncPushSubscription();
-  }, []);
+    if (!user || !isPushEnabled()) {
+      return undefined;
+    }
+    syncSubscription().catch(() => null);
+    return listenForSubscriptionChange(() => null);
+  }, [user]);
 
   const organizations = user?.organizations || [];
 
@@ -296,6 +302,7 @@ const App = () => {
           to: '/',
         }}
         links={[
+          { key: 'about', label: t('navbar.about'), to: '/about' },
           { key: 'contact', label: t('navbar.contact'), href: 'https://startcloud.com/#contact' },
           { key: 'docs', label: t('navbar.docs'), href: '/docs/' },
         ]}
@@ -312,6 +319,7 @@ const App = () => {
       <Container fluid ref={scrollRef} className="app-scroll py-3">
         <Routes>
           <Route path="/" element={<HomePage collections={collections} context={context} />} />
+          <Route path="/about" element={<About />} />
           <Route
             path="/:org"
             element={<OrgRoute context={context} organizations={organizations} />}

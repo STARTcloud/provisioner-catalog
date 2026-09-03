@@ -1,78 +1,28 @@
 import axios from 'axios';
 
 import { API_ORIGIN, authHeaders } from './auth';
+import { createPush } from './chrome';
 
-const PUSH_ENABLED_KEY = 'catalog.push_enabled';
 const SUBSCRIPTIONS_PATH = '/push/subscriptions';
-
-export const isPushSupported = () =>
-  'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-
-export const isPushEnabled = () => localStorage.getItem(PUSH_ENABLED_KEY) === 'true';
-
-export const setPushEnabled = enabled => {
-  if (enabled) {
-    localStorage.setItem(PUSH_ENABLED_KEY, 'true');
-  } else {
-    localStorage.removeItem(PUSH_ENABLED_KEY);
-  }
-};
-
-const urlBase64ToUint8Array = base64String => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64);
-  return Uint8Array.from(raw, char => char.charCodeAt(0));
-};
-
-const ensureServiceWorker = async () => {
-  await navigator.serviceWorker.register('/notification-sw.js');
-  return navigator.serviceWorker.ready;
-};
 
 const subscriptionHeaders = method => authHeaders(method, `${API_ORIGIN}${SUBSCRIPTIONS_PATH}`);
 
-export const subscribePush = async () => {
-  const registration = await ensureServiceWorker();
-  const { data } = await axios.get('/push/vapid-key');
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(data.publicKey),
-  });
-  await axios.post(SUBSCRIPTIONS_PATH, subscription.toJSON(), {
-    headers: await subscriptionHeaders('POST'),
-  });
-  return subscription;
-};
-
-export const unsubscribePush = async () => {
-  const registration = await navigator.serviceWorker.getRegistration();
-  const subscription = await registration?.pushManager.getSubscription();
-  if (!subscription) {
-    return;
-  }
-  await axios.delete(SUBSCRIPTIONS_PATH, {
-    params: { endpoint: subscription.endpoint },
-    headers: await subscriptionHeaders('DELETE'),
-  });
-  await subscription.unsubscribe();
-};
-
-export const resyncPushSubscription = () => {
-  if (!isPushEnabled() || !isPushSupported()) {
-    return Promise.resolve(null);
-  }
-  return ensureServiceWorker()
-    .then(registration => registration.pushManager.getSubscription())
-    .then(async subscription => {
-      if (!subscription) {
-        setPushEnabled(false);
-        return null;
-      }
-      await axios.post(SUBSCRIPTIONS_PATH, subscription.toJSON(), {
-        headers: await subscriptionHeaders('POST'),
-      });
-      return subscription;
-    })
-    .catch(() => null);
-};
+export const {
+  isPushSupported,
+  isPushEnabled,
+  setPushEnabled,
+  subscribePush,
+  unsubscribePush,
+  syncSubscription,
+  listenForSubscriptionChange,
+} = createPush({
+  storageKey: 'catalog.push_enabled',
+  getVapidKey: () => axios.get('/push/vapid-key').then(({ data }) => data.publicKey),
+  createSubscription: async subscription =>
+    axios.post(SUBSCRIPTIONS_PATH, subscription, { headers: await subscriptionHeaders('POST') }),
+  deleteSubscription: async endpoint =>
+    axios.delete(SUBSCRIPTIONS_PATH, {
+      params: { endpoint },
+      headers: await subscriptionHeaders('DELETE'),
+    }),
+});

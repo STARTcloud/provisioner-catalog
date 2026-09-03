@@ -1,44 +1,11 @@
-import { createInstance } from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
-import HttpApi from 'i18next-http-backend';
-import { initReactI18next } from 'react-i18next';
+import { createI18n } from '../chrome';
 
-const supportedLngs = __SUPPORTED_LOCALES__;
-
-export const getSupportedLanguages = () => supportedLngs;
-
-const i18n = createInstance({
-  fallbackLng: 'en',
-  ns: ['common', 'auth'],
-  defaultNS: 'common',
-  debug: false,
-  interpolation: {
-    escapeValue: false,
-  },
-  react: {
-    useSuspense: true,
-  },
+const { i18n, ready, getSupportedLanguages } = createI18n({
+  loadSupportedLanguages: () => __SUPPORTED_LOCALES__,
 });
 
-i18n.use(HttpApi).use(LanguageDetector).use(initReactI18next);
+export { getSupportedLanguages };
 
-i18n.on('languageChanged', lng => {
-  document.documentElement.lang = lng;
-});
-
-const initI18n = async () => {
-  await i18n.init({
-    supportedLngs,
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-    },
-    backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
-    },
-  });
-};
-
-export const i18nPromise = initI18n();
+export const i18nPromise = ready;
 
 export default i18n;

@@ -136,24 +136,27 @@ jobs:
             Object.entries(obj).flatMap(([key, value]) =>
               value && typeof value === 'object' ? flat(value, `${prefix}${key}.`) : [`${prefix}${key}`]
             );
-          const read = lang => new Set(flat(JSON.parse(fs.readFileSync(`public/locales/${lang}/common.json`, 'utf8'))));
-          const en = read('en');
+          const read = (lang, ns) => new Set(flat(JSON.parse(fs.readFileSync(`public/locales/${lang}/${ns}`, 'utf8'))));
+          const namespaces = fs.readdirSync('public/locales/en').filter(file => file.endsWith('.json'));
           const langs = fs.readdirSync('public/locales').filter(dir => dir !== 'en');
           let failed = false;
           for (const lang of langs) {
-            const keys = read(lang);
-            const missing = [...en].filter(key => !keys.has(key));
-            const extra = [...keys].filter(key => !en.has(key));
-            if (missing.length > 0) {
-              failed = true;
-              console.error(`${lang}/common.json is MISSING ${missing.length} keys:\n  ${missing.join('\n  ')}`);
-            }
-            if (extra.length > 0) {
-              failed = true;
-              console.error(`${lang}/common.json has ${extra.length} keys en lacks:\n  ${extra.join('\n  ')}`);
-            }
-            if (missing.length === 0 && extra.length === 0) {
-              console.log(`${lang}: parity OK (${keys.size} keys)`);
+            for (const ns of namespaces) {
+              const en = read('en', ns);
+              const keys = read(lang, ns);
+              const missing = [...en].filter(key => !keys.has(key));
+              const extra = [...keys].filter(key => !en.has(key));
+              if (missing.length > 0) {
+                failed = true;
+                console.error(`${lang}/${ns} is MISSING ${missing.length} keys:\n  ${missing.join('\n  ')}`);
+              }
+              if (extra.length > 0) {
+                failed = true;
+                console.error(`${lang}/${ns} has ${extra.length} keys en lacks:\n  ${extra.join('\n  ')}`);
+              }
+              if (missing.length === 0 && extra.length === 0) {
+                console.log(`${lang}/${ns}: parity OK (${keys.size} keys)`);
+              }
             }
           }
           process.exit(failed ? 1 : 0);

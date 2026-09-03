@@ -43,7 +43,7 @@ from datetime import datetime, timezone
 import yaml
 
 from scripts import quality
-from scripts.notify import send_push_dispatch, version_pairs
+from scripts.notify import notify_watchers, send_push_dispatch, version_pairs
 from scripts.validate_repo import (
     Reporter,
     _open_url,
@@ -440,16 +440,20 @@ def main() -> int:
         handle.write("\n")
 
     if published is not None:
-        events = [
-            {
-                "scope": "public",
-                "title": f"{family} {version} released",
-                "body": "New provisioner version in the public catalog",
-                "navigate": "https://provisioner-catalog.startcloud.com/",
-                "tag": f"catalog-{family}",
-            }
-            for family, version in sorted(version_pairs(catalog) - version_pairs(published))
-        ]
+        owners = {p["name"]: str(p.get("repo", "")).split("/")[0] for p in provisioners}
+        events = []
+        for family, version in sorted(version_pairs(catalog) - version_pairs(published)):
+            events.append(
+                {
+                    "scope": "public",
+                    "title": f"{family} {version} released",
+                    "body": "New provisioner version in the public catalog",
+                    "navigate": "https://provisioner-catalog.startcloud.com/",
+                    "tag": f"catalog-{family}",
+                }
+            )
+            item = f"{owners.get(family, '')}/{family}"
+            events.extend(notify_watchers(rep, item, family, version))
         send_push_dispatch(rep, events)
 
     total_versions = sum(len(p["versions"]) for p in provisioners)

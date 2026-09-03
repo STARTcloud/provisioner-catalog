@@ -72,6 +72,8 @@ jobs:
         id: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CATALOG_HUB_CLIENT_ID: ${{ secrets.CATALOG_HUB_CLIENT_ID }}
+          CATALOG_HUB_CLIENT_SECRET: ${{ secrets.CATALOG_HUB_CLIENT_SECRET }}
           CATALOG_PUSH_DISPATCH_KEY: ${{ secrets.CATALOG_PUSH_DISPATCH_KEY }}
         run: >-
           python3 -m scripts.build_catalog

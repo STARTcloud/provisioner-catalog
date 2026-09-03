@@ -45,7 +45,12 @@ from scripts.build_catalog import (
     validate_against_schema,
     write_github_output,
 )
-from scripts.notify import send_hub_notification, send_push_dispatch, version_pairs
+from scripts.notify import (
+    notify_watchers,
+    send_hub_notification,
+    send_push_dispatch,
+    version_pairs,
+)
 from scripts.validate_repo import (
     API_ROOT,
     MAX_SIDECAR_BYTES,
@@ -439,6 +444,8 @@ def main() -> int:
                         "tag": f"catalog-{family}",
                     }
                 )
+                item = f"{org['name']}/{family}"
+                push_events.extend(notify_watchers(rep, item, family, version))
         total = sum(len(p["versions"]) for p in provisioners)
         tiers = ", ".join(f"{n}={e['tier']}" for n, e in sorted(health_map.items()))
         rep.info(

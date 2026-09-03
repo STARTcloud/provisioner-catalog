@@ -312,7 +312,7 @@ The Worker always sets `Vary: Origin`. When the request `Origin` is in `ALLOWED_
 
 ## Push and admin endpoints
 
-The same Worker is routed on `/push/*` and `/admin/*`. Web-push subscriptions are stored in a Cloudflare KV namespace keyed by a sha256 of the subscription endpoint; the data job delivers events through `/push/dispatch`.
+The same Worker is routed on `/push/*`, `/watches` and `/admin/*`. Web-push subscriptions are stored in a Cloudflare KV namespace keyed by a sha256 of the subscription endpoint, watches in the same namespace keyed by the user's uuid; the data job delivers events through `/push/dispatch` and resolves watchers through `/watches/watchers`.
 
 ### GET /push/vapid-key
 
@@ -404,6 +404,45 @@ Each target receives an `aes128gcm`-encrypted payload `{ "title", "body", "tag",
 | `401` | `{ "error": "bad dispatch key" }` — header missing, wrong, or the Worker has no `DISPATCH_KEY` |
 | `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
 
+### GET /watches
+
+Bearer JWT (same verification as private catalogs). The caller's watched provisioners, stored in the same KV namespace under `watch:<UUID>` (falling back to `sub`); an item id is `<organization>/<name>`, the organization being the repository owner for public provisioners and the IdP organization name for private ones.
+
+| Status | Body |
+| --- | --- |
+| `200` | `{ "items": ["STARTcloud/startcloud_generic_provisioner", …] }` |
+| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+
+### POST /watches
+
+Bearer JWT. Body `{ "id": "<organization>/<name>" }`; the id must match `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`. Adding an id already watched is a no-op.
+
+| Status | Body |
+| --- | --- |
+| `204` | empty — watched |
+| `400` | `{ "error": "invalid watch" }` |
+| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+
+### DELETE /watches?id=…
+
+Bearer JWT. Removes the id from the caller's watches; the record disappears with its last id.
+
+| Status | Body |
+| --- | --- |
+| `204` | empty — unwatched (or never watched) |
+| `400` | `{ "error": "id required" }` |
+| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+
+### GET /watches/watchers?item=…
+
+Authenticated by the `X-Dispatch-Key` header like `/push/dispatch`; the data job's lookup of who watches an item before it notifies them.
+
+| Status | Body |
+| --- | --- |
+| `200` | `{ "uuids": ["<user uuid>", …] }` |
+| `400` | `{ "error": "item required" }` — missing or malformed item id |
+| `401` | `{ "error": "bad dispatch key" }` |
+
 ### POST /admin/rebuild
 
 Bearer JWT whose `authorities` claim contains `ROLE_ADMIN`. Fires a `workflow_dispatch` of `generate-catalog-data.yml` on `STARTcloud/provisioner-catalog` at `ref: main` with inputs `requested_by` (the caller's `UUID`, falling back to `sub`) and `forceRepositoryUpdate: "true"`, so the run publishes even when the data is unchanged and notifies the requester when it finishes.
@@ -448,6 +487,16 @@ No auth. The Worker's own health document, in the shape BoxVault's `/api/health`
   "services": { "worker": "ok", "idp": "ok", "pages": "ok", "store": "ok" }
 }
 ```
+
+### GET /config
+
+No auth. The estate settings the web UI needs at runtime, the same role BoxVault's `/api/config/hyperweaver` plays: `hyperweaver.url` is the Hyperweaver origin from the Worker's `HYPERWEAVER_URL` var, an empty string when none is configured, in which case the UI draws no Deploy control.
+
+```json
+{ "hyperweaver": { "url": "https://hyperweaver.example.com" } }
+```
+
+The UI's Deploy controls, for a signed-in viewer whose token carries a Hyperweaver entry in the `entitlements` claim, open `{hyperweaver.url}/?create=machine&provisioner={owner/name}&provisioner_version={version}&provisioner_url={artifact URL}`, the provisioner deep link Hyperweaver's machine wizard reads beside its `box*` parameters.
 
 ---
 
@@ -498,6 +547,7 @@ The job obtains a hub token with the OAuth `client_credentials` grant at the iss
 | New `(family, version)` appears in the public catalog (baseline present) | none | `scope: public`, title `<family> <version> released`, body `New provisioner version in the public catalog`, tag `catalog-<family>` |
 | New `(family, version)` appears in an org's private catalog (baseline present) | recipient `{ "org_uuid" }`, title `<family> <version> released`, body `New provisioner version in the <Org name> private catalog.`, key `catalog:<org_uuid>:<family>:<version>` | `scope: org`, `org_uuid`, same title, body `New version in the <Org name> private catalog`, tag `catalog-<family>` |
 | A `workflow_dispatch` run with `requested_by` finishes | recipient `{ "user_uuid": <requested_by> }`, title `Catalog rebuild finished: <build result>`, body `Build <build result>, deploy <deploy result>.`, key `catalog:rebuild:<run id>` | `scope: user`, `uuid`, same title and body, tag `catalog-rebuild` |
+| A new `(family, version)` appears on a provisioner someone watches, public or private (baseline present) | one per watcher from `GET /watches/watchers`: recipient `{ "user_uuid" }`, title `<family> <version> released`, body `New version of <organization>/<family>, a provisioner you watch.`, navigate the item page, key `catalog:watch:<uuid>:<organization>/<family>:<version>` | `scope: user`, `uuid`, same title, body and navigate, tag `catalog-<family>` |
 
 A first publish (no baseline document yet) sends nothing. Push dispatch goes to `https://provisioner-catalog.startcloud.com/push/dispatch` (`CATALOG_PUSH_DISPATCH_URL`) with `X-Dispatch-Key: <CATALOG_PUSH_DISPATCH_KEY>` and is skipped when the key is absent.
 

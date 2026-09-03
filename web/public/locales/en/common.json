@@ -33,7 +33,11 @@
       "storage": "Storage",
       "storageBoxes": "Storage (Boxes)",
       "storageIsos": "Storage (ISOs)",
-      "oidcProviders": "OIDC Providers"
+      "oidcProviders": "OIDC Providers",
+      "worker": "Worker",
+      "idp": "Identity provider",
+      "pages": "Public catalog",
+      "store": "Private store"
     }
   },
   "loading": "Loading...",
@@ -137,15 +141,20 @@
   },
   "collections": {
     "provisioners": "Provisioners",
+    "provisionersCount_one": "{{count}} provisioner",
+    "provisionersCount_other": "{{count}} provisioners",
     "boxes": "Boxes",
-    "isos": "ISOs"
+    "boxesCount_one": "{{count}} box",
+    "boxesCount_other": "{{count}} boxes",
+    "isos": "ISOs",
+    "isosCount_one": "{{count}} ISO",
+    "isosCount_other": "{{count}} ISOs"
   },
   "pages": {
     "loading": "Loading…",
     "notFound": "Not found.",
     "empty": "Nothing here yet.",
     "noMatches": "Nothing matches.",
-    "countOf": "{{count}} {{collection}}",
     "searchAll": "Search…",
     "filter": {
       "collection": "Collection",

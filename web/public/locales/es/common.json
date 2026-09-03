@@ -33,7 +33,11 @@
       "storage": "Almacenamiento",
       "storageBoxes": "Almacenamiento (Boxes)",
       "storageIsos": "Almacenamiento (ISOs)",
-      "oidcProviders": "Proveedores OIDC"
+      "oidcProviders": "Proveedores OIDC",
+      "worker": "Worker",
+      "idp": "Proveedor de identidad",
+      "pages": "Catálogo público",
+      "store": "Almacén privado"
     }
   },
   "loading": "Cargando...",
@@ -137,15 +141,20 @@
   },
   "collections": {
     "provisioners": "Provisioners",
+    "provisionersCount_one": "{{count}} provisioner",
+    "provisionersCount_other": "{{count}} provisioners",
     "boxes": "Boxes",
-    "isos": "ISOs"
+    "boxesCount_one": "{{count}} box",
+    "boxesCount_other": "{{count}} boxes",
+    "isos": "ISOs",
+    "isosCount_one": "{{count}} ISO",
+    "isosCount_other": "{{count}} ISOs"
   },
   "pages": {
     "loading": "Cargando…",
     "notFound": "No encontrado.",
     "empty": "Aún no hay nada aquí.",
     "noMatches": "Nada coincide.",
-    "countOf": "{{count}} {{collection}}",
     "searchAll": "Buscar…",
     "filter": {
       "collection": "Colección",

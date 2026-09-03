@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { FaCircleUser } from 'react-icons/fa6';
 
-import { ISSUER } from './auth';
+import { API_ORIGIN, ISSUER } from './auth';
 import {
   deleteNotification,
   fetchNotifications,
@@ -41,6 +41,14 @@ export const pushAdapter = {
   setEnabled: setPushEnabled,
   subscribe: subscribePush,
   unsubscribe: unsubscribePush,
+};
+
+export const fetchHealth = async () => {
+  const response = await fetch(`${API_ORIGIN}/health`);
+  if (!response.ok) {
+    throw new Error('Health check failed');
+  }
+  return response.json();
 };
 
 export const buildTicketUrl = (user, userInfo, activeOrg) => {

@@ -296,6 +296,7 @@ const coverageColumn = {
 export const provisioners = {
   key: 'provisioners',
   labelKey: 'collections.provisioners',
+  countKey: 'collections.provisionersCount',
   icon: <FaCubes aria-hidden />,
   segment: '',
   hasVersions: true,

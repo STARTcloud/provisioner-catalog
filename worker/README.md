@@ -40,6 +40,8 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - Same URL with a valid Bearer token for a member org → that org's catalog.json.
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
+- `curl https://provisioner-catalog.startcloud.com/health` → `{"status":"ok",…}`
+  with `worker`, `idp`, `pages` and `store` all `ok`; the footer heart reads it.
 
 ## Config changes
 

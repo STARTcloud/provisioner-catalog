@@ -649,6 +649,60 @@ const handleDispatch = async (request, env, cors) => {
   return jsonResponse(200, { delivered }, cors);
 };
 
+const HEALTH_TTL_MS = 60 * 1000;
+let healthCache = { at: 0, body: null };
+
+const probe = async (url, headers = {}) => {
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json', ...headers },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (response.ok) {
+      return 'ok';
+    }
+    if (response.status === 429) {
+      return `warning (${response.status})`;
+    }
+    return `error (${response.status})`;
+  } catch {
+    return 'error (unreachable)';
+  }
+};
+
+const overallStatus = (services) => {
+  const values = Object.values(services);
+  if (values.some((value) => value.startsWith('error'))) {
+    return 'error';
+  }
+  if (values.some((value) => value.startsWith('warning'))) {
+    return 'warning';
+  }
+  return 'ok';
+};
+
+const handleHealth = async (request, env, cors) => {
+  if (Date.now() - healthCache.at > HEALTH_TTL_MS) {
+    const [idp, pages, store] = await Promise.all([
+      probe(`${env.ISSUER}/.well-known/openid-configuration`),
+      probe(new URL('/catalog.json', request.url).toString()),
+      env.GITHUB_PAT
+        ? probe(`https://api.github.com/repos/${env.STORE_REPO}`, {
+            Authorization: `Bearer ${env.GITHUB_PAT}`,
+            'User-Agent': 'provisioner-catalog-gate',
+            'X-GitHub-Api-Version': '2022-11-28',
+          })
+        : Promise.resolve('error (not configured)'),
+    ]);
+    const services = { worker: 'ok', idp, pages, store };
+    healthCache = {
+      at: Date.now(),
+      body: { status: overallStatus(services), timestamp: new Date().toISOString(), services },
+    };
+  }
+  return jsonResponse(200, healthCache.body, cors);
+};
+
 const WORKER_PREFIXES = ['/private/', '/push/', '/admin/'];
 
 const isPageRequest = (request, pathname) =>
@@ -679,6 +733,9 @@ export default {
 
     const { pathname } = new URL(request.url);
 
+    if (pathname === '/health' && request.method === 'GET') {
+      return handleHealth(request, env, cors);
+    }
     if (pathname === '/admin/rebuild' && request.method === 'POST') {
       return handleRebuild(request, env, cors);
     }

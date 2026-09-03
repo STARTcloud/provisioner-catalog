@@ -10,7 +10,7 @@ permalink: /api/
 
 {: .no_toc }
 
-The STARTcloud Provisioner Catalog exposes two static JSON documents on `https://provisioner-catalog.startcloud.com` — `catalog.json`, the wire contract agents parse, and `health.json`, the UI-only companion — plus a Cloudflare Worker that gates per-organization private catalogs and serves the push-notification and admin routes. Everything below is the exact shape each endpoint speaks.
+The STARTcloud Provisioner Catalog exposes two static JSON documents on `https://provisioner-catalog.startcloud.com` — `catalog.json`, the wire contract agents parse, and `health.json`, the UI-only companion — plus a Cloudflare Worker that gates per-organization private catalogs, serves the push-notification and admin routes and answers a health document. Everything below is the exact shape each endpoint speaks.
 
 ## Table of contents
 
@@ -258,7 +258,7 @@ Organizations on the STARTcloud IdP can share private provisioners with their me
 | `/private/{org-uuid}/catalog.json` | GET | Bearer JWT, member of `{org-uuid}` |
 | `/private/{org-uuid}/health.json` | GET | Bearer JWT, member of `{org-uuid}` |
 
-`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under `/private/`, `/push/` or `/admin/` returns `404`; paths outside those prefixes are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
+`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under `/private/`, `/push/` or `/admin/` returns `404`; `/health` answers the Worker's health document; other paths outside those prefixes are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
 
 ### Bearer token requirements
 
@@ -429,6 +429,25 @@ Same auth as `/admin/rebuild`. Reads the single most recent run of the same work
 | `503` | `{ "error": "dispatch not configured" }` |
 
 The web UI polls this every 10 seconds (at most 90 times) after a rebuild, reporting success once it has seen `queued`/`in_progress` followed by `completed`.
+
+### GET /health
+
+No auth. The Worker's own health document, in the shape BoxVault's `/api/health` speaks so the shared footer renders both: every `services` value is a coarse status word, `ok`, `warning (<status>)` or `error (<reason>)`, and `status` is `error` when any service is, else `warning` when any is, else `ok`. The Worker caches the document for 60 seconds; the web UI's footer polls it every 60 seconds and shows the overall state as the heart, the per-service words on hover.
+
+| Service | Probe |
+| --- | --- |
+| `worker` | always `ok` — the Worker answered |
+| `idp` | `GET {ISSUER}/.well-known/openid-configuration` |
+| `pages` | `GET /catalog.json` on this host |
+| `store` | `GET https://api.github.com/repos/{STORE_REPO}` with the read-only PAT; `error (not configured)` without one |
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-09-02T21:05:09.000Z",
+  "services": { "worker": "ok", "idp": "ok", "pages": "ok", "store": "ok" }
+}
+```
 
 ---
 

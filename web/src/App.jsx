@@ -27,6 +27,7 @@ import {
   REPO_URL,
   VIEW_ALL_URL,
   buildTicketUrl,
+  fetchHealth,
   notificationsAdapter,
   pushAdapter,
 } from './chromeProps.jsx';
@@ -324,6 +325,7 @@ const App = () => {
         version={__APP_VERSION__}
         repoUrl={REPO_URL}
         poweredBy={POWERED_BY}
+        fetchHealth={fetchHealth}
       />
     </div>
   );

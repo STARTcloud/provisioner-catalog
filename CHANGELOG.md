@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.48](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.47...provisioner-catalog-v0.0.48) (2026-09-03)
+
+
+### Features
+
+* filter panel label column sizes itself, empty groups hidden, home lists organizations without a visibility level ([a406edc](https://github.com/STARTcloud/provisioner-catalog/commit/a406edc7f95fedbca26f66763ab1d8afca5c1d3b))
+
 ## [0.0.47](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.46...provisioner-catalog-v0.0.47) (2026-09-03)
 
 

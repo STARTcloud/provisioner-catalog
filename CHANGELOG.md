@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.56](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.55...provisioner-catalog-v0.0.56) (2026-09-03)
+
+
+### Features
+
+* add the shared session layer and run the catalog on it ([f329559](https://github.com/STARTcloud/provisioner-catalog/commit/f329559206ba428096de738a96bc47085767fc0c))
+
 ## [0.0.55](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.54...provisioner-catalog-v0.0.55) (2026-09-03)
 
 

@@ -314,7 +314,7 @@ export const provisioners = {
     },
     {
       key: 'provider',
-      labelKey: 'search.provider',
+      labelKey: 'pages.filter.provider',
       values: item => Object.keys(item.extras.coverage.counts),
       activeClass: 'bg-primary',
     },

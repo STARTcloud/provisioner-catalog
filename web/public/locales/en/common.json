@@ -89,8 +89,7 @@
     "clearFilters": "Clear filters",
     "activeFilters_one": "{{count}} filter active",
     "activeFilters_other": "{{count}} filters active",
-    "tier": "Tier",
-    "provider": "Provider"
+    "tier": "Tier"
   },
   "card": {
     "version_one": "{{count}} version",
@@ -150,16 +149,14 @@
     "countOf": "{{count}} {{collection}}",
     "searchAll": "Search…",
     "filter": {
-      "collection": "Collection"
+      "collection": "Collection",
+      "provider": "Provider",
+      "architecture": "Architecture"
     },
     "view": {
       "label": "View",
       "table": "List view",
       "cards": "Card view"
-    },
-    "group": {
-      "public": "Public",
-      "private": "Private"
     },
     "toggle": "Show or hide",
     "table": {

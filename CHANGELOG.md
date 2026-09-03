@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.55](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.54...provisioner-catalog-v0.0.55) (2026-09-03)
+
+
+### Bug Fixes
+
+* bump web dependencies to the newest ESLint nine line, react-hooks seven and Vite 8.2 ([330fc4a](https://github.com/STARTcloud/provisioner-catalog/commit/330fc4ae7edb350091e77adb343f3364a6a70768))
+
 ## [0.0.54](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.53...provisioner-catalog-v0.0.54) (2026-09-03)
 
 

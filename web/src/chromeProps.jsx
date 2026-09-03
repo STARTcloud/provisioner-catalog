@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-import { createI18n, createNotificationsClient, createPush } from './chrome';
+import { createApiClient, createI18n, createNotificationsClient, createPush } from './chrome';
 import { createBrowserOidc, createReturnTo, createSessionEvents } from './session';
 
 export const APP_NAME = 'Provisioner Catalog';
@@ -18,6 +16,8 @@ const TICKET_REQ_TYPE = 'sso';
 const TICKET_CONTEXT = `provisioner-catalog|${__APP_VERSION__}`;
 const FALLBACK_CUSTOMER_ID = 'A55DF1';
 const SUBSCRIPTIONS_PATH = '/push/subscriptions';
+
+const requestOriginFor = origin => (import.meta.env.DEV ? '' : origin);
 
 export const {
   i18n,
@@ -38,29 +38,29 @@ export const session = createBrowserOidc({
   scopes: SCOPES,
   storagePrefix: 'catalog',
   events,
-  apiBase: import.meta.env.DEV ? '' : ISSUER,
+  apiBase: requestOriginFor(ISSUER),
 });
 
-export const authHeaders = session.headers;
+export const client = createApiClient({
+  baseUrl: API_ORIGIN,
+  requestOrigin: requestOriginFor(API_ORIGIN),
+  session,
+});
 
 export const notificationsAdapter = createNotificationsClient({
-  baseUrl: import.meta.env.DEV ? '' : ISSUER,
-  headers: (method, path) => authHeaders(method, `${ISSUER}${path}`),
+  client: createApiClient({
+    baseUrl: ISSUER,
+    requestOrigin: requestOriginFor(ISSUER),
+    session,
+  }),
 });
-
-const subscriptionHeaders = method => authHeaders(method, `${API_ORIGIN}${SUBSCRIPTIONS_PATH}`);
 
 export const push = createPush({
   storageKey: 'catalog.push_enabled',
   serviceWorkerUrl: `/notification-sw.js?app=${encodeURIComponent(APP_NAME)}`,
-  getVapidKey: () => axios.get('/push/vapid-key').then(({ data }) => data.publicKey),
-  createSubscription: async subscription =>
-    axios.post(SUBSCRIPTIONS_PATH, subscription, { headers: await subscriptionHeaders('POST') }),
-  deleteSubscription: async endpoint =>
-    axios.delete(SUBSCRIPTIONS_PATH, {
-      params: { endpoint },
-      headers: await subscriptionHeaders('DELETE'),
-    }),
+  getVapidKey: () => client.get('/push/vapid-key', { auth: false }).then(data => data.publicKey),
+  createSubscription: subscription => client.post(SUBSCRIPTIONS_PATH, subscription),
+  deleteSubscription: endpoint => client.delete(SUBSCRIPTIONS_PATH, { params: { endpoint } }),
 });
 
 export const pushAdapter = {
@@ -71,13 +71,7 @@ export const pushAdapter = {
   unsubscribe: push.unsubscribePush,
 };
 
-export const fetchHealth = async () => {
-  const response = await fetch(`${API_ORIGIN}/health`);
-  if (!response.ok) {
-    throw new Error('Health check failed');
-  }
-  return response.json();
-};
+export const fetchHealth = () => client.get('/health', { auth: false });
 
 export const buildTicketUrl = (user, claims, activeOrg) => {
   const params = new URLSearchParams({

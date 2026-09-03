@@ -1,11 +1,11 @@
-import { API_ORIGIN } from './chromeProps.jsx';
+import { client } from './chromeProps.jsx';
 import { createDeployControls, deployableVersion } from './pages';
 
 export { deployableVersion };
 
 const fetchHyperweaverUrl = () =>
-  fetch(`${API_ORIGIN}/config`)
-    .then(response => (response.ok ? response.json() : null))
+  client
+    .get('/config', { auth: false })
     .then(data => data?.hyperweaver?.url || '')
     .catch(() => '');
 

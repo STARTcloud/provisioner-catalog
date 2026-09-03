@@ -1,6 +1,5 @@
-import axios from 'axios';
-
-import { API_ORIGIN, authHeaders } from './chromeProps.jsx';
+import { encodePath } from './chrome';
+import { client } from './chromeProps.jsx';
 
 let publicPromise = null;
 const privatePromises = new Map();
@@ -20,23 +19,25 @@ const membershipFor = name => memberships.find(org => org.name === name) || null
 
 const fetchPublic = () => {
   publicPromise ||= Promise.all([
-    axios.get('/catalog.json'),
-    axios.get('/health.json').catch(() => ({ data: null })),
-  ]).then(([catalog, health]) => ({ catalog: catalog.data, health: health.data }));
+    client.get('/catalog.json', { auth: false }),
+    client.get('/health.json', { auth: false }).catch(() => null),
+  ]).then(([catalog, health]) => ({ catalog, health }));
   return publicPromise;
 };
 
-const fetchPrivate = async path =>
-  axios.get(path, { headers: await authHeaders('GET', `${API_ORIGIN}${path}`) });
+const PRIVATE_KEYS = { 404: 'errors.noPrivateCatalog' };
+
+const fetchPrivate = (uuid, file) =>
+  client.get(encodePath('private', uuid, file), { messageKeys: PRIVATE_KEYS });
 
 const fetchOrg = uuid => {
   if (!privatePromises.has(uuid)) {
     privatePromises.set(
       uuid,
       Promise.all([
-        fetchPrivate(`/private/${uuid}/catalog.json`),
-        fetchPrivate(`/private/${uuid}/health.json`).catch(() => ({ data: null })),
-      ]).then(([catalog, health]) => ({ catalog: catalog.data, health: health.data }))
+        fetchPrivate(uuid, 'catalog.json'),
+        fetchPrivate(uuid, 'health.json').catch(() => null),
+      ]).then(([catalog, health]) => ({ catalog, health }))
     );
   }
   return privatePromises.get(uuid);
@@ -44,17 +45,7 @@ const fetchOrg = uuid => {
 
 const NOTICE_TYPES = { 'errors.noPrivateCatalog': 'info', 'errors.accessDenied': 'warning' };
 
-const privateError = error => {
-  const { status } = error.response || {};
-  const failure = new Error(error.message);
-  failure.status = status;
-  if (status === 404) {
-    failure.messageKey = 'errors.noPrivateCatalog';
-  } else if (status === 401 || status === 403) {
-    failure.messageKey = 'errors.accessDenied';
-  }
-  return failure;
-};
+const noticeKeyOf = error => (NOTICE_TYPES[error.messageKey] ? error.messageKey : '');
 
 const noticeFor = key => ({ type: NOTICE_TYPES[key], key });
 
@@ -167,7 +158,7 @@ const privateItemsFor = async membership => {
     const organization = organizationOf(membership.name, membership);
     return { items: itemsFrom(data, () => organization, true), noticeKey: '' };
   } catch (error) {
-    return { items: [], noticeKey: privateError(error).messageKey || '' };
+    return { items: [], noticeKey: noticeKeyOf(error) };
   }
 };
 
@@ -194,9 +185,9 @@ const listOrg = async org => {
   try {
     data = await fetchOrg(membership.uuid);
   } catch (error) {
-    const failure = privateError(error);
-    if (failure.messageKey) {
-      ownItems.notice = noticeFor(failure.messageKey);
+    const noticeKey = noticeKeyOf(error);
+    if (noticeKey) {
+      ownItems.notice = noticeFor(noticeKey);
     }
     return ownItems;
   }
@@ -231,22 +222,14 @@ const getOrganization = org => Promise.resolve(organizationOf(org, membershipFor
 
 const WATCHES_PATH = '/watches';
 
-const watchHeaders = method => authHeaders(method, `${API_ORIGIN}${WATCHES_PATH}`);
-
 const watches = {
-  list: async () => {
-    const { data } = await axios.get(WATCHES_PATH, { headers: await watchHeaders('GET') });
-    return new Set(data.items || []);
-  },
+  list: async () => new Set((await client.get(WATCHES_PATH)).items || []),
   toggle: async (item, next) => {
     if (next) {
-      await axios.post(WATCHES_PATH, { id: item.id }, { headers: await watchHeaders('POST') });
+      await client.post(WATCHES_PATH, { id: item.id });
       return;
     }
-    await axios.delete(WATCHES_PATH, {
-      params: { id: item.id },
-      headers: await watchHeaders('DELETE'),
-    });
+    await client.delete(WATCHES_PATH, { params: { id: item.id } });
   },
 };
 

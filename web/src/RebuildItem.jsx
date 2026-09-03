@@ -1,19 +1,14 @@
-import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { Dropdown, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaArrowsRotate } from 'react-icons/fa6';
 
 import { useNotify } from './chrome';
-import { API_ORIGIN, authHeaders } from './chromeProps.jsx';
+import { client } from './chromeProps.jsx';
 
 const POLL_INTERVAL_MS = 10000;
 const POLL_LIMIT = 90;
 const REBUILD_KEY = 'rebuild';
-
-const authed = async (method, path) => ({
-  headers: await authHeaders(method, `${API_ORIGIN}${path}`),
-});
 
 const RebuildItem = () => {
   const { t } = useTranslation();
@@ -61,11 +56,7 @@ const RebuildItem = () => {
       return;
     }
     try {
-      const { data } = await axios.get(
-        '/admin/rebuild/status',
-        await authed('GET', '/admin/rebuild/status')
-      );
-      settle(data);
+      settle(await client.get('/admin/rebuild/status'));
     } catch {
       stopPolling();
     }
@@ -73,7 +64,7 @@ const RebuildItem = () => {
 
   const rebuild = async () => {
     try {
-      await axios.post('/admin/rebuild', null, await authed('POST', '/admin/rebuild'));
+      await client.post('/admin/rebuild');
       notify('info', t('rebuild.running'), { key: REBUILD_KEY, sticky: true });
       setRunning(true);
       sawRunRef.current = false;

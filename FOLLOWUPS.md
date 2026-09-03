@@ -30,27 +30,3 @@ modals and theme files into one codebase.
   GitHub Actions path that lets a publisher build an image in CI and push
   it to a BoxVault instance the way the catalog's family workflow publishes
   a provisioner release, so publishing a box is a workflow, not an upload.
-
-## One browser session for every backend
-
-Both frontends run the shared session layer (the universal session
-contract in the auth server's guides): the catalog with the browser OIDC
-provider, BoxVault with the backend session provider. The step that lets
-the browser provider drive BoxVault too, so one identity-provider session
-serves every app, is on the BoxVault backend:
-
-- `backend/app/middleware/authJwt.js` (`verifyToken`) accepts only
-  BoxVault's own HS256 JWT on `x-access-token` or a raw service-account
-  key; `backend/app/middleware/externalTokenAuth.js` verifies an
-  identity-provider Bearer token against the provider's JWKS but is
-  mounted on read routes only and checks no DPoP proof. Accepting an
-  identity-provider token on the JWT gate, with the proof checked the way
-  the catalog Worker checks it (JWKS, `cnf.jkt`, `jti` replay), opens
-  every route to the browser provider.
-- `backend/app/controllers/auth/token.js` signs the refreshed JWT with
-  `id`, `isServiceAccount`, `stayLoggedIn`, `provider` and
-  `organizations` only, dropping the `id_token`, `oidc_access_token`,
-  `oidc_refresh_token` and `oidc_expires_at` the sign-in embedded; after
-  the first refresh the session no longer resolves its issuer from the
-  embedded ID token. Carry the identity-provider claims through the
-  refresh.

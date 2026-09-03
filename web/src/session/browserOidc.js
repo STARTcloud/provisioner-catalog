@@ -290,6 +290,17 @@ export const createBrowserOidc = ({
     return load();
   };
 
+  const retryAuth = async () => {
+    try {
+      await refreshTokens();
+    } catch {
+      endSession();
+      return false;
+    }
+    claimsPromise = null;
+    return true;
+  };
+
   const savePreferences = async patch => {
     const token = await getAccessToken();
     if (!token) {
@@ -334,6 +345,8 @@ export const createBrowserOidc = ({
     begin,
     complete,
     headers,
+    retryAuth,
+    endSession,
     refresh,
     claims,
     savePreferences,

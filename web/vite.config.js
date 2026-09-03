@@ -79,6 +79,14 @@ export default defineConfig(({ command }) => ({
         target: apiTarget,
         changeOrigin: true,
       },
+      '/health': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
+      '/config': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
     },
   },
   build: {

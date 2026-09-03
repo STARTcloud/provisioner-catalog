@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.51](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.50...provisioner-catalog-v0.0.51) (2026-09-03)
+
+
+### Bug Fixes
+
+* footer link drops the source glyph ([df2d1d3](https://github.com/STARTcloud/provisioner-catalog/commit/df2d1d3909e1604a09acf0ecfaaeba92fe9453a1))
+
 ## [0.0.50](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.49...provisioner-catalog-v0.0.50) (2026-09-03)
 
 

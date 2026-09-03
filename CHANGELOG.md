@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.58](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.57...provisioner-catalog-v0.0.58) (2026-09-03)
+
+
+### Features
+
+* share the logger, pick table columns from the panel and redraw the About page ([f67fa86](https://github.com/STARTcloud/provisioner-catalog/commit/f67fa8683adadbaf19f3a2f19f0007eea23a0934))
+
 ## [0.0.57](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.56...provisioner-catalog-v0.0.57) (2026-09-03)
 
 

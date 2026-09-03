@@ -257,7 +257,6 @@ const App = () => {
     }
     setActiveOrgUuid(uuid);
     localStorage.setItem(ACTIVE_ORG_KEY, uuid);
-    navigate(`/${org.name}`);
   };
 
   const route = parseRoute(pathname, { reserved: RESERVED_ROUTES, collections });

@@ -258,7 +258,7 @@ Organizations on the STARTcloud IdP can share private provisioners with their me
 | `/private/{org-uuid}/catalog.json` | GET | Bearer JWT, member of `{org-uuid}` |
 | `/private/{org-uuid}/health.json` | GET | Bearer JWT, member of `{org-uuid}` |
 
-`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under the Worker's routes returns `404`; a matching path with any method other than `GET` returns `405`.
+`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under `/private/`, `/push/` or `/admin/` returns `404`; paths outside those prefixes are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
 
 ### Bearer token requirements
 

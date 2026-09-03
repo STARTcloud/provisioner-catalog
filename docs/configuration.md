@@ -151,13 +151,13 @@ Hub notifications are sent from `build_org_catalogs` for every new `(family, ver
 
 ### Routes
 
-All three routes are on zone `startcloud.com`, and the `provisioner-catalog` DNS record must be proxied for any of them to intercept traffic. Every other path on the host passes through to GitHub Pages.
+One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the `provisioner-catalog` DNS record must be proxied for it to intercept traffic. The Worker answers three prefixes itself and proxies every other request to GitHub Pages, answering a Pages `404` for a page request (`GET`, `text/html`, no file extension) with `index.html` so the web UI's deep links load.
 
-| Pattern | Purpose |
+| Prefix | Purpose |
 | --- | --- |
-| `provisioner-catalog.startcloud.com/private/*` | Per-organization catalogs |
-| `provisioner-catalog.startcloud.com/push/*` | Web Push subscriptions and dispatch |
-| `provisioner-catalog.startcloud.com/admin/*` | Admin rebuild trigger and status |
+| `/private/*` | Per-organization catalogs |
+| `/push/*` | Web Push subscriptions and dispatch |
+| `/admin/*` | Admin rebuild trigger and status |
 
 ### KV binding
 
@@ -206,7 +206,7 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `POST /push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
 | `OPTIONS *` | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
-Any other path returns `404`. Responses carry `Cache-Control: private, no-store`.
+Any other path under those prefixes returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.
 
 ---
 
@@ -290,7 +290,7 @@ Theme is `auto`, `light` or `dark`, applied as `data-bs-theme` on the root eleme
 | Inbox bell | The access token's `scope` contains `notifications`; reads `<ISSUER>/api/notifications`, `/unread-count`, `/read`, `/read-all` and polls the unread count every 60 seconds |
 | Web Push | Browser support for service workers, `PushManager` and `Notification`; registers `/notification-sw.js`, fetches `/push/vapid-key`, and posts the subscription to `/push/subscriptions`. On load the SPA re-posts an existing subscription when `catalog.push_enabled` is set |
 | Rebuild catalog data | `ROLE_ADMIN` in the token's `authorities`; posts `/admin/rebuild` and polls `/admin/rebuild/status` every 10 seconds, at most 90 times |
-| Help & Support | Opens the ticket router with `customer_id` from userinfo (fallback constant in `UserMenu.jsx`) and context `provisioner-catalog|<version>` |
+| Help & Support | Opens the ticket router with `customer_id` from userinfo (fallback constant in `UserMenu.jsx`) and context `provisioner-catalog | <version>` |
 
 ---
 

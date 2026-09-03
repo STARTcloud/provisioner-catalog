@@ -86,7 +86,7 @@ The same download path is what lets a private repository run the validation acti
 
 ## Membership and the gate
 
-The Cloudflare Worker `provisioner-catalog-gate` is routed on `provisioner-catalog.startcloud.com/private/*` (plus `/push/*` and `/admin/*`). Every other path on the domain passes straight through to GitHub Pages, so the public `catalog.json` is never touched. The DNS record must be **proxied** in Cloudflare, or the route never fires.
+The Cloudflare Worker `provisioner-catalog-gate` is routed on `provisioner-catalog.startcloud.com/*`. It answers `/private/*`, `/push/*` and `/admin/*` itself and proxies every other request to GitHub Pages, so the public `catalog.json` is never touched; a page request (a `GET` for `text/html` with no file extension) that Pages answers with `404` gets `index.html` instead, so a deep link into the web UI loads. The DNS record must be **proxied** in Cloudflare, or the route never fires.
 
 ### Route
 
@@ -95,7 +95,7 @@ GET /private/<org-uuid>/catalog.json
 GET /private/<org-uuid>/health.json
 ```
 
-The uuid is matched case-insensitively and lowercased. Any other path under the Worker's routes answers `404`; any method other than `GET` on a matching path answers `405`; `OPTIONS` answers `204` with CORS headers for origins listed in `ALLOWED_ORIGINS`.
+The uuid is matched case-insensitively and lowercased. Any other path under `/private/`, `/push/` or `/admin/` answers `404`; any method other than `GET` on a matching path answers `405`; `OPTIONS` answers `204` with CORS headers for origins listed in `ALLOWED_ORIGINS`.
 
 ### Token verification
 
@@ -150,24 +150,23 @@ After sign-in the UI decodes the access token, reads its `organizations` claim, 
 
 | Gate status | Shown as |
 | --- | --- |
-| `404` | "No private catalog published for this organization yet." on that organization's page |
-| `401` / `403` | "Access denied by the catalog gate." in that organization's section |
+| `404` | nothing — the organization has no private rows yet |
+| `401` / `403` | "Access denied by the catalog gate." as a notice at the top of the page |
 | anything else | the raw request error |
 
-A multi-org user can drill into every org they belong to. That is the cross-sharing mechanism: an organization shares a provisioner by adding the repository to its own entry, and members of that org see it wherever else they belong.
+A multi-org user sees every org they belong to. That is the cross-sharing mechanism: an organization shares a provisioner by adding the repository to its own entry, and members of that org see it wherever else they belong.
 
 ### The breadcrumb and organization pages
 
-- The brand is the public root and always shows the **Public Catalog** section.
-- Signed in with organizations in the token, a breadcrumb follows the brand: the first crumb picks the group, **Public** or **Private**. **Private** lists one card per organization in the token with its logo, description, role badges, and its provisioner count, "No catalog published yet" (gate `404`), or "Access denied by the catalog gate." (gate `401`/`403`); **Open catalog** drills into that organization and the breadcrumb becomes `Private › <org>`, the org crumb being a picker across the organizations with a published catalog.
-- An organization's page shows one section: the org's logo (or a building icon), its name, the subtitle "Private catalog — visible to `<org>` members only.", and the same provisioner cards as the public catalog, including tier badges and provider chips from the org's `health.json`.
-- The last opened organization's uuid is stored in the browser under `activeOrganization`, validated against the token's `organizations` claim on every load, and falls back to the primary membership, then the first.
-- An organization whose catalog exists but lists no provisioners shows "This organization has no published provisioners yet."
-- The header search and its tier and provider filters apply to whichever page is shown, with filter picks persisted per page; on the **Private** list the search matches organization names and descriptions.
+- The home page lists every provisioner the viewer can see. Signed in, it is grouped under **Private** and **Public**, each foldable, with a foldable row per organization inside each group.
+- The breadcrumb after the brand comes from the route alone: `› <org>` on an organization page, `› <org> › Provisioners › <provisioner> › <version> › <provider>` as you drill in, every crumb a plain link back up and none of them a picker.
+- An organization's page (`/<org>`) shows the org's logo (or a building icon), its name and description, and its provisioners: the private ones when the token lists the organization, plus the public ones published under that GitHub owner, with tier badges and provider chips from the org's `health.json`. Private rows carry a **Private** badge.
+- Narrowing is filtering: the header search and its **Visibility**, **Tier** and **Provider** pills apply to whichever page is shown, with filter picks, the sort and the list / cards view persisted per page.
+- An organization whose catalog exists but lists no provisioners shows "Nothing here yet."
 
 ### The org switcher
 
-The user menu gains an active-organization entry when the token carries at least two organizations. It opens a modal listing each org with logo, name, description, a "Primary" marker, and role badges. Choosing one drills straight into that organization's catalog.
+The user menu gains an active-organization entry when the token carries at least two organizations. It opens a modal listing each org with logo, name, description, a "Primary" marker, and role badges. Choosing one sets the active organization for org-scoped actions such as the support ticket and leaves the page where it is; the choice is stored in the browser under `activeOrganization`, validated against the token's `organizations` claim on every load, and falls back to the primary membership, then the first.
 
 ## Notifications for private catalogs
 

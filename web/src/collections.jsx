@@ -5,7 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { FaBug, FaCubes, FaGithub, FaHouse } from 'react-icons/fa6';
 
 import { catalogAdapter } from './catalogAdapter';
-import { downloadsColumn, itemShape, labelColumn, releasedColumn, versionsColumn } from './pages';
+import {
+  CollapseButton,
+  downloadsColumn,
+  itemShape,
+  labelColumn,
+  releasedColumn,
+  versionsColumn,
+} from './pages';
 
 export const TIER_ORDER = ['diamond', 'platinum', 'gold', 'silver', 'bronze', 'unrated'];
 const VISIBLE_VERSIONS = 10;
@@ -170,25 +177,25 @@ QualityRules.propTypes = {
   item: itemShape.isRequired,
 };
 
-const ItemExtras = ({ item }) => {
+const QualitySection = ({ item }) => {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   return (
-    <div className="row g-3 mb-4 mx-0 px-0">
-      <div className="col-lg-5 col-xl-4">
-        <div className="card h-100">
-          <div className="card-header">
-            <h5 className="mb-0">{t('card.quality', { tier: t(`tiers.${item.extras.tier}`) })}</h5>
-          </div>
-          <div className="card-body">
-            <QualityRules item={item} />
-          </div>
-        </div>
+    <div className="list-table">
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <CollapseButton collapsed={!open} onToggle={() => setOpen(current => !current)} />
+        <h4 className="mb-0">{t('card.qualityHeading')}</h4>
+        <TierBadge item={item} />
+        <span className="badge bg-secondary bg-opacity-50">
+          {t('card.unmetCount', { count: item.extras.failedRules.length })}
+        </span>
       </div>
+      {open ? <QualityRules item={item} /> : null}
     </div>
   );
 };
 
-ItemExtras.propTypes = {
+QualitySection.propTypes = {
   item: itemShape.isRequired,
 };
 
@@ -324,7 +331,7 @@ export const provisioners = {
     [item.name, item.label || '', item.description || '', item.extras.repo].some(text =>
       text.toLowerCase().includes(needle)
     ),
-  slots: { ItemChips, ItemHeaderExtra, ItemActions, ItemExtras, CardExtras },
+  slots: { ItemChips, ItemHeaderExtra, ItemActions, ItemSections: QualitySection, CardExtras },
 };
 
 export const collections = [provisioners];

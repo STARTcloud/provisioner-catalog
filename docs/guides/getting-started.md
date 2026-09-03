@@ -40,7 +40,7 @@ Health chips appear when the data run found something worth flagging: a stale fa
 
 ### Search and filters
 
-The search lives in the header, first in the account cluster: a magnifier icon that expands into an input on click or a short hover. Typing filters the cards on the page live by family name, description, repository, or label, and the input shows a matched / total count. The gear beside it opens a filter panel under the header with one row of pills per group, each labelled `value (count)`: **Tier** (the measured quality tier) and **Provider** (providers with a verified image in any recorded version). Picked filters persist per page in the browser; the × clears the query and every filter and collapses the search.
+The search lives in the header, first in the account cluster: a magnifier icon that expands into an input on click or a short hover. Typing filters the page live by family name, description, repository, or label, and the input shows a matched / total count. The gear beside it opens a filter panel under the header with one row of pills per group, each labelled `value (count)`: **Visibility** (Public / Private, once a private catalog is loaded), **Tier** (the measured quality tier) and **Provider** (providers with a verified image in any recorded version). Picked filters, the sort and the list / cards view persist per page in the browser; the × clears the query and every filter and collapses the search.
 
 ### Theme and language
 
@@ -50,17 +50,17 @@ The header's theme button cycles **Auto → Light → Dark**. The user menu's fi
 
 The user menu's **Sign in** entry starts an OIDC authorization-code + PKCE flow against the STARTcloud IdP. The catalog is a public client with no secret. After the IdP redirects back to `/callback`, the page exchanges the code, syncs your account preferences, and returns you to the catalog. Sign-in state is stored in the browser, and access tokens are refreshed automatically shortly before they expire.
 
-### Public, Private, and the breadcrumb
+### The breadcrumb and organization pages
 
-The brand is the root and always shows the **Public Catalog**, the same data everyone sees; hovering the section title shows when it was last regenerated.
+The brand is the root: the home page lists every provisioner you can see, grouped under **Private** and **Public** once you are signed in, with a foldable row per organization inside each group.
 
-Signed in with organizations in your token, a breadcrumb follows the brand. Its first crumb is the group, **Public** or **Private**, and clicking it opens a picker between the two. **Private** shows one card per organization on your account with its logo, description, roles, and either its provisioner count or "No catalog published yet"; **Open catalog** drills into that organization, and the breadcrumb becomes `Private › <org>`, where the org crumb is a picker across your organizations. Each organization's catalog is fetched from `/private/<org-uuid>/catalog.json` with your bearer token, and the header search and filters apply to whichever page is shown. The brand takes you back to the public root.
+Signed in, a breadcrumb follows the brand and comes from the route alone: `› <org>` on an organization page, then `› <org> › Provisioners › <provisioner> › <version>` as you drill in, every crumb a plain link back up and none of them a picker. An organization page (`/<org>`) shows that organization's provisioners: the private ones when your token lists the organization, fetched from `/private/<org-uuid>/catalog.json` with your bearer token, plus the public ones published under that GitHub owner. Narrowing is filtering: the **Visibility** pills in the search panel show only public or only private rows, and the search and filters apply to whichever page is shown.
 
-The last organization you opened is remembered in the browser, validated against your token on every load, and falls back to your primary organization, then the first. An organization whose catalog the gate refuses shows "Access denied by the catalog gate."
+An organization whose catalog the gate refuses shows "Access denied by the catalog gate."; an organization whose catalog lists nothing shows "Nothing here yet."
 
 ### Organization switcher
 
-When your token carries at least two organizations, the user menu gains an active-organization entry. It opens a modal listing every organization with its logo, description, roles, and primary flag; selecting one drills straight into that organization's catalog.
+When your token carries at least two organizations, the user menu gains an active-organization entry. It opens a modal listing every organization with its logo, description, roles, and primary flag. Picking one sets the active organization for org-scoped actions such as the support ticket and leaves the page where it is. The active organization is remembered in the browser, validated against your token on every load, and falls back to your primary organization, then the first.
 
 ### Notifications bell
 
@@ -149,7 +149,7 @@ Add one line to `sources.yml`, alphabetized, with an owner-attribution comment, 
 
 ## Troubleshooting
 
-**No breadcrumb after sign-in** — your token carries no organizations, so there is nothing private to show. An organization that is in your token but has no published catalog still appears under **Private**, marked "No catalog published yet", because the gate answered `404 no catalog published for this organization`.
+**Nothing under Private after sign-in** — your token carries no organizations, or none of them has a published catalog: the gate answered `404 no catalog published for this organization` and the Private group stays empty. The breadcrumb only appears once you leave the home page, because it is the route.
 
 **"Access denied by the catalog gate"** — the gate returned `403 not a member of this organization` (the organization uuid is not in your token's `organizations` claim) or `401`. Membership is the only thing that grants read access; there is no other route in.
 

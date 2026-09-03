@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.53](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.52...provisioner-catalog-v0.0.53) (2026-09-03)
+
+
+### Features
+
+* shared error boundary, mountApp, push, i18n and Deploy controls in chrome and pages, shared.json namespace, Worker /config, Deploy on provisioners ([a41f5fd](https://github.com/STARTcloud/provisioner-catalog/commit/a41f5fd77b39970e08e9a9ba1807cd8c9316db15))
+
 ## [0.0.52](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.51...provisioner-catalog-v0.0.52) (2026-09-03)
 
 

@@ -309,6 +309,7 @@ const tierColumn = {
 const coverageColumn = {
   key: 'providers',
   labelKey: 'pages.table.providers',
+  sortValue: item => Object.keys(item.extras.coverage.counts).sort().join(' ').toLowerCase(),
   render: item =>
     Object.keys(item.extras.coverage.counts).length > 0 ? <CoverageChips item={item} /> : 'N/A',
 };

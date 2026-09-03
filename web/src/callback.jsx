@@ -13,7 +13,7 @@ const onDone = () => window.location.replace(returnTo.consume() || '/');
 i18nPromise.then(() => {
   createRoot(document.getElementById('root')).render(
     <I18nextProvider i18n={i18n}>
-      <Suspense fallback="Loading...">
+      <Suspense fallback={i18n.t('loading')}>
         <CallbackPage complete={session.complete} onDone={onDone} />
       </Suspense>
     </I18nextProvider>

@@ -42,6 +42,8 @@ const fetchOrg = uuid => {
   return privatePromises.get(uuid);
 };
 
+const NOTICE_TYPES = { 'errors.noPrivateCatalog': 'info', 'errors.accessDenied': 'warning' };
+
 const privateError = error => {
   const { status } = error.response || {};
   const failure = new Error(error.message);
@@ -53,6 +55,8 @@ const privateError = error => {
   }
   return failure;
 };
+
+const noticeFor = key => ({ type: NOTICE_TYPES[key], key });
 
 const ownerOf = repo => repo.split('/')[0];
 const ownerLogo = owner => `https://github.com/${owner}.png?size=64`;
@@ -163,9 +167,7 @@ const privateItemsFor = async membership => {
     const organization = organizationOf(membership.name, membership);
     return { items: itemsFrom(data, () => organization, true), noticeKey: '' };
   } catch (error) {
-    const failure = privateError(error);
-    const denied = failure.status === 401 || failure.status === 403;
-    return { items: [], noticeKey: denied ? failure.messageKey : '' };
+    return { items: [], noticeKey: privateError(error).messageKey || '' };
   }
 };
 
@@ -175,9 +177,9 @@ const listAll = async () => {
     Promise.all(memberships.map(privateItemsFor)),
   ]);
   const items = [...privateResults.flatMap(result => result.items), ...ownItems];
-  const denied = privateResults.find(result => result.noticeKey);
-  if (denied) {
-    items.notice = { type: 'warning', key: denied.noticeKey };
+  const failed = privateResults.find(result => result.noticeKey);
+  if (failed) {
+    items.notice = noticeFor(failed.noticeKey);
   }
   return items;
 };
@@ -193,8 +195,8 @@ const listOrg = async org => {
     data = await fetchOrg(membership.uuid);
   } catch (error) {
     const failure = privateError(error);
-    if (failure.status === 401 || failure.status === 403) {
-      ownItems.notice = { type: 'warning', key: failure.messageKey };
+    if (failure.messageKey) {
+      ownItems.notice = noticeFor(failure.messageKey);
     }
     return ownItems;
   }

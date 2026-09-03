@@ -59,7 +59,8 @@
     "queued": "Regeneración en cola.",
     "running": "Regeneración en curso…",
     "done": "Regeneración terminada.",
-    "failed": "Error al regenerar: {{message}}"
+    "failed": "Error al regenerar: {{message}}",
+    "unknown": "desconocido"
   },
   "search": {
     "placeholder": "Buscar provisioners por nombre, descripción o repositorio…",

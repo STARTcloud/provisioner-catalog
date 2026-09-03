@@ -59,7 +59,8 @@
     "queued": "Rebuild queued.",
     "running": "Rebuild running…",
     "done": "Rebuild finished.",
-    "failed": "Rebuild failed: {{message}}"
+    "failed": "Rebuild failed: {{message}}",
+    "unknown": "unknown"
   },
   "search": {
     "placeholder": "Search provisioners by name, description, or repository…",

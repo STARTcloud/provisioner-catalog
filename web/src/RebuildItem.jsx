@@ -4,10 +4,12 @@ import { Dropdown, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaArrowsRotate } from 'react-icons/fa6';
 
+import { useNotify } from './chrome';
 import { API_ORIGIN, authHeaders } from './chromeProps.jsx';
 
 const POLL_INTERVAL_MS = 10000;
 const POLL_LIMIT = 90;
+const REBUILD_KEY = 'rebuild';
 
 const authed = async (method, path) => ({
   headers: await authHeaders(method, `${API_ORIGIN}${path}`),
@@ -15,8 +17,8 @@ const authed = async (method, path) => ({
 
 const RebuildItem = () => {
   const { t } = useTranslation();
+  const notify = useNotify();
   const [running, setRunning] = useState(false);
-  const [feedback, setFeedback] = useState('');
   const pollRef = useRef(null);
   const sawRunRef = useRef(false);
   const pollCountRef = useRef(0);
@@ -43,11 +45,12 @@ const RebuildItem = () => {
     }
     if (data.status === 'completed' && sawRunRef.current) {
       stopPolling();
-      setFeedback(
-        data.conclusion === 'success'
-          ? t('rebuild.done')
-          : t('rebuild.failed', { message: data.conclusion || 'unknown' })
-      );
+      if (data.conclusion === 'success') {
+        notify('success', t('rebuild.done'), { key: REBUILD_KEY, sticky: true });
+      } else {
+        const message = data.conclusion || t('rebuild.unknown');
+        notify('danger', t('rebuild.failed', { message }), { key: REBUILD_KEY, sticky: true });
+      }
     }
   };
 
@@ -69,31 +72,30 @@ const RebuildItem = () => {
   };
 
   const rebuild = async () => {
-    setFeedback('');
     try {
       await axios.post('/admin/rebuild', null, await authed('POST', '/admin/rebuild'));
-      setFeedback(t('rebuild.running'));
+      notify('info', t('rebuild.running'), { key: REBUILD_KEY, sticky: true });
       setRunning(true);
       sawRunRef.current = false;
       pollCountRef.current = 0;
       pollRef.current = setInterval(pollOnce, POLL_INTERVAL_MS);
     } catch (rebuildError) {
-      setFeedback(t('rebuild.failed', { message: rebuildError.message }));
+      notify('danger', t('rebuild.failed', { message: rebuildError.message }), {
+        key: REBUILD_KEY,
+        sticky: true,
+      });
     }
   };
 
   return (
-    <>
-      <Dropdown.Item as="button" type="button" onClick={rebuild} disabled={running}>
-        {running ? (
-          <Spinner animation="border" size="sm" role="status" className="me-2" />
-        ) : (
-          <FaArrowsRotate className="me-2" />
-        )}
-        {t('navbar.rebuild')}
-      </Dropdown.Item>
-      {feedback ? <Dropdown.ItemText className="small">{feedback}</Dropdown.ItemText> : null}
-    </>
+    <Dropdown.Item as="button" type="button" onClick={rebuild} disabled={running}>
+      {running ? (
+        <Spinner animation="border" size="sm" role="status" className="me-2" />
+      ) : (
+        <FaArrowsRotate className="me-2" />
+      )}
+      {t('navbar.rebuild')}
+    </Dropdown.Item>
   );
 };
 

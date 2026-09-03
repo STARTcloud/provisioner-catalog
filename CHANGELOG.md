@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.54](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.53...provisioner-catalog-v0.0.54) (2026-09-03)
+
+
+### Features
+
+* grow the chrome into AppChrome and converge identity, membership, modals and tooling with BoxVault ([176091b](https://github.com/STARTcloud/provisioner-catalog/commit/176091b8ddf710d028928182415a6682405f49fa))
+
 ## [0.0.53](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.52...provisioner-catalog-v0.0.53) (2026-09-03)
 
 

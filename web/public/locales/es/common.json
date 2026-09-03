@@ -174,12 +174,5 @@
   "errors": {
     "noPrivateCatalog": "Aún no se ha publicado un catálogo privado para esta organización.",
     "accessDenied": "Acceso denegado por la puerta del catálogo."
-  },
-  "callback": {
-    "completing": "Completando el inicio de sesión…",
-    "failed": "Error al iniciar sesión: {{message}} —",
-    "clockSkew": "es posible que su hora esté desajustada; inténtelo de nuevo",
-    "returnLink": "vuelva al catálogo",
-    "tryAgain": "e inténtelo de nuevo."
   }
 }

@@ -174,12 +174,5 @@
   "errors": {
     "noPrivateCatalog": "No private catalog published for this organization yet.",
     "accessDenied": "Access denied by the catalog gate."
-  },
-  "callback": {
-    "completing": "Completing sign-in…",
-    "failed": "Sign-in failed: {{message}} —",
-    "clockSkew": "your time may be off, please try again",
-    "returnLink": "return to the catalog",
-    "tryAgain": "and try again."
   }
 }

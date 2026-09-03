@@ -141,7 +141,7 @@ jobs:
             );
           const read = (lang, ns) => new Set(flat(JSON.parse(fs.readFileSync(`public/locales/${lang}/${ns}`, 'utf8'))));
           const namespaces = fs.readdirSync('public/locales/en').filter(file => file.endsWith('.json'));
-          const langs = fs.readdirSync('public/locales').filter(dir => dir !== 'en');
+          const langs = fs.readdirSync('public/locales').filter(dir => dir !== 'en' && dir !== 'cimode');
           let failed = false;
           for (const lang of langs) {
             for (const ns of namespaces) {

@@ -1,4 +1,4 @@
-import { API_ORIGIN } from './auth';
+import { API_ORIGIN } from './chromeProps.jsx';
 import { createDeployControls, deployableVersion } from './pages';
 
 export { deployableVersion };

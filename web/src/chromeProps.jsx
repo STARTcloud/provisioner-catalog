@@ -1,13 +1,18 @@
 import axios from 'axios';
 
-import { API_ORIGIN, ISSUER, authHeaders } from './auth';
 import { createI18n, createNotificationsClient, createPush } from './chrome';
+import { createBrowserOidc, createReturnTo, createSessionEvents } from './session';
 
 export const APP_NAME = 'Provisioner Catalog';
 export const REPO_URL = 'https://github.com/STARTcloud/provisioner-catalog';
 export const POWERED_BY = { href: 'https://startcloud.com', logoSrc: '/startcloud-logo40.png' };
+export const ISSUER = 'https://dev-auth.startcloud.com';
+export const API_ORIGIN = __API_ORIGIN__ || window.location.origin;
 export const VIEW_ALL_URL = `${ISSUER}/notifications`;
+export const ACTIVE_ORG_KEY = 'activeOrganization';
 
+const CLIENT_ID = 'provisioner-catalog';
+const SCOPES = 'openid profile email organizations notifications entitlements';
 const TICKET_BASE_URL = 'https://xd.prominic.net/app/apprequest.nsf/router?openagent';
 const TICKET_REQ_TYPE = 'sso';
 const TICKET_CONTEXT = `provisioner-catalog|${__APP_VERSION__}`;
@@ -20,6 +25,24 @@ export const {
   getSupportedLanguages,
 } = createI18n({ loadSupportedLanguages: () => __SUPPORTED_LOCALES__ });
 
+export const events = createSessionEvents();
+
+export const returnTo = createReturnTo({
+  storageKey: 'catalog.intended_url',
+  authPaths: ['/callback'],
+});
+
+export const session = createBrowserOidc({
+  issuer: ISSUER,
+  clientId: CLIENT_ID,
+  scopes: SCOPES,
+  storagePrefix: 'catalog',
+  apiBase: import.meta.env.DEV ? '' : ISSUER,
+  onEnded: () => events.endSession(),
+});
+
+export const authHeaders = session.headers;
+
 export const notificationsAdapter = createNotificationsClient({
   baseUrl: import.meta.env.DEV ? '' : ISSUER,
   headers: (method, path) => authHeaders(method, `${ISSUER}${path}`),
@@ -27,8 +50,9 @@ export const notificationsAdapter = createNotificationsClient({
 
 const subscriptionHeaders = method => authHeaders(method, `${API_ORIGIN}${SUBSCRIPTIONS_PATH}`);
 
-const push = createPush({
+export const push = createPush({
   storageKey: 'catalog.push_enabled',
+  serviceWorkerUrl: `/notification-sw.js?app=${encodeURIComponent(APP_NAME)}`,
   getVapidKey: () => axios.get('/push/vapid-key').then(({ data }) => data.publicKey),
   createSubscription: async subscription =>
     axios.post(SUBSCRIPTIONS_PATH, subscription, { headers: await subscriptionHeaders('POST') }),
@@ -38,8 +62,6 @@ const push = createPush({
       headers: await subscriptionHeaders('DELETE'),
     }),
 });
-
-export const { isPushEnabled, syncSubscription, listenForSubscriptionChange } = push;
 
 export const pushAdapter = {
   isSupported: push.isPushSupported,
@@ -57,10 +79,10 @@ export const fetchHealth = async () => {
   return response.json();
 };
 
-export const buildTicketUrl = (user, userInfo, activeOrg) => {
+export const buildTicketUrl = (user, claims, activeOrg) => {
   const params = new URLSearchParams({
     req: TICKET_REQ_TYPE,
-    customerId: activeOrg?.customer_id || userInfo?.customer_id || FALLBACK_CUSTOMER_ID,
+    customerId: activeOrg?.customer_id || claims?.customer_id || FALLBACK_CUSTOMER_ID,
     user: user.name || '',
     email: user.email || '',
     context: TICKET_CONTEXT,

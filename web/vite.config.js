@@ -28,7 +28,7 @@ const authTarget = devConfig.server?.auth_target || 'https://dev-auth.startcloud
 const localeDirs = fs.existsSync('./public/locales')
   ? fs
       .readdirSync('./public/locales', { withFileTypes: true })
-      .filter(entry => entry.isDirectory())
+      .filter(entry => entry.isDirectory() && entry.name !== 'cimode')
       .map(entry => entry.name)
   : [];
 const supportedLocales = localeDirs.length ? localeDirs : ['en'];

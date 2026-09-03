@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { API_ORIGIN, authHeaders } from './auth';
+import { API_ORIGIN, authHeaders } from './chromeProps.jsx';
 
 let publicPromise = null;
 const privatePromises = new Map();

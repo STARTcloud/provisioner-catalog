@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { FaBook, FaCircleInfo, FaEnvelope } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 
-import { ISSUER, signOutEverywhere } from './auth';
 import { AppChrome, Avatar, userDisplayName, userSecondaryLine } from './chrome';
 import {
   APP_NAME,
@@ -19,6 +18,7 @@ import {
 } from './chromeProps.jsx';
 import { collections } from './collections.jsx';
 import RebuildItem from './RebuildItem.jsx';
+import { sessionStateShape } from './session';
 
 const RESERVED_ROUTES = ['about', 'callback', 'docs', 'schema', 'private', 'push', 'admin'];
 
@@ -51,22 +51,11 @@ AppRows.propTypes = {
   isAdmin: PropTypes.bool.isRequired,
 };
 
-const Shell = ({
-  user,
-  userInfo,
-  organizations,
-  activeOrgUuid,
-  onPickOrg,
-  onSignIn,
-  onSignOut,
-  sessionEnded,
-  theme,
-  onChangeLanguage,
-  children,
-}) => {
+const Shell = ({ account, onSignOut, theme, onChangeLanguage, children }) => {
   const { t } = useTranslation();
-  const displayName = user ? userInfo?.name || userDisplayName(user) || t('user.unknownUser') : '';
-  const picture = userInfo?.picture || '';
+  const { user, claims, organizations, activeOrgUuid, issuerUrl } = account;
+  const displayName = user ? claims?.name || userDisplayName(user) || t('user.unknownUser') : '';
+  const picture = claims?.picture || '';
   const activeOrg = organizations.find(org => org.uuid === activeOrgUuid) || null;
 
   return (
@@ -93,8 +82,8 @@ const Shell = ({
               displayName,
               email: userSecondaryLine({ ...user, name: displayName }),
               renderAvatar: size => <Avatar picture={picture} size={size} />,
-              oidc: true,
-              issuerUrl: ISSUER,
+              oidc: account.oidc,
+              issuerUrl,
               localProfile: null,
             }
           : null
@@ -102,7 +91,7 @@ const Shell = ({
       orgs={{
         organizations,
         activeUuid: activeOrgUuid,
-        onPick: onPickOrg,
+        onPick: account.pickOrg,
         load: null,
         mark: null,
         logoFor: name =>
@@ -115,21 +104,21 @@ const Shell = ({
           ? {
               appName: t('navbar.provisionerCatalog'),
               appRows: <AppRows isAdmin={Boolean(user.authorities?.includes('ROLE_ADMIN'))} />,
-              favorites: userInfo?.favorite_apps || [],
+              favorites: claims?.favorite_apps || [],
               notifications: String(user.scope || '').includes('notifications')
                 ? notificationsAdapter
                 : null,
               push: pushAdapter,
               viewAllUrl: VIEW_ALL_URL,
-              ticketUrl: buildTicketUrl(user, userInfo, activeOrg),
+              ticketUrl: buildTicketUrl(user, claims, activeOrg),
             }
           : null
       }
       session={{
-        onSignIn,
+        onSignIn: account.signIn,
         onSignOut,
-        onSignOutEverywhere: signOutEverywhere,
-        ended: Boolean(sessionEnded),
+        onSignOutEverywhere: account.signOutEverywhere,
+        ended: Boolean(account.sessionEnded),
       }}
       footer={{ version: __APP_VERSION__, repoUrl: REPO_URL, poweredBy: POWERED_BY, fetchHealth }}
     >
@@ -139,14 +128,8 @@ const Shell = ({
 };
 
 Shell.propTypes = {
-  user: PropTypes.object,
-  userInfo: PropTypes.object,
-  organizations: PropTypes.array.isRequired,
-  activeOrgUuid: PropTypes.string.isRequired,
-  onPickOrg: PropTypes.func.isRequired,
-  onSignIn: PropTypes.func.isRequired,
+  account: sessionStateShape.isRequired,
   onSignOut: PropTypes.func.isRequired,
-  sessionEnded: PropTypes.bool.isRequired,
   theme: PropTypes.shape({
     preference: PropTypes.string.isRequired,
     onToggle: PropTypes.func.isRequired,

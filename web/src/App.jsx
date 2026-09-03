@@ -1,5 +1,4 @@
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
@@ -7,22 +6,8 @@ import './css/styles.css';
 import './css/fonts.css';
 import About from './About.jsx';
 import { resetCatalogCache, setMemberships } from './adapter';
-import {
-  beginLogin,
-  consumeSessionEnded,
-  getAccessToken,
-  getClaims,
-  getUserInfo,
-  savePreferences,
-  signOut,
-} from './auth';
 import { useTheme } from './chrome';
-import {
-  APP_NAME,
-  isPushEnabled,
-  listenForSubscriptionChange,
-  syncSubscription,
-} from './chromeProps.jsx';
+import { ACTIVE_ORG_KEY, APP_NAME, events, push, returnTo, session } from './chromeProps.jsx';
 import { collections, provisioners } from './collections.jsx';
 import {
   HomePage,
@@ -34,19 +19,14 @@ import {
   isMember,
   pageContextShape,
 } from './pages';
+import { useSession } from './session';
 import Shell from './shell.jsx';
 
-const ACTIVE_ORG_KEY = 'activeOrganization';
 const PREFS_PREFIX = 'catalog_table_prefs';
 
-const resolveActiveOrg = (organizations, stored) => {
-  if (stored && organizations.some(org => org.uuid === stored)) {
-    return stored;
-  }
-  return (organizations.find(org => org.primary) || organizations[0])?.uuid || '';
-};
+const persistTheme = preference => session.savePreferences({ theme: preference });
 
-const persistTheme = preference => savePreferences({ theme: preference });
+const adoptMemberships = next => setMemberships(next?.organizations || []);
 
 const OrgRoute = ({ context, organizations }) => {
   const { org } = useParams();
@@ -112,73 +92,26 @@ ProviderRoute.propTypes = {
 const App = () => {
   const { i18n } = useTranslation(['common', 'auth']);
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [userInfo, setUserInfo] = useState(null);
-  const [activeOrgUuid, setActiveOrgUuid] = useState('');
-  const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
+  const account = useSession({
+    provider: session,
+    events,
+    returnTo,
+    activeOrgKey: ACTIVE_ORG_KEY,
+    push,
+    onAdopt: adoptMemberships,
+  });
+  const { user, organizations } = account;
   const { preference: themePreference, toggleTheme } = useTheme({ onPersist: persistTheme });
 
-  useEffect(() => {
-    const loadSession = async () => {
-      const token = await getAccessToken();
-      if (!token) {
-        setSessionEnded(consumeSessionEnded());
-        return;
-      }
-      const claims = getClaims();
-      const organizations = claims?.organizations || [];
-      setMemberships(organizations);
-      setUser(claims);
-      getUserInfo().then(info => setUserInfo(info));
-      const resolved = resolveActiveOrg(organizations, localStorage.getItem(ACTIVE_ORG_KEY));
-      setActiveOrgUuid(resolved);
-      if (resolved) {
-        localStorage.setItem(ACTIVE_ORG_KEY, resolved);
-      } else {
-        localStorage.removeItem(ACTIVE_ORG_KEY);
-      }
-    };
-    loadSession();
-  }, []);
-
-  useEffect(() => {
-    if (!user || !isPushEnabled()) {
-      return undefined;
-    }
-    syncSubscription().catch(() => null);
-    return listenForSubscriptionChange(() => null);
-  }, [user]);
-
-  const organizations = user?.organizations || [];
-
   const handleSignOut = () => {
-    signOut();
+    account.signOut();
     resetCatalogCache();
-    setMemberships([]);
-    setUser(null);
-    setUserInfo(null);
-    setActiveOrgUuid('');
-    localStorage.removeItem(ACTIVE_ORG_KEY);
     navigate('/');
-  };
-
-  const handleSignIn = () => {
-    setSessionEnded(false);
-    beginLogin();
   };
 
   const changeLanguage = async lang => {
     await i18n.changeLanguage(lang);
-    savePreferences({ language: lang });
-  };
-
-  const onPickOrg = uuid => {
-    const org = organizations.find(entry => entry.uuid === uuid);
-    if (!org) {
-      return;
-    }
-    setActiveOrgUuid(uuid);
-    localStorage.setItem(ACTIVE_ORG_KEY, uuid);
+    session.savePreferences({ language: lang });
   };
 
   const context = {
@@ -191,14 +124,8 @@ const App = () => {
 
   return (
     <Shell
-      user={user}
-      userInfo={userInfo}
-      organizations={organizations}
-      activeOrgUuid={activeOrgUuid}
-      onPickOrg={onPickOrg}
-      onSignIn={handleSignIn}
+      account={account}
       onSignOut={handleSignOut}
-      sessionEnded={Boolean(sessionEnded)}
       theme={{ preference: themePreference, onToggle: toggleTheme }}
       onChangeLanguage={changeLanguage}
     >

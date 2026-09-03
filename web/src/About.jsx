@@ -14,14 +14,14 @@ const COMPONENTS = [
 const About = () => {
   const { t } = useTranslation();
   const docs = [
-    { key: 'docs', href: '/docs/', label: t('about.docs.docs'), Icon: FaBook },
-    { key: 'api', href: '/docs/api/', label: t('about.docs.api'), Icon: FaCode },
     {
       key: 'gettingStarted',
       href: '/docs/guides/getting-started/',
       label: t('about.docs.gettingStarted'),
       Icon: FaServer,
     },
+    { key: 'docs', href: '/docs/', label: t('about.docs.docs'), Icon: FaBook },
+    { key: 'api', href: '/docs/api/', label: t('about.docs.api'), Icon: FaCode },
   ];
   const support = [
     { key: 'repository', href: REPO_URL, label: t('about.support.repository'), Icon: FaGithub },
@@ -30,19 +30,17 @@ const About = () => {
       href: `${REPO_URL}/issues/new`,
       label: t('about.support.issues'),
       Icon: FaBug,
-      tone: 'danger',
     },
     {
       key: 'contact',
       href: 'https://startcloud.com/#contact',
       label: t('about.support.contact'),
       Icon: FaEnvelope,
-      tone: 'primary',
     },
   ];
   return (
     <AboutPage
-      brand={<img src="/startcloud.svg" alt="" className="logo-xl flex-shrink-0" />}
+      brand={<img src="/startcloud.svg" alt="" className="prov-icon" />}
       title={t('app.title')}
       description={t('about.description')}
       version={__APP_VERSION__}

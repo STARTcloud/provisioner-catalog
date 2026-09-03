@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.52](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.51...provisioner-catalog-v0.0.52) (2026-09-03)
+
+
+### Features
+
+* shared Add New and Remove All labels for collection heading rows ([7a679f1](https://github.com/STARTcloud/provisioner-catalog/commit/7a679f1df623a903b63d0a7c605ddb13221ba1c2))
+
 ## [0.0.51](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.50...provisioner-catalog-v0.0.51) (2026-09-03)
 
 

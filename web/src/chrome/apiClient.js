@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const CONTENT_TYPES = { json: 'application/json', 'octet-stream': 'application/octet-stream' };
-const MESSAGE_KEYS = { 401: 'errors.accessDenied', 403: 'errors.accessDenied', 404: 'errors.notFound' };
+const MESSAGE_KEYS = {
+  401: 'errors.accessDenied',
+  403: 'errors.accessDenied',
+  404: 'errors.notFound',
+};
 
 const textOf = value => (typeof value === 'string' ? value : '');
 

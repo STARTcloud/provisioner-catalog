@@ -245,9 +245,7 @@ export const createBackendSession = ({ baseUrl, events, storageKey = 'user' }) =
 
   const signOutEverywhere = async () => {
     const response = isOidc(current())
-      ? await axios
-          .post(`${api}/auth/oidc/logout`, {}, { headers: authHeader() })
-          .catch(() => null)
+      ? await axios.post(`${api}/auth/oidc/logout`, {}, { headers: authHeader() }).catch(() => null)
       : null;
     clear();
     window.location.assign(response?.data?.redirect_url || '/');

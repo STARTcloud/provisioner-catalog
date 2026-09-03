@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-import { base64url, createDpop, decodeBase64url } from './dpop';
+import { base64url, createDpop } from './dpop';
+import { decodeJwt } from './jwt';
 
 const PREFERENCES_PATH = '/api/user/preferences';
 const THEME_VALUES = ['auto', 'light', 'dark'];
@@ -14,15 +15,6 @@ const randomUrlSafe = byteCount => {
 const s256 = async text => {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return base64url(digest);
-};
-
-const decodeJwt = token => {
-  const [, payload = ''] = token.split('.');
-  try {
-    return JSON.parse(new TextDecoder().decode(decodeBase64url(payload)));
-  } catch {
-    return null;
-  }
 };
 
 const applyAccountPreferences = preferences => {
@@ -69,16 +61,18 @@ const tokenFailure = requestError => {
  * DPoP against the identity provider, tokens in localStorage under the
  * app's prefix, the refresh grant a minute before expiry, the provider's
  * userinfo as the claims, and the end-session form POST for signing out
- * everywhere.
+ * everywhere. A session it restores or completes is
+ * `{ user, organizations, oidc, issuerUrl }`, the user being the access
+ * token's claims.
  *
  * @param {Object} options - The app's side of the client
  * @param {string} options.issuer - The identity provider's issuer URL
  * @param {string} options.clientId - The registered public client id
  * @param {string} options.scopes - Space-separated scopes to request
  * @param {string} options.storagePrefix - Prefix of every localStorage key and of the DPoP database
+ * @param {Object} options.events - The bus from `createSessionEvents`; `login` is emitted after the exchange and `sessionEnded` when a refresh fails
  * @param {string} [options.apiBase] - Origin the preferences write is sent to, empty when a dev proxy answers same-origin
  * @param {string} [options.redirectPath] - The registered callback path on this origin
- * @param {Function} [options.onEnded] - Called when a refresh fails and the session is gone
  * @returns {Object} The session provider `useSession` and the callback page drive
  */
 export const createBrowserOidc = ({
@@ -86,9 +80,9 @@ export const createBrowserOidc = ({
   clientId,
   scopes,
   storagePrefix,
+  events,
   apiBase = issuer,
   redirectPath = '/callback',
-  onEnded = null,
 }) => {
   const STORE = {
     access: `${storagePrefix}.access_token`,
@@ -170,9 +164,7 @@ export const createBrowserOidc = ({
 
   const endSession = () => {
     clearTokens();
-    if (onEnded) {
-      onEnded();
-    }
+    events.endSession();
   };
 
   const getAccessToken = async () => {
@@ -200,6 +192,8 @@ export const createBrowserOidc = ({
     }
     return { user, organizations: user.organizations || [], oidc: true, issuerUrl: issuer };
   };
+
+  const restore = () => sessionOf(localStorage.getItem(STORE.access));
 
   const load = async () => sessionOf(await getAccessToken());
 
@@ -265,7 +259,8 @@ export const createBrowserOidc = ({
     storeTokens(tokens);
     const info = await claims();
     applyAccountPreferences(info?.preferences);
-    return sessionOf(localStorage.getItem(STORE.access));
+    events.emit('login');
+    return restore();
   };
 
   const headers = async (method, url) => {
@@ -325,7 +320,9 @@ export const createBrowserOidc = ({
   return {
     id: 'idp',
     issuerUrl: issuer,
+    restore,
     load,
+    reload: load,
     begin,
     complete,
     headers,

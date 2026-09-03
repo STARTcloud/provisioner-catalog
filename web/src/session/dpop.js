@@ -12,12 +12,6 @@ export const base64url = buffer => {
   return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-export const decodeBase64url = segment => {
-  const padded = segment.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
-  return Uint8Array.from(binary, char => char.charCodeAt(0));
-};
-
 const encodeJson = value => base64url(new TextEncoder().encode(JSON.stringify(value)));
 
 const htuOf = url => {

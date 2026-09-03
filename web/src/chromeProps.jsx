@@ -37,8 +37,8 @@ export const session = createBrowserOidc({
   clientId: CLIENT_ID,
   scopes: SCOPES,
   storagePrefix: 'catalog',
+  events,
   apiBase: import.meta.env.DEV ? '' : ISSUER,
-  onEnded: () => events.endSession(),
 });
 
 export const authHeaders = session.headers;

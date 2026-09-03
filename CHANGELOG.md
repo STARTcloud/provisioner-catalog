@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.59](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.58...provisioner-catalog-v0.0.59) (2026-09-03)
+
+
+### Features
+
+* one notice surface, every column sortable, checksums in full ([a1eefdd](https://github.com/STARTcloud/provisioner-catalog/commit/a1eefdd9169a7d25229c7d7835eb920c57475b4f))
+
 ## [0.0.58](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.57...provisioner-catalog-v0.0.58) (2026-09-03)
 
 

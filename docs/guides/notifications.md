@@ -97,7 +97,7 @@ Users whose token `authorities` include `ROLE_ADMIN` see **Rebuild catalog data*
 
 1. The SPA posts to `/admin/rebuild` with the Bearer token. The Worker verifies the JWT, requires `ROLE_ADMIN`, and dispatches `generate-catalog-data.yml` on `main` in the catalog repository with inputs `requested_by` (the caller's uuid) and `forceRepositoryUpdate: true`, then answers `202 {"status":"queued"}`.
 2. The menu shows "Rebuild running…" and the item's icon becomes a spinner. The SPA polls `GET /admin/rebuild/status` every 10 seconds, up to 90 times. The Worker returns the status and conclusion of the workflow's most recent run.
-3. Polling waits until it has seen `queued` or `in_progress` once, then stops on `completed`, showing "Rebuild finished." or "Rebuild failed: <conclusion>". A polling error or the 90-poll cap stops the spinner silently.
+3. Polling waits until it has seen `queued` or `in_progress` once, then stops on `completed`, showing "Rebuild finished." or "Rebuild failed: `<conclusion>`". A polling error or the 90-poll cap stops the spinner silently.
 4. When the run finishes, the `notify-requester` job sends the completion hub notification and a user-scoped push to the requester, whether or not the SPA is still polling.
 
 Because the data workflow runs in the `catalog-pages` concurrency group without cancel-in-progress, a rebuild dispatched while a scheduled run is active queues behind it. `forceRepositoryUpdate` makes the rebuild deploy to Pages even when the generated data is unchanged.
@@ -106,7 +106,7 @@ Because the data workflow runs in the `catalog-pages` concurrency group without 
 
 Values are never documented here; only the names and where each lives.
 
-**GitHub Actions secrets (catalog repository)**
+### GitHub Actions secrets (catalog repository)
 
 | Name | Used by | Purpose |
 | --- | --- | --- |
@@ -144,7 +144,7 @@ Values are never documented here; only the names and where each lives.
 | `DISPATCH_PAT` | GitHub token the Worker uses to dispatch the data workflow and read its runs; `/admin/*` answers 503 without it |
 | `GITHUB_PAT` | Read-only token for the private store (private catalogs, not notifications) |
 
-**Auth server**
+### Auth server
 
 | Item | Requirement |
 | --- | --- |

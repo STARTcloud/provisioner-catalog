@@ -4,7 +4,7 @@ import { Accordion, Badge, Button, ListGroup } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaBug, FaCubes, FaGithub, FaHouse } from 'react-icons/fa6';
 
-import { catalogAdapter } from './catalogAdapter';
+import { catalogAdapter } from './adapter';
 import { DeployButton, ProvisionerQuickActions, deployableVersion } from './deploy';
 import {
   CollapseButton,
@@ -18,6 +18,7 @@ import {
 
 export const TIER_ORDER = ['diamond', 'platinum', 'gold', 'silver', 'bronze', 'unrated'];
 const VISIBLE_VERSIONS = 10;
+const RULES_GUIDE = '/docs/guides/quality-tiers/';
 
 const coverageClass = (count, total) => {
   if (count === total) {
@@ -166,12 +167,28 @@ const QualityRules = ({ item }) => {
   return (
     <>
       <p className="mb-1">{t('card.unmetRules')}</p>
-      <ul className="mb-0">
-        {item.extras.failedRules.map(rule => (
-          <li key={rule}>
-            <code>{rule}</code>
-          </li>
-        ))}
+      <ul className="list-unstyled mb-0 d-flex flex-column gap-2">
+        {item.extras.failedRules.map(rule => {
+          const [tier] = rule.split('.');
+          return (
+            <li key={rule} className="d-flex align-items-start gap-2">
+              <Badge className={`tier-badge tier-${tier}`}>{t(`tiers.${tier}`)}</Badge>
+              <span>
+                <a
+                  href={`${RULES_GUIDE}#${tier}-rules`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="fw-semibold"
+                >
+                  {t(`rules.${rule}.label`, { defaultValue: rule })}
+                </a>
+                <span className="d-block small text-body-secondary">
+                  {t(`rules.${rule}.requirement`, { defaultValue: '' })}
+                </span>
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </>
   );

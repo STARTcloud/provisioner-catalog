@@ -290,7 +290,7 @@ Theme is `auto`, `light` or `dark`, applied as `data-bs-theme` on the root eleme
 | Inbox bell | The access token's `scope` contains `notifications`; reads `<ISSUER>/api/notifications`, `/unread-count`, `/read`, `/read-all` and polls the unread count every 60 seconds |
 | Web Push | Browser support for service workers, `PushManager` and `Notification`; registers `/notification-sw.js`, fetches `/push/vapid-key`, and posts the subscription to `/push/subscriptions`. On load the SPA re-posts an existing subscription when `catalog.push_enabled` is set |
 | Rebuild catalog data | `ROLE_ADMIN` in the token's `authorities`; posts `/admin/rebuild` and polls `/admin/rebuild/status` every 10 seconds, at most 90 times |
-| Help & Support | Opens the ticket router with `customer_id` from userinfo (fallback constant in `UserMenu.jsx`) and context `provisioner-catalog | <version>` |
+| Help & Support | Opens the ticket router with `customer_id` from userinfo (fallback constant in `UserMenu.jsx`) and context `provisioner-catalog \| <version>` |
 
 ---
 

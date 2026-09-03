@@ -7,7 +7,7 @@ import { I18nextProvider, useTranslation } from 'react-i18next';
 import './css/styles.css';
 import './css/fonts.css';
 import { completeLogin, syncAccountPreferences } from './auth';
-import i18n, { i18nPromise } from './i18n';
+import { i18n, i18nPromise } from './chromeProps.jsx';
 
 let exchangeStarted = false;
 

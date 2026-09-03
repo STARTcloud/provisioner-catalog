@@ -15,7 +15,6 @@ export default [
       'dist/**/*',
       'build/**/*',
       'coverage/**/*',
-      'vendor/**/*',
       '*.min.js',
       '.next/**/*',
       '.vite/**/*',
@@ -23,6 +22,14 @@ export default [
       '*.log',
       '*.json',
       '*.lock',
+      'package-lock.json',
+      'package.json',
+      'licenses.json',
+      '**/licenses.json',
+      'vite.config.js',
+      'vite.config.mjs',
+      'src/version.json',
+      'vendor/**/*',
       '.vscode/**/*',
     ],
   },
@@ -44,6 +51,7 @@ export default [
         ...globals.browser,
         ...globals.es2021,
         // Vite global variables
+        __APP_NAME__: 'readonly',
         __APP_VERSION__: 'readonly',
         __SUPPORTED_LOCALES__: 'readonly',
         __API_ORIGIN__: 'readonly',
@@ -56,30 +64,28 @@ export default [
     },
     settings: {
       react: {
-        version: 'detect',
+        version: 'detect', // Fix React version warning
       },
       'import/resolver': {
         node: {
           extensions: ['.js', '.jsx'],
           moduleDirectory: ['node_modules', 'src/'],
+          tryExtensions: ['.js', '.jsx', '.json'],
+          resolveDependencies: true,
         },
       },
     },
     rules: {
-      // Base JavaScript rules (comprehensive)
       ...js.configs.recommended.rules,
 
-      // React rules (comprehensive)
       ...pluginReact.configs.recommended.rules,
       ...pluginReactHooks.configs.recommended.rules,
       ...pluginJsxA11y.configs.recommended.rules,
       ...pluginImport.configs.recommended.rules,
 
-      // Prettier rules
       ...prettierConfig.rules,
       'prettier/prettier': 'error',
 
-      // === VARIABLES & DECLARATIONS ===
       'prefer-const': 'error',
       'no-var': 'error',
       'no-undef': 'error',
@@ -90,6 +96,7 @@ export default [
           args: 'all',
           caughtErrors: 'all',
           ignoreRestSiblings: false,
+          reportUsedIgnorePattern: false,
         },
       ],
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
@@ -121,7 +128,7 @@ export default [
 
       // === COMPARISON & CONDITIONALS ===
       eqeqeq: ['error', 'always'],
-      'no-nested-ternary': 'error',
+      'no-nested-ternary': 'error', // Phase 1: Tightened from warn to error
       'no-unneeded-ternary': 'error',
       'no-else-return': 'error',
       'consistent-return': 'error',
@@ -150,14 +157,30 @@ export default [
       'no-extend-native': 'error',
       'no-global-assign': 'error',
 
+      // === PHASE 2: ADDITIONAL SECURITY RULES ===
+      'no-restricted-globals': ['error', 'event', 'fdescribe'],
+      'no-restricted-syntax': ['error', 'WithStatement'],
+      'no-return-assign': 'error',
+      'no-sequences': 'error',
+      'no-void': 'error',
+      'no-constant-binary-expression': 'error',
+      'no-constructor-return': 'error',
+      'no-new-native-nonconstructor': 'error',
+      'no-object-constructor': 'error',
+
+      // === PHASE 2: PERFORMANCE RULES ===
+      'no-unreachable-loop': 'error',
+      'logical-assignment-operators': 'error',
+      'grouped-accessor-pairs': 'error',
+
       // === BROWSER SPECIFIC ===
-      'no-alert': 'error',
+      'no-alert': 'warn', // Allow alerts but warn in browser code
       'no-console': 'off', // Allow console statements in frontend development (build tools strip them)
 
       // === CODE QUALITY ===
-      complexity: ['warn', 30], // Increased for complex React components
-      'max-depth': ['warn', 6], // Increased for complex UI logic
-      'max-params': ['warn', 8], // Increased for React components with many props
+      complexity: ['error', 20], // Phase 1: Tightened from warn/30 to error/20
+      'max-depth': ['error', 4], // Phase 1: Tightened from warn/6 to error/4
+      'max-params': ['error', 6], // Phase 1: Tightened from warn/8 to error/6
       // File and function size limits removed per user request
 
       // === NAMING CONVENTIONS ===
@@ -183,7 +206,7 @@ export default [
       'one-var': ['error', 'never'],
 
       // === REGEX ===
-      'prefer-named-capture-group': 'warn',
+      'prefer-named-capture-group': 'error',
       'prefer-regex-literals': 'error',
       'no-useless-backreference': 'error',
 
@@ -235,24 +258,37 @@ export default [
       'react/prefer-es6-class': 'error',
       'react/require-render-return': 'error',
 
+      // === PHASE 2: MODERN REACT RULES ===
+      'react/function-component-definition': [
+        'error',
+        {
+          namedComponents: 'arrow-function',
+          unnamedComponents: 'arrow-function',
+        },
+      ],
+      'react/no-unstable-nested-components': 'error',
+      'react/jsx-fragments': ['error', 'syntax'],
+      'react/jsx-no-leaked-render': 'off',
+      'react/jsx-no-useless-fragment': 'error',
+
       // === REACT HOOKS RULES ===
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
 
-      // === ACCESSIBILITY RULES (jsx-a11y) ===
+      // === ACCESSIBILITY RULES (jsx-a11y) - Practical for Bootstrap CSS ===
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/aria-props': 'error',
       'jsx-a11y/aria-proptypes': 'error',
       'jsx-a11y/aria-unsupported-elements': 'error',
       'jsx-a11y/role-has-required-aria-props': 'error',
       'jsx-a11y/role-supports-aria-props': 'error',
-      'jsx-a11y/img-redundant-alt': 'error',
-      'jsx-a11y/no-access-key': 'error',
-      'jsx-a11y/no-onchange': 'off', // Can be overly restrictive
+      'jsx-a11y/img-redundant-alt': 'warn',
+      'jsx-a11y/no-access-key': 'warn',
+      'jsx-a11y/no-onchange': 'off',
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/no-static-element-interactions': 'warn',
-      'jsx-a11y/anchor-is-valid': 'error',
-      'jsx-a11y/label-has-associated-control': 'error',
+      'jsx-a11y/anchor-is-valid': 'warn',
+      'jsx-a11y/label-has-associated-control': 'warn',
 
       // === IMPORT/EXPORT RULES ===
       'import/order': [
@@ -276,18 +312,37 @@ export default [
       'import/first': 'error',
       'import/no-amd': 'error',
       'import/no-webpack-loader-syntax': 'error',
-      'import/no-unresolved': ['error', { commonjs: true }],
+      'import/no-unresolved': ['error', { commonjs: true, ignore: ['\\.svg\\?react$'] }],
       'import/named': 'error',
       'import/default': 'error',
       'import/namespace': 'error',
       'import/no-absolute-path': 'error',
-      'import/no-dynamic-require': 'warn',
+      'import/no-dynamic-require': 'error',
       'import/no-self-import': 'error',
       'import/no-cycle': ['error', { maxDepth: 10 }],
       'import/no-useless-path-segments': 'error',
       'import/no-relative-parent-imports': 'off', // Allow relative imports
       'import/newline-after-import': 'error',
       'import/no-duplicates': 'error',
+
+      // === PHASE 2: STRICTER IMPORT RULES ===
+      'import/no-deprecated': 'error',
+      'import/no-empty-named-blocks': 'error',
+      'import/no-extraneous-dependencies': [
+        'error',
+        {
+          devDependencies: [
+            '**/*.test.js',
+            '**/*.test.jsx',
+            '**/*.spec.js',
+            '**/*.spec.jsx',
+            '**/*.config.js',
+            '**/*.config.mjs',
+            '**/vitest.config.js',
+            '**/vite.config.js',
+          ],
+        },
+      ],
 
       // === RESTRICTED IMPORTS ===
       'no-restricted-imports': [
@@ -312,10 +367,28 @@ export default [
 
   // Vite configuration files - Special handling
   {
-    files: ['**/vite.config.js', '**/vite.config.mjs'],
+    files: ['**/vite.config.js', '**/vite.config.mjs', '**/vitest.config.js'],
+    languageOptions: {
+      ecmaVersion: 2024, // Support for import assertions
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          importAssertions: true, // Enable import assertion support
+        },
+      },
+    },
     rules: {
       'no-undef': 'off', // Allow import assertions and special Vite syntax
       'import/no-unresolved': 'off', // Vite handles special imports
+    },
+  },
+
+  // Configuration files (JSON, etc.) - Minimal rules
+  {
+    files: ['**/*.{json,jsonc,json5}'],
+    rules: {
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
     },
   },
 

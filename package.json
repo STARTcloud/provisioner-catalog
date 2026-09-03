@@ -12,15 +12,18 @@
     "dev": "cd web && npm run dev",
     "lint:web": "cd web && npm run lint",
     "lint:web:fix": "cd web && npm run lint:fix",
-    "lint:all": "npm run lint:web",
+    "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore web/node_modules --ignore worker/node_modules --ignore vendor --ignore _site --ignore CHANGELOG.md",
+    "lint:all": "npm run lint:web && npm run lint:md",
     "lint": "npm run lint:all",
-    "lint:fix:all": "npm run lint:web:fix",
+    "lint:fix:md": "markdownlint '**/*.md' --ignore node_modules --ignore web/node_modules --ignore worker/node_modules --ignore vendor --ignore _site --ignore CHANGELOG.md --fix",
+    "lint:fix:all": "npm run lint:web:fix && npm run lint:fix:md",
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
     "quality": "npm run lint && npm run format:check",
     "fix": "npm run lint:fix:all && npm run format:fix"
   },
   "devDependencies": {
+    "markdownlint-cli": "^0.48.0",
     "prettier": "^3.9.5"
   },
   "author": "STARTcloud",

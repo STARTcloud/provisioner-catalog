@@ -1,14 +1,7 @@
-import PropTypes from 'prop-types';
-import { FaCircleUser } from 'react-icons/fa6';
+import axios from 'axios';
 
-import { API_ORIGIN, ISSUER } from './auth';
-import {
-  isPushEnabled,
-  isPushSupported,
-  setPushEnabled,
-  subscribePush,
-  unsubscribePush,
-} from './push';
+import { API_ORIGIN, ISSUER, authHeaders } from './auth';
+import { createI18n, createNotificationsClient, createPush } from './chrome';
 
 export const APP_NAME = 'Provisioner Catalog';
 export const REPO_URL = 'https://github.com/STARTcloud/provisioner-catalog';
@@ -19,15 +12,41 @@ const TICKET_BASE_URL = 'https://xd.prominic.net/app/apprequest.nsf/router?opena
 const TICKET_REQ_TYPE = 'sso';
 const TICKET_CONTEXT = `provisioner-catalog|${__APP_VERSION__}`;
 const FALLBACK_CUSTOMER_ID = 'A55DF1';
+const SUBSCRIPTIONS_PATH = '/push/subscriptions';
 
-export { notificationsAdapter } from './notifications';
+export const {
+  i18n,
+  ready: i18nPromise,
+  getSupportedLanguages,
+} = createI18n({ loadSupportedLanguages: () => __SUPPORTED_LOCALES__ });
+
+export const notificationsAdapter = createNotificationsClient({
+  baseUrl: import.meta.env.DEV ? '' : ISSUER,
+  headers: (method, path) => authHeaders(method, `${ISSUER}${path}`),
+});
+
+const subscriptionHeaders = method => authHeaders(method, `${API_ORIGIN}${SUBSCRIPTIONS_PATH}`);
+
+const push = createPush({
+  storageKey: 'catalog.push_enabled',
+  getVapidKey: () => axios.get('/push/vapid-key').then(({ data }) => data.publicKey),
+  createSubscription: async subscription =>
+    axios.post(SUBSCRIPTIONS_PATH, subscription, { headers: await subscriptionHeaders('POST') }),
+  deleteSubscription: async endpoint =>
+    axios.delete(SUBSCRIPTIONS_PATH, {
+      params: { endpoint },
+      headers: await subscriptionHeaders('DELETE'),
+    }),
+});
+
+export const { isPushEnabled, syncSubscription, listenForSubscriptionChange } = push;
 
 export const pushAdapter = {
-  isSupported: isPushSupported,
-  isEnabled: isPushEnabled,
-  setEnabled: setPushEnabled,
-  subscribe: subscribePush,
-  unsubscribe: unsubscribePush,
+  isSupported: push.isPushSupported,
+  isEnabled: push.isPushEnabled,
+  setEnabled: push.setPushEnabled,
+  subscribe: push.subscribePush,
+  unsubscribe: push.unsubscribePush,
 };
 
 export const fetchHealth = async () => {
@@ -47,16 +66,4 @@ export const buildTicketUrl = (user, userInfo, activeOrg) => {
     context: TICKET_CONTEXT,
   });
   return `${TICKET_BASE_URL}&${params.toString()}`;
-};
-
-export const Avatar = ({ picture = '', size }) =>
-  picture ? (
-    <img src={picture} alt="" width={size} height={size} className="rounded-circle flex-shrink-0" />
-  ) : (
-    <FaCircleUser size={size} className="flex-shrink-0" aria-hidden />
-  );
-
-Avatar.propTypes = {
-  picture: PropTypes.string,
-  size: PropTypes.number.isRequired,
 };

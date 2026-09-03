@@ -140,7 +140,7 @@ A change in `health.json` alone (a tier moving, a download count ticking up) is 
 | Sidecar-gaps chip            | Yellow "checksum sidecars incomplete" when `sidecars_ok` is `false`                                                                                                                                                                 |
 | Provider chips               | One chip per provider verified for **any** recorded version, aggregated from `health.versions`: green when every measured version verifies it, yellow when some do, red when only one does; a provider no version verifies has no chip. Tooltip: "Verified image in N of M versions" |
 | Version list                 | Each version row carries a small grey chip per provider verified for that exact version                                                                                                                                             |
-| Quality breakdown accordion  | Header "Quality: <Tier>"; body is "All quality rules pass." or "Unmet rules:" followed by every `failed_rules` code                                                                                                                  |
+| Quality breakdown accordion  | Header "Quality: `<Tier>`"; body is "All quality rules pass." or "Unmet rules:" followed by every `failed_rules` code                                                                                                                  |
 
 Cards without a matching `health.json` entry render with no badge, chips, or breakdown.
 

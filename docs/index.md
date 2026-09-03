@@ -53,14 +53,14 @@ graph TD
 
 ### Quick start
 
-**Provisioner authors**
+#### Provisioner authors
 
 1. **Conform your releases**: publish `<name>-<version>.tar.gz` registry-shaped archives with a `.sha256` sidecar per asset, version sourced from `provisioner.yml` (the examples publisher kit has copy-paste workflows)
 2. **Validate in your CI**: add `- uses: STARTcloud/provisioner-catalog@main` and get it green
 3. **Open the admission PR**: add one line to `sources.yml` with the PR template's checklist completed
 4. **Wait for the data run**: after merge, your packages appear in the published catalog within ~2 hours
 
-**Consumers**
+#### Consumers
 
 1. **Point an agent at the catalog**: `https://provisioner-catalog.startcloud.com/catalog.json` (agents accept multiple catalog URLs)
 2. **Verify checksums**: agents verify the recorded sha256 after downloading an artifact

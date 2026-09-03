@@ -95,7 +95,10 @@ jobs:
         run: npm run cinstall:all
 
       - name: Run ESLint
-        run: npm run lint
+        run: npm run lint:web
+
+      - name: Run markdownlint
+        run: npm run lint:md
 
       - name: Check Prettier formatting
         run: npm run format:check

@@ -94,6 +94,78 @@
     "platinum": "Platino",
     "diamond": "Diamante"
   },
+  "rules": {
+    "bronze": {
+      "description": {
+        "label": "Descripción",
+        "requirement": "Añade una description no vacía a provisioner.yml."
+      },
+      "label": {
+        "label": "Etiqueta visible",
+        "requirement": "Añade un label no vacío a provisioner.yml; name sigue siendo el slug."
+      },
+      "semver_versions": {
+        "label": "Versiones semánticas",
+        "requirement": "Nombra cada artefacto versionado nombre-mayor.menor.parche.tar.gz y retira los lanzamientos cuya versión no sea semver."
+      },
+      "latest_alias": {
+        "label": "Alias latest",
+        "requirement": "Sube nombre.tar.gz junto al archivo versionado en cada lanzamiento."
+      }
+    },
+    "silver": {
+      "changelog": {
+        "label": "Changelog incluido",
+        "requirement": "Incluye CHANGELOG.md en la raíz del paquete para que llegue al archivo."
+      },
+      "readme": {
+        "label": "README incluido",
+        "requirement": "Incluye README.md en la raíz del paquete para que llegue al archivo."
+      },
+      "release_within_12_months": {
+        "label": "Lanzamiento en el último año",
+        "requirement": "Publica un lanzamiento; el más reciente tiene más de 365 días."
+      },
+      "lint_ci": {
+        "label": "Lint en CI",
+        "requirement": "Añade un paso ansible/ansible-lint a un flujo bajo .github/workflows."
+      }
+    },
+    "gold": {
+      "config_fields_documented": {
+        "label": "Campos de configuración documentados",
+        "requirement": "Da a cada campo de configuración un label y un tooltip, y declara al menos uno."
+      },
+      "roles_documented": {
+        "label": "Roles documentados",
+        "requirement": "Da a cada rol un label y una description, y declara al menos uno."
+      },
+      "example_hosts": {
+        "label": "Archivo Hosts de ejemplo",
+        "requirement": "Incluye Hosts.example.yml en la raíz del paquete, o examples/Hosts.yml."
+      }
+    },
+    "platinum": {
+      "automated_tests": {
+        "label": "Pruebas automatizadas",
+        "requirement": "Incluye escenarios molecule para al menos la mitad de los roles declarados y ejecútalos en verde en CI como trabajos Molecule antes de cortar el lanzamiento."
+      },
+      "multi_provider": {
+        "label": "Imágenes verificadas para dos proveedores",
+        "requirement": "Haz que Hosts.template.yml renderice para al menos dos proveedores listados, cada uno nombrando una imagen que el catálogo de boxes sirva."
+      },
+      "release_cadence": {
+        "label": "Cadencia de lanzamientos",
+        "requirement": "Publica al menos dos lanzamientos en un año, separados al menos 30 días."
+      }
+    },
+    "diamond": {
+      "booted_providers": {
+        "label": "Arrancado en cada proveedor verificado",
+        "requirement": "Añade un trabajo de CI por proveedor verificado que arranque una máquina desde el Hosts.yml renderizado y reporte un check run Boot en verde en el commit del lanzamiento."
+      }
+    }
+  },
   "health": {
     "stale": "obsoleto — última versión hace {{count}} días",
     "artifactErrors": "errores de artefactos en esta ejecución",

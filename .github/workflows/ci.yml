@@ -29,9 +29,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -51,9 +51,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -74,6 +74,31 @@ jobs:
         uses: docker://rhysd/actionlint:1.7.7
         with:
           args: -color
+
+  lint-and-format:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install dependencies
+        run: npm run cinstall:all
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        run: npm run format:check
 
   web:
     name: Web Lint & Build
@@ -169,5 +194,5 @@ jobs:
 
   codeql-analysis:
     name: CodeQL
-    needs: [jsonschema, sorted, actionlint, web, docs]
+    needs: [jsonschema, sorted, actionlint, lint-and-format, web, docs]
     uses: ./.github/workflows/codeql.yml

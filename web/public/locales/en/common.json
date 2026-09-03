@@ -167,6 +167,14 @@
       "cards": "Card view"
     },
     "toggle": "Show or hide",
+    "addNew": "Add New",
+    "removeAll": "Remove All",
+    "links": {
+      "repo": "Source repository",
+      "homepage": "Homepage",
+      "issues": "Report an issue",
+      "pipeline": "CI pipeline"
+    },
     "table": {
       "name": "Name",
       "os": "OS",

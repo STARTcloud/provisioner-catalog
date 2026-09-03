@@ -1,16 +1,23 @@
 {
-    "packages": {
-        ".": {
-            "changelog-path": "CHANGELOG.md",
-            "release-type": "simple",
-            "bump-minor-pre-major": true,
-            "bump-patch-for-minor-pre-major": true,
-            "package-name": "provisioner-catalog",
-            "draft": false,
-            "prerelease": false,
-            "default-branch": "main",
-            "component": "provisioner-catalog"
+  "packages": {
+    ".": {
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "simple",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "package-name": "provisioner-catalog",
+      "draft": false,
+      "prerelease": false,
+      "default-branch": "main",
+      "component": "provisioner-catalog",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "package.json",
+          "jsonpath": "$.version"
         }
-    },
-    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+      ]
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }

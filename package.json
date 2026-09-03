@@ -1,0 +1,28 @@
+{
+  "name": "provisioner-catalog",
+  "version": "0.0.50",
+  "description": "STARTcloud Provisioner Catalog — the published catalog data, the web UI, the private-catalog Worker and the docs.",
+  "private": true,
+  "scripts": {
+    "cinstall:web": "cd web && npm ci",
+    "cinstall:web:nodev": "cd web && npm ci --omit=dev",
+    "cinstall:all": "npm ci && npm run cinstall:web",
+    "build": "npm run build:web",
+    "build:web": "cd web && npm run build",
+    "dev": "cd web && npm run dev",
+    "lint:web": "cd web && npm run lint",
+    "lint:web:fix": "cd web && npm run lint:fix",
+    "lint:all": "npm run lint:web",
+    "lint": "npm run lint:all",
+    "lint:fix:all": "npm run lint:web:fix",
+    "format:check": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "quality": "npm run lint && npm run format:check",
+    "fix": "npm run lint:fix:all && npm run format:fix"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.5"
+  },
+  "author": "STARTcloud",
+  "license": "GPL-3.0"
+}

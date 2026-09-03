@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Container, Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { FaBook, FaEnvelope } from 'react-icons/fa6';
@@ -192,6 +192,11 @@ const App = () => {
   const [activeOrgUuid, setActiveOrgUuid] = useState('');
   const [sessionEnded, setSessionEnded] = useState(() => consumeSessionEnded());
   const { preference: themePreference, toggleTheme } = useTheme({ onPersist: persistTheme });
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -283,7 +288,7 @@ const App = () => {
     : null;
 
   return (
-    <div className="App d-flex flex-column min-vh-100">
+    <div className="App d-flex flex-column vh-100">
       <Header
         brand={{
           name: APP_NAME,
@@ -304,7 +309,7 @@ const App = () => {
         sessionEnded={Boolean(sessionEnded && !user)}
       />
 
-      <Container fluid className="mt-3 flex-grow-1">
+      <Container fluid ref={scrollRef} className="app-scroll py-3">
         <Routes>
           <Route path="/" element={<HomePage collections={collections} context={context} />} />
           <Route

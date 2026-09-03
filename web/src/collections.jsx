@@ -306,14 +306,6 @@ export const provisioners = {
   adapter: catalogAdapter,
   filterGroups: [
     {
-      key: 'watched',
-      labelKey: 'pages.watch.filterWatched',
-      values: (item, ctx) => (ctx.watchedIds.has(item.id) ? ['watched'] : []),
-      activeClass: 'bg-warning text-dark',
-      labelFor: (value, t) => t(`pages.watch.${value}`),
-      signedInOnly: true,
-    },
-    {
       key: 'tier',
       labelKey: 'search.tier',
       values: item => [item.extras.tier],

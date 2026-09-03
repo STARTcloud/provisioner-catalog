@@ -16,14 +16,15 @@
  * Secrets (wrangler secret put): GITHUB_PAT
  */
 
-const PATH_RE = /^\/private\/(?<uuid>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/(?<file>catalog|health)\.json$/i;
+const PATH_RE =
+  /^\/private\/(?<uuid>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/(?<file>catalog|health)\.json$/i;
 const LEEWAY_SECONDS = 60;
 
 // JWKS cache, per isolate. Refetched when a kid is unknown (key rotation) or
 // the entry is older than an hour.
 let jwksCache = { keys: null, fetchedAt: 0 };
 
-const b64urlToBytes = (segment) => {
+const b64urlToBytes = segment => {
   const padded = segment.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
   const bytes = new Uint8Array(binary.length);
@@ -33,7 +34,7 @@ const b64urlToBytes = (segment) => {
   return bytes;
 };
 
-const bytesToB64url = (bytes) => {
+const bytesToB64url = bytes => {
   let binary = '';
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
@@ -66,7 +67,7 @@ const jsonResponse = (status, body, corsHeaders) =>
 
 const corsFor = (request, env) => {
   const origin = request.headers.get('Origin');
-  const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((entry) => entry.trim());
+  const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(entry => entry.trim());
   const headers = { Vary: 'Origin' };
   if (origin && allowed.includes(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
@@ -77,7 +78,7 @@ const corsFor = (request, env) => {
   return headers;
 };
 
-const fetchJwks = async (env) => {
+const fetchJwks = async env => {
   const discoveryUrl = `${env.ISSUER}/.well-known/openid-configuration`;
   const discovery = await fetch(discoveryUrl, {
     headers: { Accept: 'application/json' },
@@ -98,14 +99,14 @@ const fetchJwks = async (env) => {
 const findKey = async (kid, env) => {
   const fresh = Date.now() - jwksCache.fetchedAt < 60 * 60 * 1000;
   if (jwksCache.keys && fresh) {
-    const hit = jwksCache.keys.find((key) => key.kid === kid);
+    const hit = jwksCache.keys.find(key => key.kid === kid);
     if (hit) {
       return hit;
     }
   }
   // Unknown kid or stale cache: refetch once — covers IdP key rotation.
   const keys = await fetchJwks(env);
-  return keys.find((key) => key.kid === kid) || null;
+  return keys.find(key => key.kid === kid) || null;
 };
 
 /* Verify the compact JWT; returns its payload or throws with a reason. */
@@ -161,20 +162,20 @@ const verifyJwt = async (token, env) => {
 const PROOF_MAX_AGE_SECONDS = 60;
 const JTI_TTL_SECONDS = 300;
 
-const decodeSegment = (segment) => JSON.parse(new TextDecoder().decode(b64urlToBytes(segment)));
+const decodeSegment = segment => JSON.parse(new TextDecoder().decode(b64urlToBytes(segment)));
 
-const jwkThumbprint = async (jwk) => {
+const jwkThumbprint = async jwk => {
   const canonical = JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y });
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
   return bytesToB64url(new Uint8Array(digest));
 };
 
-const sha256B64url = async (text) => {
+const sha256B64url = async text => {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return bytesToB64url(new Uint8Array(digest));
 };
 
-const htuOf = (url) => {
+const htuOf = url => {
   const target = new URL(url);
   return `${target.origin}${target.pathname}`;
 };
@@ -298,7 +299,7 @@ const handlePrivate = async (request, env, cors, match) => {
 
   const organizations = Array.isArray(payload.organizations) ? payload.organizations : [];
   const member = organizations.some(
-    (org) => typeof org.uuid === 'string' && org.uuid.toLowerCase() === uuid
+    org => typeof org.uuid === 'string' && org.uuid.toLowerCase() === uuid
   );
   if (!member) {
     // Membership = read access; nothing else grants it. Never redirect.
@@ -402,12 +403,12 @@ const handleRebuildStatus = async (request, env, cors) => {
   );
 };
 
-const subscriptionKey = async (endpoint) => {
+const subscriptionKey = async endpoint => {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint));
   return `sub:${bytesToB64url(new Uint8Array(digest))}`;
 };
 
-const isValidSubscription = (body) =>
+const isValidSubscription = body =>
   typeof body?.endpoint === 'string' &&
   body.endpoint.startsWith('https://') &&
   body.endpoint.length <= 512 &&
@@ -439,7 +440,7 @@ const handleSubscribe = async (request, env, cors) => {
     p256dh: body.keys.p256dh,
     auth: body.keys.auth,
     uuid: String(payload.UUID || payload.sub || ''),
-    orgs: organizations.map((org) => String(org.uuid || '').toLowerCase()).filter(Boolean),
+    orgs: organizations.map(org => String(org.uuid || '').toLowerCase()).filter(Boolean),
   };
   await env.SUBS.put(await subscriptionKey(body.endpoint), JSON.stringify(record));
   return new Response(null, { status: 204, headers: cors });
@@ -525,7 +526,7 @@ const encryptPayload = async (subscription, payload) => {
   );
 };
 
-const importVapidPrivateKey = async (env) => {
+const importVapidPrivateKey = async env => {
   const pub = b64urlToBytes(env.VAPID_PUBLIC_KEY);
   const jwk = {
     kty: 'EC',
@@ -578,7 +579,7 @@ const sendPush = async (subscription, payload, env) => {
   });
 };
 
-const listSubscriptions = async (env) => {
+const listSubscriptions = async env => {
   const records = [];
   let cursor;
   do {
@@ -670,12 +671,12 @@ const probe = async (url, headers = {}) => {
   }
 };
 
-const overallStatus = (services) => {
+const overallStatus = services => {
   const values = Object.values(services);
-  if (values.some((value) => value.startsWith('error'))) {
+  if (values.some(value => value.startsWith('error'))) {
     return 'error';
   }
-  if (values.some((value) => value.startsWith('warning'))) {
+  if (values.some(value => value.startsWith('warning'))) {
     return 'warning';
   }
   return 'ok';
@@ -760,7 +761,7 @@ export default {
 
     const match = PATH_RE.exec(pathname);
     if (!match) {
-      if (WORKER_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+      if (WORKER_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
         return jsonResponse(404, { error: 'not found' }, cors);
       }
       return handleSite(request, pathname);

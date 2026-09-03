@@ -38,9 +38,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -64,9 +64,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -88,9 +88,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -115,9 +115,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -142,9 +142,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup
@@ -168,9 +168,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "requirements.txt"
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
       - name: Install dependencies if needed
         run: bash scripts/setup

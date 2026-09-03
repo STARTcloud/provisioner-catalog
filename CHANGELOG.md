@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.49](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.48...provisioner-catalog-v0.0.49) (2026-09-03)
+
+
+### Features
+
+* watch cell on every table, localStorage watches and a Watched filter for provisioners ([ca374fc](https://github.com/STARTcloud/provisioner-catalog/commit/ca374fcae176944df334e49dc7f6e2679e96bab6))
+
 ## [0.0.48](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.47...provisioner-catalog-v0.0.48) (2026-09-03)
 
 

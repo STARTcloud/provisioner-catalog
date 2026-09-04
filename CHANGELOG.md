@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.62](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.61...provisioner-catalog-v0.0.62) (2026-09-04)
+
+
+### Features
+
+* export the backend profile's membership mapping from the session layer ([16b4c53](https://github.com/STARTcloud/provisioner-catalog/commit/16b4c531c354ea0f18ac5f71bd4e238ff66c462c))
+* service accounts grouped per organization with an organization pick on create ([1178270](https://github.com/STARTcloud/provisioner-catalog/commit/11782708d3779b302f436d13bbcaa123ce0386c3))
+* shared admin page with organizations, configuration and storage ([2386410](https://github.com/STARTcloud/provisioner-catalog/commit/2386410981682fab4baa9b3e1c948f021c02deb9))
+* shared organization console, discovery and member card ([5206e45](https://github.com/STARTcloud/provisioner-catalog/commit/5206e45c98992a0550458875e18257593ebfaaaa))
+* shared profile page with the account adapter ([ee3885e](https://github.com/STARTcloud/provisioner-catalog/commit/ee3885eba78170495c0adff0576670ba6ec0e754))
+* shared setup page over the setup adapter ([9746870](https://github.com/STARTcloud/provisioner-catalog/commit/9746870af11459f1daa05b1ab1a576d74b229c8b))
+
 ## [0.0.61](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.60...provisioner-catalog-v0.0.61) (2026-09-04)
 
 

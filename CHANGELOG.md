@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.64](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.63...provisioner-catalog-v0.0.64) (2026-09-04)
+
+
+### Bug Fixes
+
+* answer the STARTcloud UI dependency-update dispatch with an auto-merging bump PR ([a59f316](https://github.com/STARTcloud/provisioner-catalog/commit/a59f3161932b4d56b28783555c9e1aa582da2c4a))
+* bump startcloud-ui to v0.2.0 ([#80](https://github.com/STARTcloud/provisioner-catalog/issues/80)) ([cba5b56](https://github.com/STARTcloud/provisioner-catalog/commit/cba5b56ef7e51406144aed870e8ce2e7f1810800))
+* bump startcloudUiVersion to 0.1.1 ([#78](https://github.com/STARTcloud/provisioner-catalog/issues/78)) ([8be3ea5](https://github.com/STARTcloud/provisioner-catalog/commit/8be3ea54aa0409d2e8969e62d7fd1bcc4a98975b))
+* stop auto-merging UI bump PRs, pull requests are the human gate ([704e0dc](https://github.com/STARTcloud/provisioner-catalog/commit/704e0dcdbda7ab9d4cad6c1600c78e8ec6d14777))
+
 ## [0.0.63](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.62...provisioner-catalog-v0.0.63) (2026-09-04)
 
 

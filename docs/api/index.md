@@ -521,11 +521,51 @@ The UI's Deploy controls, for a signed-in viewer whose token carries a Hyperweav
 
 ### GET /api/status
 
-No auth. The app identity every host of the STARTcloud UI answers before the UI renders anything: `role` names the app the UI boots (`catalog` here, `boxvault` on BoxVault) and `version` is this repository's released version, read from the `version.txt` the data job publishes beside `catalog.json` and cached for 60 seconds. An unreadable `version.txt` yields an empty string, never an error.
+No auth. The app identity and capabilities every host of the STARTcloud UI answers before the UI renders anything. `role` names the app (`catalog` here, `boxvault` on BoxVault) and `version` is this repository's released version, read from the `version.txt` the data job publishes beside `catalog.json` and cached for 60 seconds with the rest of the document; an unreadable `version.txt` yields an empty string, never an error. The remaining fields drive the UI at runtime, so a new backend is a new status document, never new UI code.
 
 ```json
-{ "role": "catalog", "version": "0.0.62" }
+{
+  "role": "catalog",
+  "version": "0.0.64",
+  "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
+  "auth": ["idp"],
+  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
+  "collections": ["provisioners"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health"],
+  "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
+  "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
+}
 ```
+
+| Field | Meaning |
+| --- | --- |
+| `role`, `version` | The app name and this repository's released version |
+| `brand` | `name`, `logoUrl` (a path this host serves; `/startcloud.svg` ships in the UI artifact) and `repo` |
+| `auth` | Session methods the UI may create, first entry wins: `idp` is browser OIDC against `idp.issuer`; BoxVault answers `backend`, its own session |
+| `idp` | Present only when `auth` contains `idp`: `issuer` and `clientId` are the Worker's `ISSUER` and `AUDIENCE` vars, `scopes` the authorization request's scope string, `storagePrefix` the prefix of the UI's token storage keys |
+| `collections` | Collection registry entries the UI mounts, in order; the first is implicit (no route segment). Data, never a gate |
+| `features` | The gate: kebab-case tokens, absence hides the surface; a host with no `features` array at all renders everything |
+| `links` | `docs` and `contact` for the footer and menus |
+| `ticket` | The support ticket constants (`baseUrl`, `reqType`, `fallbackCustomerId`); BoxVault answers `null` because it serves them at `/api/config/ticket` |
+
+Feature tokens across every host and what each gates; the catalog answers the six marked:
+
+| Token | Surface | Catalog |
+| --- | --- | --- |
+| `local-accounts` | the `/register` self-service form and the profile page's password, email and delete-account sections (the routes themselves follow the `backend` auth token) | |
+| `setup` | `/setup` and the setup gate before any other route | |
+| `admin` | `/admin` route and the Admin menu row (still needs `ROLE_ADMIN`) | |
+| `org-console` | `/org-console` route and menu row (still needs org OWNER/ADMIN) | |
+| `discover` | `/organizations/discover` and the Discover button on the home page | |
+| `invitations` | the Invitations tab in the org console | |
+| `uploads` | ISO upload zone, box file upload, the `uploads` slots | |
+| `private-catalogs` | fetch `/api/private/<uuid>/...` per membership, the access-denied banner | yes |
+| `watches` | watch stars and the Watched filter | yes |
+| `deploy` | Deploy button and glyph (still needs the hyperweaver entitlement and a configured URL) | yes |
+| `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
+| `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
+| `notifications` | the Notifications menu row (still needs the scope) | yes |
+| `health` | the footer health heart from `/api/health` | yes |
 
 ---
 

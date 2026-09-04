@@ -34,7 +34,7 @@ Every `*_provisioner` repository runs one set of nine CI files, byte-identical, 
 | `.github/workflows/release-please.yml` | Push to main: CI → release-please → build → validate, with `secrets: inherit` on the reusable jobs |
 | `.github/workflows/build-provisioner.yml` | Checks out the release tag, stages, uploads `<name>-<version>.tar.gz`, `<name>.tar.gz` and both `.sha256` sidecars |
 | `.github/workflows/dev-release.yml` | One replaceable prerelease per `bump/*` PR (`v<base>-dev.pr<N>`), deleted when the PR closes |
-| `.github/workflows/dependency-bump.yml` | `repository_dispatch` from producers plus a daily reconcile; opens `fix: bump …` PRs, closes superseded ones |
+| `.github/workflows/dependency-bump.yml` | `repository_dispatch` from producers on every release; opens `fix: bump …` PRs for a human to merge, closes superseded ones |
 | `.github/workflows/validate.yml` | The catalog's validation action, called after every build and on a daily cron |
 
 ## What a repository must hold
@@ -74,7 +74,7 @@ release-please manages the version from Conventional Commits and stamps `provisi
 
 **Validate after build, not on `release: published`.** release-please creates the GitHub release, which fires `release: published`, before the build job in the same run has uploaded the tar.gz and sidecars; a validate started by that event downloads nothing and fails. `release-please.yml` calls `validate.yml` with `needs: build-provisioner`, the first moment the assets exist. The daily cron re-checks every published release afterwards.
 
-**Dependency bumps as pull requests, never direct pushes.** A bump PR runs the full CI gate, publishes a testable prerelease through `dev-release.yml`, and merges as a Conventional `fix:` commit so release-please releases it like any other change. A bump whose pin `main` already carries is closed and its branch deleted, on the dispatch path immediately and on the daily reconcile otherwise.
+**Dependency bumps as pull requests, never direct pushes.** A bump PR runs the full CI gate, publishes a testable prerelease through `dev-release.yml`, and a human merges it as a Conventional `fix:` commit so release-please releases it like any other change; nothing auto-merges and nothing polls. A bump whose pin `main` already carries is closed and its branch deleted when the next dispatch for it arrives.
 
 **Bare `vX.Y.Z` tags.** core_provisioner, every collection, and the `dev.prN` prereleases already tag that way; `include-component-in-tag: false` brings provisioner releases to the same grammar. The catalog never reads tags — it matches the `<name>-<version>.tar.gz` asset filename — so the tag form is a naming choice, not a contract.
 

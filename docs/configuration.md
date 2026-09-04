@@ -160,7 +160,7 @@ One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the 
 | `/push/*` | Web Push subscriptions and dispatch |
 | `/admin/*` | Admin rebuild trigger and status |
 | `/watches` | The caller's watched provisioners |
-| `/api/status` | The app identity the STARTcloud UI probes before it renders |
+| `/api/status` | The app identity and capabilities the STARTcloud UI probes before it renders |
 | `/health`, `/config` | The Worker's health document and the estate settings |
 
 ### KV binding
@@ -211,16 +211,64 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `POST /push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
 | `POST /push/test-toast` | Bearer | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}` to the caller's own subscriptions; `503` when either VAPID key is unset |
 | `POST /push/test-channel` | Bearer | `ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | `200 {"delivered":1}` after one hub write addressed to the caller; `503` without the hub credentials; `502` when discovery, the token grant or the write fails |
-| `GET /api/status` | None | The published `version.txt` on this host | `200 {"role":"catalog","version"}`, the version cached for 60 seconds and empty when `version.txt` cannot be read |
+| `GET /api/status` | None | `ISSUER`, `AUDIENCE`, the published `version.txt` on this host | `200` with the status document below, cached for 60 seconds; `version` is empty when `version.txt` cannot be read |
 | `OPTIONS *` | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
 Any other path under those prefixes returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.
+
+### The status document
+
+`GET /api/status` is the contract every host of the STARTcloud UI answers; the UI reads nothing else to decide what to render. `idp.issuer` and `idp.clientId` are the `ISSUER` and `AUDIENCE` vars; everything else is constant in `worker/src/index.js`.
+
+```json
+{
+  "role": "catalog",
+  "version": "0.0.64",
+  "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
+  "auth": ["idp"],
+  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
+  "collections": ["provisioners"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health"],
+  "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
+  "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `role`, `version` | The app name and this repository's released version |
+| `brand` | `name`, `logoUrl` (a path this host serves) and `repo` |
+| `auth` | Session methods, first entry wins: `idp` is browser OIDC against `idp.issuer`; BoxVault answers `backend` |
+| `idp` | Present only when `auth` contains `idp`; `issuer`, `clientId`, `scopes`, `storagePrefix` are all required |
+| `collections` | Collection registry entries the UI mounts, in order; data, never a gate |
+| `features` | The gate: absence hides the surface; a host with no `features` array renders everything |
+| `links` | `docs` and `contact` |
+| `ticket` | Support ticket constants; BoxVault answers `null` and serves them at `/api/config/ticket` |
+
+Feature tokens and what each gates; the catalog answers the six marked:
+
+| Token | Surface | Catalog |
+| --- | --- | --- |
+| `local-accounts` | the `/register` self-service form and the profile page's password, email and delete-account sections (the routes themselves follow the `backend` auth token) | |
+| `setup` | `/setup` and the setup gate before any other route | |
+| `admin` | `/admin` route and the Admin menu row (still needs `ROLE_ADMIN`) | |
+| `org-console` | `/org-console` route and menu row (still needs org OWNER/ADMIN) | |
+| `discover` | `/organizations/discover` and the Discover button on the home page | |
+| `invitations` | the Invitations tab in the org console | |
+| `uploads` | ISO upload zone, box file upload, the `uploads` slots | |
+| `private-catalogs` | fetch `/api/private/<uuid>/...` per membership, the access-denied banner | yes |
+| `watches` | watch stars and the Watched filter | yes |
+| `deploy` | Deploy button and glyph (still needs the hyperweaver entitlement and a configured URL) | yes |
+| `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
+| `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
+| `notifications` | the Notifications menu row (still needs the scope) | yes |
+| `health` | the footer health heart from `/api/health` | yes |
 
 ---
 
 ## The STARTcloud UI
 
-The web UI is not built here. It is the [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui), one build shared with BoxVault and the rest of the estate, fetched as a release artifact and merged into the Pages payload by the data job. Which app it renders is decided at runtime: the page asks its own origin `GET /api/status`, the Worker answers `role: catalog`, and the catalog app boots.
+The web UI is not built here. It is the [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui), one build shared with BoxVault and the rest of the estate, fetched as a release artifact and merged into the Pages payload by the data job. Which app it renders is decided at runtime: the page asks its own origin `GET /api/status`, the Worker answers `role: catalog` with the `auth`, `idp`, `collections`, `features`, `links` and `ticket` fields described under [The status document](#the-status-document), and the catalog app boots with only the surfaces those fields name.
 
 ### The pin
 
@@ -235,13 +283,13 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 
 | Path | Purpose |
 | --- | --- |
-| `/api/status` | `role` and `version`, before anything renders; the version is the footer's and the About page's |
+| `/api/status` | `role`, `version`, `brand`, `auth`, `idp`, `collections`, `features`, `links` and `ticket`, before anything renders; the version is the footer's and the About page's, `features` decides which surfaces exist |
 | `/catalog.json`, `/health.json` | The public catalog and its health companion |
 | `/private/<uuid>/catalog.json`, `/private/<uuid>/health.json` | The private catalogs of the signed-in user's organizations |
 | `/health`, `/config` | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
 | `/push/*`, `/watches`, `/admin/*` | Toasts, watches and the admin rebuild |
 
-The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`, the `/callback` redirect, the `catalog.` storage keys) live in the UI repository under `src/apps/catalog/`. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
+The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
 
 ---
 
@@ -288,7 +336,7 @@ Maintained by release-please from conventional commits; `release-please.yml` run
 | `draft`, `prerelease` | `false` |
 | `default-branch` | `main` |
 
-`version.txt` at the repository root holds the current version; the data job copies it into the Pages payload, and the Worker's `/api/status` reads it back so the UI footer shows it. Releases are tagged `provisioner-catalog-v<version>`. They version the tooling, workflows, UI pin and documentation only; published catalog data never waits for one.
+`version.txt` at the repository root holds the current version; the data job copies it into the Pages payload, and the Worker's `/api/status` reads it back as `version` so the UI footer shows it. Releases are tagged `provisioner-catalog-v<version>`. They version the tooling, workflows, UI pin and documentation only; published catalog data never waits for one.
 
 ### Format version
 

@@ -829,11 +829,34 @@ const publishedVersion = async request => {
   }
 };
 
-const handleStatus = async (request, cors) => {
+const handleStatus = async (request, env, cors) => {
   if (Date.now() - statusCache.at > STATUS_TTL_MS) {
     statusCache = {
       at: Date.now(),
-      body: { role: 'catalog', version: await publishedVersion(request) },
+      body: {
+        role: 'catalog',
+        version: await publishedVersion(request),
+        brand: {
+          name: 'Provisioner Catalog',
+          logoUrl: '/startcloud.svg',
+          repo: 'https://github.com/STARTcloud/provisioner-catalog',
+        },
+        auth: ['idp'],
+        idp: {
+          issuer: env.ISSUER,
+          clientId: env.AUDIENCE,
+          scopes: 'openid profile email organizations notifications entitlements',
+          storagePrefix: 'catalog',
+        },
+        collections: ['provisioners'],
+        features: ['private-catalogs', 'watches', 'deploy', 'rebuild', 'notifications', 'health'],
+        links: { docs: '/docs/', contact: 'https://startcloud.com/#contact' },
+        ticket: {
+          baseUrl: 'https://xd.prominic.net/app/apprequest.nsf/router?openagent',
+          reqType: 'sso',
+          fallbackCustomerId: 'A55DF1',
+        },
+      },
     };
   }
   return jsonResponse(200, statusCache.body, cors);
@@ -974,7 +997,7 @@ export default {
     const { pathname } = new URL(request.url);
 
     if (pathname === '/api/status' && request.method === 'GET') {
-      return handleStatus(request, cors);
+      return handleStatus(request, env, cors);
     }
     if (pathname === '/health' && request.method === 'GET') {
       return handleHealth(request, env, cors);

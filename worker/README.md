@@ -40,7 +40,22 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - Same URL with a valid Bearer token for a member org → that org's catalog.json.
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
-- `curl https://provisioner-catalog.startcloud.com/api/status` → `{"role":"catalog","version":"…"}` (the STARTcloud UI probes this before it renders)
+- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `health` the footer heart):
+
+  ```json
+  {
+    "role": "catalog",
+    "version": "…",
+    "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
+    "auth": ["idp"],
+    "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
+    "collections": ["provisioners"],
+    "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health"],
+    "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
+    "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
+  }
+  ```
+
 - `curl https://provisioner-catalog.startcloud.com/health` → `{"status":"ok",…}`
 - `curl https://provisioner-catalog.startcloud.com/config` → `{"hyperweaver":{"url":"…"}}` (empty until `HYPERWEAVER_URL` is set)
 - `curl https://provisioner-catalog.startcloud.com/watches` → `{"error":"missing bearer token"}` (the route answers; the UI calls it with the user's token)

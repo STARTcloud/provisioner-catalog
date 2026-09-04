@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.63](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.62...provisioner-catalog-v0.0.63) (2026-09-04)
+
+
+### Features
+
+* serve the STARTcloud UI artifact instead of a bundled web app ([fc4125f](https://github.com/STARTcloud/provisioner-catalog/commit/fc4125fe0268979515a28d0b01deec4c943882c8))
+
 ## [0.0.62](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.61...provisioner-catalog-v0.0.62) (2026-09-04)
 
 

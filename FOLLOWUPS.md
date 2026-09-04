@@ -12,11 +12,9 @@ The provisioner catalog is a metadata file that points at GitHub releases;
 BoxVault stores and serves artifacts and already covers organizations,
 visibility, versions and providers. The catalog's job could one day be a
 BoxVault feature (a "provisioners" kind alongside boxes and ISOs, or BoxVault
-consuming the catalog feed), which would collapse the two navbars, footers,
-modals and theme files into one codebase.
+consuming the catalog feed). Both apps now render through the one STARTcloud
+UI, so the remaining difference is the data plumbing.
 
-- Keep converging the two frontends until the shared surface is the whole
-  shell and only the data plumbing differs; that is the precondition.
 - Decide whether BoxVault consumes `catalog.json` as a source or hosts the
   provisioner metadata itself before any code moves.
 - Armor belongs in the same picture: as an organization-level artifact

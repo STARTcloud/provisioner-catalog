@@ -73,12 +73,12 @@ All workflows live in `.github/workflows/`. Admission is human (PRs); data is sc
 
 | File | Trigger | What it does | What it publishes |
 | --- | --- | --- | --- |
-| `release-please.yml` | `push` to `main` | Runs `ci.yml` as a reusable workflow, then release-please with a GitHub App token minted from `BOT_CLIENT_ID` / `BOT_PRIVATE_KEY`. When `release_created` is `true`, calls `generate-catalog-data.yml` with `secrets: inherit`. | Release PRs, GitHub releases, `CHANGELOG.md`, `version.txt`; catalog data on release |
+| `release-please.yml` | `push` to `main` | Runs `ci.yml` as a reusable workflow, then release-please with a GitHub App token minted from `BOT_APP_ID` / `BOT_PRIVATE_KEY`. When `release_created` is `true`, calls `generate-catalog-data.yml` with `secrets: inherit`. | Release PRs, GitHub releases, `CHANGELOG.md`, `version.txt`; catalog data on release |
 | `ci.yml` | `workflow_call`; `pull_request` to `main` | Jobs `jsonschema` (`scripts.validate_schemas`), `sorted` (`scripts.is_sorted`), `actionlint` (`rhysd/actionlint:1.7.7`), `lint-and-format` (markdownlint, `prettier --check`), `docs` (Jekyll build, html-proofer), then `codeql-analysis` via `codeql.yml`. | Nothing |
 | `checks.yml` | `pull_request` (`opened`, `synchronize`, `reopened`) to `main` | The admission gate. `preflight` clones `main` to `/tmp/repositories/default` and extracts the one added repository; `editable` runs `scripts.check.edits`; `owner`, `releases`, `removed`, `existing`, `catalog` (the local `action.yml` against the candidate) run only when a repository was added; `completed` fails if any dependency failed or was cancelled. Concurrency group `checks-<ref>`, cancel-in-progress. | Nothing; merging is admission only |
 | `generate-catalog-data.yml` | `schedule` (`0 */2 * * *`); `workflow_call`; `workflow_dispatch` | See below. | `catalog.json`, `health.json`, `version.txt` and the STARTcloud UI to GitHub Pages; `orgs/<uuid>/catalog.json` and `health.json` committed to the private store |
 | `deploy-worker.yml` | `push` to `main` touching `worker/**`; `workflow_dispatch` | `cloudflare/wrangler-action@v4` with `workingDirectory: worker` and `CLOUDFLARE_API_TOKEN`. | The Cloudflare Worker |
-| `bump-ui-pin.yml` | `repository_dispatch` (`startcloud-ui-release`); `schedule` (`17 6 * * *`); `workflow_dispatch` with an optional `version` | Resolves the latest `STARTcloud/startcloud-ui` release (or the given version), rewrites `startcloudUiVersion` in `package.json`, and opens a `fix:` pull request with a GitHub App token minted from `BOT_CLIENT_ID` / `BOT_PRIVATE_KEY`. | A pin-bump PR whenever the catalog is behind |
+| `dependency-bump.yml` | `repository_dispatch` (`dependency-update`, sent by the STARTcloud UI's release workflow with `repo`, `tag` and `sha`); `workflow_dispatch` with a required `tag` | Rewrites `startcloudUiVersion` in `package.json` to the tag, commits `fix: bump startcloud-ui to <tag>` on `bump/startcloud-ui` as `startcloud-bot[bot]`, opens the pull request and enables squash auto-merge, all with a GitHub App token minted from `BOT_APP_ID` / `BOT_PRIVATE_KEY`; when `main` already pins the tag it closes any open bump PR instead. | One bump PR per UI release, merged when `ci.yml` is green |
 | `codeql.yml` | `schedule` (`17 5 * * 4`); `workflow_call` | CodeQL matrix over `actions` and `python`, build mode `none`. | Code-scanning alerts |
 
 ### The release gate
@@ -138,7 +138,7 @@ Every environment variable and secret name read by the Python scripts and workfl
 | `CATALOG_HUB_CLIENT_SECRET` | `scripts.notify.send_hub_notification` | Same | Same | Same |
 | `CATALOG_PUSH_DISPATCH_URL` | `scripts.notify.send_push_dispatch` | Not set by any workflow | Where Web Push events are posted | Defaults to `https://provisioner-catalog.startcloud.com/push/dispatch` |
 | `CATALOG_PUSH_DISPATCH_KEY` | `scripts.notify.send_push_dispatch` | `generate-catalog-data.yml` secret (`build`, `notify-requester`, `build-private`) | The `X-Dispatch-Key` header the Worker's `/push/dispatch` requires | Logged as `push dispatch skipped (no key)`; no error |
-| `BOT_CLIENT_ID` | `actions/create-github-app-token@v3` | `release-please.yml` and `bump-ui-pin.yml` secret | The App token release-please and the pin bump use so their PRs and releases trigger workflows | The mint step fails and the job does not run |
+| `BOT_APP_ID` | `actions/create-github-app-token@v3` | `release-please.yml` and `dependency-bump.yml` secret (organization secret) | The App token release-please and the dependency bump use so their PRs and releases trigger workflows | The mint step fails and the job does not run |
 | `BOT_PRIVATE_KEY` | `actions/create-github-app-token@v3` | Same | Same | Same |
 | `CLOUDFLARE_API_TOKEN` | `cloudflare/wrangler-action@v4` | `deploy-worker.yml` secret | `wrangler deploy` of the Worker | The deploy job fails |
 
@@ -229,7 +229,7 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 | `startcloudUiVersion` in `package.json` | The STARTcloud UI release the data job fetches |
 | Artifact | `https://github.com/STARTcloud/startcloud-ui/releases/download/v<version>/startcloud-ui-<version>.tar.gz`, the contents of the UI's `dist/` |
 | Fetched into | `ui/` (gitignored), then copied over `dist/` beside `catalog.json`, `health.json`, `version.txt` and `docs/` |
-| Kept current by | `bump-ui-pin.yml`, which opens a `fix:` PR whenever a newer UI release exists; merging it mints a release whose data run ships the new UI |
+| Kept current by | `dependency-bump.yml`, which answers the UI's `dependency-update` dispatch with an auto-merging `fix:` PR; merging it mints a release whose data run ships the new UI |
 
 ### What the UI reads from this host
 

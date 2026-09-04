@@ -40,6 +40,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - Same URL with a valid Bearer token for a member org → that org's catalog.json.
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
+- `curl https://provisioner-catalog.startcloud.com/api/status` → `{"role":"catalog","version":"…"}` (the STARTcloud UI probes this before it renders)
 - `curl https://provisioner-catalog.startcloud.com/health` → `{"status":"ok",…}`
 - `curl https://provisioner-catalog.startcloud.com/config` → `{"hyperweaver":{"url":"…"}}` (empty until `HYPERWEAVER_URL` is set)
 - `curl https://provisioner-catalog.startcloud.com/watches` → `{"error":"missing bearer token"}` (the route answers; the UI calls it with the user's token)

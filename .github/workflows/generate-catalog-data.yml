@@ -5,9 +5,9 @@ name: Generate Catalog Data
 # (including the web UI's admin rebuild, which always forces a publish) — or
 # chained from release-please.yml when a release is minted — this rebuilds
 # catalog.json from the admitted repositories' GitHub releases and deploys it
-# to GitHub Pages together with the SPA and the docs site, when the data
-# changed, on a release chain (so SPA and docs changes ship), or when
-# forceRepositoryUpdate is set.
+# to GitHub Pages together with the pinned STARTcloud UI and the docs site,
+# when the data changed, on a release chain (so UI pin and docs changes
+# ship), or when forceRepositoryUpdate is set.
 #
 # This job can never admit a repository: it only reads sources.yml and
 # removed.yml from main. The immutability tripwire fails the run loudly if an
@@ -48,7 +48,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build catalog.json + SPA
+    name: Build catalog.json + UI
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.build.outputs.changed }}
@@ -80,23 +80,15 @@ jobs:
           --out dist/catalog.json
           --published-url https://provisioner-catalog.startcloud.com/catalog.json
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: 'web/package-lock.json'
+      - name: Fetch STARTcloud UI artifact
+        run: |
+          UI_VERSION=$(node -p "require('./package.json').startcloudUiVersion")
+          echo "Fetching STARTcloud UI v${UI_VERSION}"
+          mkdir -p ui
+          curl -fsSL "https://github.com/STARTcloud/startcloud-ui/releases/download/v${UI_VERSION}/startcloud-ui-${UI_VERSION}.tar.gz" | tar -xz -C ui
 
-      - name: Install SPA dependencies
-        working-directory: web
-        run: npm ci
-
-      - name: Build SPA
-        working-directory: web
-        run: npm run build
-
-      - name: Merge SPA into the Pages payload
-        run: cp -r web/dist/. dist/
+      - name: Merge the UI into the Pages payload
+        run: cp -r ui/. dist/ && cp version.txt dist/
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1

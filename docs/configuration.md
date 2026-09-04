@@ -9,7 +9,7 @@ permalink: /configuration/
 
 {: .no_toc }
 
-Operator reference for the STARTcloud Provisioner Catalog: the hand-edited repository lists, every GitHub Actions workflow and the secrets it reads, the Cloudflare Worker's vars and bindings, the web UI's build-time and dev-server settings, the Python toolchain, and how the repository is versioned.
+Operator reference for the STARTcloud Provisioner Catalog: the hand-edited repository lists, every GitHub Actions workflow and the secrets it reads, the Cloudflare Worker's vars and bindings, how the STARTcloud UI is pinned and shipped, the Python toolchain, and how the repository is versioned.
 
 ## Table of contents
 
@@ -74,10 +74,11 @@ All workflows live in `.github/workflows/`. Admission is human (PRs); data is sc
 | File | Trigger | What it does | What it publishes |
 | --- | --- | --- | --- |
 | `release-please.yml` | `push` to `main` | Runs `ci.yml` as a reusable workflow, then release-please with a GitHub App token minted from `BOT_CLIENT_ID` / `BOT_PRIVATE_KEY`. When `release_created` is `true`, calls `generate-catalog-data.yml` with `secrets: inherit`. | Release PRs, GitHub releases, `CHANGELOG.md`, `version.txt`; catalog data on release |
-| `ci.yml` | `workflow_call`; `pull_request` to `main` | Jobs `jsonschema` (`scripts.validate_schemas`), `sorted` (`scripts.is_sorted`), `actionlint` (`rhysd/actionlint:1.7.7`), `web` (`npm ci`, `npm run lint`, `npm run format:check`, locale key parity, `npm run build`), then `codeql-analysis` via `codeql.yml`. | Nothing |
+| `ci.yml` | `workflow_call`; `pull_request` to `main` | Jobs `jsonschema` (`scripts.validate_schemas`), `sorted` (`scripts.is_sorted`), `actionlint` (`rhysd/actionlint:1.7.7`), `lint-and-format` (markdownlint, `prettier --check`), `docs` (Jekyll build, html-proofer), then `codeql-analysis` via `codeql.yml`. | Nothing |
 | `checks.yml` | `pull_request` (`opened`, `synchronize`, `reopened`) to `main` | The admission gate. `preflight` clones `main` to `/tmp/repositories/default` and extracts the one added repository; `editable` runs `scripts.check.edits`; `owner`, `releases`, `removed`, `existing`, `catalog` (the local `action.yml` against the candidate) run only when a repository was added; `completed` fails if any dependency failed or was cancelled. Concurrency group `checks-<ref>`, cancel-in-progress. | Nothing; merging is admission only |
-| `generate-catalog-data.yml` | `schedule` (`0 */2 * * *`); `workflow_call`; `workflow_dispatch` | See below. | `catalog.json`, `health.json` and the SPA to GitHub Pages; `orgs/<uuid>/catalog.json` and `health.json` committed to the private store |
-| `deploy-worker.yml` | `push` to `main` touching `worker/**`; `workflow_dispatch` | `cloudflare/wrangler-action@v3` with `workingDirectory: worker` and `CLOUDFLARE_API_TOKEN`. | The Cloudflare Worker |
+| `generate-catalog-data.yml` | `schedule` (`0 */2 * * *`); `workflow_call`; `workflow_dispatch` | See below. | `catalog.json`, `health.json`, `version.txt` and the STARTcloud UI to GitHub Pages; `orgs/<uuid>/catalog.json` and `health.json` committed to the private store |
+| `deploy-worker.yml` | `push` to `main` touching `worker/**`; `workflow_dispatch` | `cloudflare/wrangler-action@v4` with `workingDirectory: worker` and `CLOUDFLARE_API_TOKEN`. | The Cloudflare Worker |
+| `bump-ui-pin.yml` | `repository_dispatch` (`startcloud-ui-release`); `schedule` (`17 6 * * *`); `workflow_dispatch` with an optional `version` | Resolves the latest `STARTcloud/startcloud-ui` release (or the given version), rewrites `startcloudUiVersion` in `package.json`, and opens a `fix:` pull request with a GitHub App token minted from `BOT_CLIENT_ID` / `BOT_PRIVATE_KEY`. | A pin-bump PR whenever the catalog is behind |
 | `codeql.yml` | `schedule` (`17 5 * * 4`); `workflow_call` | CodeQL matrix over `actions` and `python`, build mode `none`. | Code-scanning alerts |
 
 ### The release gate
@@ -90,7 +91,7 @@ Catalog data does not wait for a release of this repository, but the push-to-mai
 
 | Job | Runs when | Steps |
 | --- | --- | --- |
-| `build` | Always | `scripts.build_catalog --out dist/catalog.json --published-url https://provisioner-catalog.startcloud.com/catalog.json`, then `npm ci` and `npm run build` in `web/`, `cp -r web/dist/. dist/`, and `actions/upload-pages-artifact@v5` behind the deploy condition |
+| `build` | Always | `scripts.build_catalog --out dist/catalog.json --published-url https://provisioner-catalog.startcloud.com/catalog.json`, then the STARTcloud UI release named by `startcloudUiVersion` fetched into `ui/` and copied over `dist/` together with `version.txt`, the Jekyll docs copied to `dist/docs`, and `actions/upload-pages-artifact@v5` behind the deploy condition |
 | `deploy` | Deploy condition true | `actions/deploy-pages@v5` to the `github-pages` environment |
 | `notify-requester` | `always()` and event is `workflow_dispatch` with a non-empty `requested_by` | `scripts.notify_done` with `REQUESTED_BY`, `BUILD_RESULT`, `DEPLOY_RESULT` |
 | `build-private` | Always; the build step only when `store/sources-orgs.yml` exists | Checks out `STARTcloud/provisioner-catalogs-private` into `store/` with `PRIVATE_CATALOG_PAT`, runs `scripts.build_org_catalogs --config store/sources-orgs.yml --store store`, and commits `orgs/` back as `github-actions[bot]` when `changed` is `true` |
@@ -98,7 +99,7 @@ Catalog data does not wait for a release of this repository, but the push-to-mai
 Change detection: `scripts/build_catalog.py` compares the freshly built `catalog.json` and `health.json` (minus `updated`) against the currently published copies and writes `changed=true|false` to `$GITHUB_OUTPUT`. The Pages upload and deploy run when any of these hold:
 
 - `steps.build.outputs.changed == 'true'`
-- `github.event_name == 'push'` (the chain from `release-please.yml`, so SPA changes ship with a release)
+- `github.event_name == 'push'` (the chain from `release-please.yml`, so a UI pin bump ships with a release)
 - `github.event_name == 'workflow_dispatch'` and `inputs.forceRepositoryUpdate` is true
 
 Exit codes from the builders: `0` built, `1` build or schema error (nothing published), `2` immutability tripwire (a published version's asset now hashes differently; nothing published).
@@ -137,9 +138,9 @@ Every environment variable and secret name read by the Python scripts and workfl
 | `CATALOG_HUB_CLIENT_SECRET` | `scripts.notify.send_hub_notification` | Same | Same | Same |
 | `CATALOG_PUSH_DISPATCH_URL` | `scripts.notify.send_push_dispatch` | Not set by any workflow | Where Web Push events are posted | Defaults to `https://provisioner-catalog.startcloud.com/push/dispatch` |
 | `CATALOG_PUSH_DISPATCH_KEY` | `scripts.notify.send_push_dispatch` | `generate-catalog-data.yml` secret (`build`, `notify-requester`, `build-private`) | The `X-Dispatch-Key` header the Worker's `/push/dispatch` requires | Logged as `push dispatch skipped (no key)`; no error |
-| `BOT_CLIENT_ID` | `actions/create-github-app-token@v3` | `release-please.yml` secret | The App token release-please uses so its PRs and releases trigger workflows | The mint step fails and release-please does not run |
-| `BOT_PRIVATE_KEY` | `actions/create-github-app-token@v3` | `release-please.yml` secret | Same | Same |
-| `CLOUDFLARE_API_TOKEN` | `cloudflare/wrangler-action@v3` | `deploy-worker.yml` secret | `wrangler deploy` of the Worker | The deploy job fails |
+| `BOT_CLIENT_ID` | `actions/create-github-app-token@v3` | `release-please.yml` and `bump-ui-pin.yml` secret | The App token release-please and the pin bump use so their PRs and releases trigger workflows | The mint step fails and the job does not run |
+| `BOT_PRIVATE_KEY` | `actions/create-github-app-token@v3` | Same | Same | Same |
+| `CLOUDFLARE_API_TOKEN` | `cloudflare/wrangler-action@v4` | `deploy-worker.yml` secret | `wrangler deploy` of the Worker | The deploy job fails |
 
 Hub notifications are sent from `build_org_catalogs` for every new `(family, version)` pair in a private catalog, addressed to `{"org_uuid": ...}`, and from `notify_done` addressed to `{"user_uuid": ...}`. Push dispatch events carry a `scope` of `public` (from `build_catalog`, only when a published baseline existed), `org` (from `build_org_catalogs`), or `user` (from `notify_done`). Both sends log and continue on failure; neither can fail a build.
 
@@ -151,13 +152,16 @@ Hub notifications are sent from `build_org_catalogs` for every new `(family, ver
 
 ### Routes
 
-One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the `provisioner-catalog` DNS record must be proxied for it to intercept traffic. The Worker answers three prefixes itself and proxies every other request to GitHub Pages, answering a Pages `404` for a page request (`GET`, `text/html`, no file extension) with `index.html` so the web UI's deep links load.
+One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the `provisioner-catalog` DNS record must be proxied for it to intercept traffic. The Worker answers the prefixes and paths below itself and proxies every other request to GitHub Pages, answering a Pages `404` for a page request (`GET`, `text/html`, no file extension) with `index.html` so the web UI's deep links load.
 
 | Prefix | Purpose |
 | --- | --- |
 | `/private/*` | Per-organization catalogs |
 | `/push/*` | Web Push subscriptions and dispatch |
 | `/admin/*` | Admin rebuild trigger and status |
+| `/watches` | The caller's watched provisioners |
+| `/api/status` | The app identity the STARTcloud UI probes before it renders |
+| `/health`, `/config` | The Worker's health document and the estate settings |
 
 ### KV binding
 
@@ -207,93 +211,37 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `POST /push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
 | `POST /push/test-toast` | Bearer | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}` to the caller's own subscriptions; `503` when either VAPID key is unset |
 | `POST /push/test-channel` | Bearer | `ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | `200 {"delivered":1}` after one hub write addressed to the caller; `503` without the hub credentials; `502` when discovery, the token grant or the write fails |
+| `GET /api/status` | None | The published `version.txt` on this host | `200 {"role":"catalog","version"}`, the version cached for 60 seconds and empty when `version.txt` cannot be read |
 | `OPTIONS *` | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
 Any other path under those prefixes returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.
 
 ---
 
-## SPA configuration
+## The STARTcloud UI
 
-The web UI in `web/` is a React 19 + Vite SPA with no runtime configuration file. Production values are constants in source; the only file read at build time is `web/config.yaml`, and only by the dev server.
+The web UI is not built here. It is the [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui), one build shared with BoxVault and the rest of the estate, fetched as a release artifact and merged into the Pages payload by the data job. Which app it renders is decided at runtime: the page asks its own origin `GET /api/status`, the Worker answers `role: catalog`, and the catalog app boots.
 
-### Authentication constants
+### The pin
 
-Defined in `web/src/auth.js`.
-
-| Constant | Value |
+| Item | Value |
 | --- | --- |
-| `ISSUER` | `https://dev-auth.startcloud.com` |
-| `CLIENT_ID` | `provisioner-catalog` |
-| `SCOPES` | `openid profile email organizations notifications` |
-| `REDIRECT_URI` | `<window.location.origin>/callback` |
+| `startcloudUiVersion` in `package.json` | The STARTcloud UI release the data job fetches |
+| Artifact | `https://github.com/STARTcloud/startcloud-ui/releases/download/v<version>/startcloud-ui-<version>.tar.gz`, the contents of the UI's `dist/` |
+| Fetched into | `ui/` (gitignored), then copied over `dist/` beside `catalog.json`, `health.json`, `version.txt` and `docs/` |
+| Kept current by | `bump-ui-pin.yml`, which opens a `fix:` PR whenever a newer UI release exists; merging it mints a release whose data run ships the new UI |
 
-The client is public (authorization code + PKCE S256, no secret). Registered redirect URIs are exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`. Tokens refresh when within 60 seconds of expiry; a failed refresh clears the session.
+### What the UI reads from this host
 
-Browser storage keys:
-
-| Key | Store | Holds |
-| --- | --- | --- |
-| `catalog.access_token`, `catalog.refresh_token`, `catalog.expires_at` | localStorage | The session |
-| `catalog.pkce_verifier`, `catalog.pkce_state` | localStorage | In-flight login (localStorage so a magic-link sign-in completing in a new tab still finds them) |
-| `catalog.oidc_discovery` | sessionStorage | Cached discovery document |
-| `catalog.theme` | localStorage | `auto`, `light` or `dark` |
-| `i18nextLng` | localStorage | Selected language |
-| `catalog.push_enabled` | localStorage | Whether the user enabled Web Push on this browser |
-
-### Dev server
-
-`web/config.yaml` is read by `web/vite.config.js` and affects only `npm run dev` / `npm run client`.
-
-```yaml
-server:
-  port: 8080
-  api_target: https://provisioner-catalog.startcloud.com
-  auth_target: https://dev-auth.startcloud.com
-```
-
-| Key | Default when the file is absent | Purpose |
-| --- | --- | --- |
-| `server.port` | `8080` | Dev server and HMR port; `strictPort` is on because the registered localhost callback is exact-match on `:8080` |
-| `server.api_target` | `https://provisioner-catalog.startcloud.com` | Proxy target for `/catalog.json`, `/private`, `/push`, `/admin` |
-| `server.auth_target` | `https://dev-auth.startcloud.com` | Proxy target for `/api/user/preferences`, `/api/notifications` |
-
-All proxies use `changeOrigin: true`. In production the SPA calls `/catalog.json`, `/health.json`, `/private/*`, `/push/*` and `/admin/*` same-origin, and calls the IdP APIs at `ISSUER` directly (`import.meta.env.DEV` selects the proxied relative path in dev).
-
-### Build-time defines
-
-`vite.config.js` injects three globals:
-
-| Global | Source |
+| Path | Purpose |
 | --- | --- |
-| `__APP_VERSION__` | `../version.txt`, the release-please-managed repository version (shown in the footer and the support-ticket context) |
-| `__APP_NAME__` | `name` from `web/package.json` |
-| `__SUPPORTED_LOCALES__` | Directory names under `web/public/locales/`, falling back to `['en']` |
+| `/api/status` | `role` and `version`, before anything renders; the version is the footer's and the About page's |
+| `/catalog.json`, `/health.json` | The public catalog and its health companion |
+| `/private/<uuid>/catalog.json`, `/private/<uuid>/health.json` | The private catalogs of the signed-in user's organizations |
+| `/health`, `/config` | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
+| `/push/*`, `/watches`, `/admin/*` | Toasts, watches and the admin rebuild |
 
-The build emits two entries, `index.html` and `callback/index.html`, with unhashed asset names under `assets/`, `sourcemap: false`, and `react-bootstrap` split from the `vendor` chunk. The data job copies `web/dist/` over `dist/` before uploading the Pages artifact.
-
-### Locales
-
-Translations live in `web/public/locales/<lang>/common.json`, loaded over HTTP by `i18next-http-backend` with `fallbackLng: 'en'` and detection order `localStorage` then `navigator`. Present locales are `en` and `es`; the language picker offers every directory found at build time.
-
-The `web` job in `ci.yml` flattens every locale's keys and fails when any locale is missing a key that `en` has, or carries a key `en` lacks. Adding a locale means adding its directory with a complete `common.json`.
-
-### Theme and language roaming
-
-Theme is `auto`, `light` or `dark`, applied as `data-bs-theme` on the root element (an inline script in both HTML entries applies the stored value before React loads, to avoid a flash). Preferences roam through the IdP's preferences API:
-
-- After sign-in, `callback.jsx` calls `syncAccountPreferences()`, which reads `preferences.theme` and `preferences.language` from the userinfo endpoint into `catalog.theme` and `i18nextLng`.
-- On every load, `ThemeProvider` reads the same preferences and applies them when they differ from local state.
-- Toggling the theme or picking a language sends `PATCH <ISSUER>/api/user/preferences` (dev: `/api/user/preferences` proxied) with `{ theme }` or `{ language }`; failures are ignored and the local choice stands.
-
-### Notifications and admin
-
-| Feature | Requirement |
-| --- | --- |
-| Inbox bell | The access token's `scope` contains `notifications`; reads `<ISSUER>/api/notifications`, `/unread-count`, `/read`, `/read-all` and polls the unread count every 60 seconds |
-| Web Push | Browser support for service workers, `PushManager` and `Notification`; registers `/notification-sw.js`, fetches `/push/vapid-key`, and posts the subscription to `/push/subscriptions`. On load the SPA re-posts an existing subscription when `catalog.push_enabled` is set |
-| Rebuild catalog data | `ROLE_ADMIN` in the token's `authorities`; posts `/admin/rebuild` and polls `/admin/rebuild/status` every 10 seconds, at most 90 times |
-| Help & Support | Opens the ticket router with `customer_id` from userinfo (fallback constant in `UserMenu.jsx`) and context `provisioner-catalog \| <version>` |
+The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`, the `/callback` redirect, the `catalog.` storage keys) live in the UI repository under `src/apps/catalog/`. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
 
 ---
 
@@ -340,7 +288,7 @@ Maintained by release-please from conventional commits; `release-please.yml` run
 | `draft`, `prerelease` | `false` |
 | `default-branch` | `main` |
 
-`version.txt` at the repository root holds the current version and is the source the SPA footer displays. Releases are tagged `provisioner-catalog-v<version>`. They version the tooling, workflows, web UI and documentation only; published catalog data never waits for one.
+`version.txt` at the repository root holds the current version; the data job copies it into the Pages payload, and the Worker's `/api/status` reads it back so the UI footer shows it. Releases are tagged `provisioner-catalog-v<version>`. They version the tooling, workflows, UI pin and documentation only; published catalog data never waits for one.
 
 ### Format version
 

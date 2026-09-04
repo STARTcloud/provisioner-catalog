@@ -40,7 +40,7 @@ Agents fetch exactly one document, `https://provisioner-catalog.startcloud.com/c
 graph TD
     A["Provisioner repositories (GitHub releases)"] -- read every ~2h --> B["Data job (generate-catalog-data.yml)"];
     B -- deploys --> C["catalog.json + health.json on GitHub Pages"];
-    B -- builds into Pages payload --> D["Catalog web UI (React SPA)"];
+    B -- fetches the pinned release into the Pages payload --> D["STARTcloud UI (catalog app)"];
     E["hyperweaver-agent / zoneweaver-agent"] -- fetch catalog.json --> C;
     F["Web browser"] -- HTTPS --> D;
     D -- OIDC authorization code + PKCE --> G["STARTcloud IdP"];
@@ -76,7 +76,7 @@ graph TD
 - **[Quality Tiers](guides/quality-tiers/)** - The measured tier ladder and its rules
 - **[Private Catalogs](guides/private-catalogs/)** - Per-organization catalogs behind OIDC
 - **[Notifications](guides/notifications/)** - Push and hub notifications for new versions
-- **[Configuration](configuration/)** - Workflow secrets, Worker vars, and the web UI dev server
+- **[Configuration](configuration/)** - Workflow secrets, Worker vars, and the STARTcloud UI pin
 
 ---
 

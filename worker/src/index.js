@@ -815,6 +815,30 @@ const handleHealth = async (request, env, cors) => {
 const handleConfig = (env, cors) =>
   jsonResponse(200, { hyperweaver: { url: env.HYPERWEAVER_URL || '' } }, cors);
 
+const STATUS_TTL_MS = 60 * 1000;
+let statusCache = { at: 0, body: null };
+
+const publishedVersion = async request => {
+  try {
+    const response = await fetch(new URL('/version.txt', request.url), {
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok ? (await response.text()).trim() : '';
+  } catch {
+    return '';
+  }
+};
+
+const handleStatus = async (request, cors) => {
+  if (Date.now() - statusCache.at > STATUS_TTL_MS) {
+    statusCache = {
+      at: Date.now(),
+      body: { role: 'catalog', version: await publishedVersion(request) },
+    };
+  }
+  return jsonResponse(200, statusCache.body, cors);
+};
+
 const WATCH_PREFIX = 'watch:';
 const WATCH_ID_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
@@ -949,6 +973,9 @@ export default {
 
     const { pathname } = new URL(request.url);
 
+    if (pathname === '/api/status' && request.method === 'GET') {
+      return handleStatus(request, cors);
+    }
     if (pathname === '/health' && request.method === 'GET') {
       return handleHealth(request, env, cors);
     }

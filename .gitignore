@@ -7,8 +7,9 @@ dist/
 # Cloudflare, and .wrangler/ is wrangler's per-machine session cache.
 worker/.wrangler/
 
-# Node (web/ SPA)
+# Node
 node_modules/
+ui/
 
 # Jekyll docs build output, caches, and Ruby gems
 _site/

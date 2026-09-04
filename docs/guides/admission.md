@@ -145,7 +145,7 @@ Merging an admission PR admits the repository and nothing more. Publishing is th
 | Trigger | When | Deploys when |
 | --- | --- | --- |
 | `schedule` | cron `0 */2 * * *`, every two hours | the generated data differs from what is live |
-| `workflow_call` from `release-please.yml` | after a push to `main` whose release-please step created a release | always on the push chain, so SPA changes ship too |
+| `workflow_call` from `release-please.yml` | after a push to `main` whose release-please step created a release | always on the push chain, so a UI pin bump ships too |
 | `workflow_dispatch` | manual run, or the admin rebuild button in the web UI | data changed, or `forceRepositoryUpdate` is set |
 
 The push-to-main chain in `release-please.yml` is CI → release-please → data job, and the data job step runs only when `release_created` is true. A merge that does not mint a release relies on the two-hour cron, which is why the documented expectation is that a newly admitted repository appears within about two hours.
@@ -198,7 +198,7 @@ The catalog serves metadata, never bytes. Removal deletes nothing from the autho
 
 Both schemas set `additionalProperties: false` at every level and `uniqueItems: true` on the array, so a stray key, a second key on an entry, or an exact duplicate fails validation. `is_sorted.py` checks `sources.yml` only. `validate_schemas.py` also accepts `--catalog` to validate a generated `catalog.json` against `schema/catalog.schema.json`, which the data job does on every build.
 
-The same workflow runs actionlint over the workflows, lints and builds the web UI, and chains CodeQL.
+The same workflow runs actionlint over the workflows, lints the Markdown and formatting, builds the docs, and chains CodeQL.
 
 ## Ambiguity rule
 

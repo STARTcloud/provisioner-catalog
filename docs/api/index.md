@@ -258,7 +258,7 @@ Organizations on the STARTcloud IdP can share private provisioners with their me
 | `/private/{org-uuid}/catalog.json` | GET | Bearer JWT, member of `{org-uuid}` |
 | `/private/{org-uuid}/health.json` | GET | Bearer JWT, member of `{org-uuid}` |
 
-`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under `/private/`, `/push/` or `/admin/` returns `404`; `/health` answers the Worker's health document; other paths outside those prefixes are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
+`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under `/private/`, `/push/`, `/admin/` or `/watches/` returns `404`; `/health` answers the Worker's health document, `/config` the estate settings and `/api/status` the app identity; other paths outside those are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
 
 ### Bearer token requirements
 
@@ -518,6 +518,14 @@ No auth. The estate settings the web UI needs at runtime, the same role BoxVault
 ```
 
 The UI's Deploy controls, for a signed-in viewer whose token carries a Hyperweaver entry in the `entitlements` claim, open `{hyperweaver.url}/?create=machine&provisioner={owner/name}&provisioner_version={version}&provisioner_url={artifact URL}`, the provisioner deep link Hyperweaver's machine wizard reads beside its `box*` parameters.
+
+### GET /api/status
+
+No auth. The app identity every host of the STARTcloud UI answers before the UI renders anything: `role` names the app the UI boots (`catalog` here, `boxvault` on BoxVault) and `version` is this repository's released version, read from the `version.txt` the data job publishes beside `catalog.json` and cached for 60 seconds. An unreadable `version.txt` yields an empty string, never an error.
+
+```json
+{ "role": "catalog", "version": "0.0.62" }
+```
 
 ---
 

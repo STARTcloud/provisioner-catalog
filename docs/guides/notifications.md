@@ -53,7 +53,7 @@ Details per trigger:
 
 ## The Notifications row and modal
 
-The user menu's Notifications row (`web/src/chrome/NotificationsItem.jsx`) and the modal it opens (`web/src/chrome/NotificationsModal.jsx`, titled "Notification Channel Notifications") are the catalog's view of the hub inbox, shared byte for byte with BoxVault.
+The user menu's Notifications row (`src/chrome/NotificationsItem.jsx` in the STARTcloud UI) and the modal it opens (`src/chrome/NotificationsModal.jsx`, titled "Notification Channel Notifications") are the catalog's view of the hub inbox, the same code BoxVault renders.
 
 - **Requires the `notifications` scope on the access token.** The SPA requests `openid profile email organizations notifications entitlements` at sign-in; the row renders only when the signed-in user's token scope contains `notifications`. A user token without it is refused by the hub's read API, so the row hides rather than erroring.
 - **Polling:** the unread count (`GET /api/notifications/unread-count`) is fetched on sign-in and every 60 seconds; the badge shows the count when it is above zero.
@@ -63,11 +63,11 @@ The user menu's Notifications row (`web/src/chrome/NotificationsItem.jsx`) and t
 - **View all** links to the hub's own inbox page at `<issuer>/notifications` in a new tab.
 - **The paper-plane glyph, "Send a test Notification Channel Notification"**, posts `POST /push/test-channel` on the Worker with the user's token; the Worker writes one hub notification addressed to the caller's uuid and the row appears in the modal on its next load.
 
-In production the modal calls the issuer directly through the shared API client; the Vite dev server proxies `/api/notifications` to `auth_target` from `web/config.yaml`.
+In production the modal calls the issuer directly through the shared API client; the UI repository's dev server proxies `/api/notifications` to `auth_target` from its `config.yaml`.
 
 ## Enabling toasts
 
-Toasts are opt-in per browser through the modal's footer switch (`web/src/chrome/NotificationsModal.jsx`, `web/src/chrome/push.js`, `web/public/notification-sw.js`).
+Toasts are opt-in per browser through the modal's footer switch (`src/chrome/NotificationsModal.jsx`, `src/chrome/push.js` and `public/notification-sw.js` in the STARTcloud UI).
 
 **The switch.** "Toasts (OS notifications) on this device". Switching it on:
 
@@ -187,4 +187,4 @@ Values are never documented here; only the names and where each lives.
 
 ---
 
-Next: [Configuration](../../configuration/) — workflow secrets, Worker vars, and the web UI dev server
+Next: [Configuration](../../configuration/) — workflow secrets, Worker vars, and the STARTcloud UI pin

@@ -42,7 +42,7 @@ exclude:
   - ACKNOWLEDGMENTS.md
   - CHANGELOG.md
   - scripts/
-  - web/
+  - ui/
   - worker/
   - .github/
   - sources.yml

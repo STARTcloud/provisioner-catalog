@@ -1,9 +1,9 @@
 name: CI
 
 # Reusable CI — the hacs/default lint.yml role: validate the hand-edited lists
-# against their JSON Schemas, enforce sortedness, lint the workflows, then
-# chain CodeQL. Called by release-please.yml on push to main, and run directly
-# on every PR (the admission gate itself lives in checks.yml).
+# against their JSON Schemas, enforce sortedness, lint the workflows and the
+# docs, then chain CodeQL. Called by release-please.yml on push to main, and
+# run directly on every PR (the admission gate itself lives in checks.yml).
 
 on:
   workflow_call:
@@ -92,81 +92,13 @@ jobs:
           cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        run: npm run cinstall:all
-
-      - name: Run ESLint
-        run: npm run lint:web
+        run: npm ci
 
       - name: Run markdownlint
         run: npm run lint:md
 
       - name: Check Prettier formatting
         run: npm run format:check
-
-  web:
-    name: Web Lint & Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: 'web/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Check Prettier formatting
-        run: npm run format:check
-
-      - name: Check locale key parity against en
-        run: |
-          node --input-type=module <<'EOF'
-          import fs from 'fs';
-          const flat = (obj, prefix = '') =>
-            Object.entries(obj).flatMap(([key, value]) =>
-              value && typeof value === 'object' ? flat(value, `${prefix}${key}.`) : [`${prefix}${key}`]
-            );
-          const read = (lang, ns) => new Set(flat(JSON.parse(fs.readFileSync(`public/locales/${lang}/${ns}`, 'utf8'))));
-          const namespaces = fs.readdirSync('public/locales/en').filter(file => file.endsWith('.json'));
-          const langs = fs.readdirSync('public/locales').filter(dir => dir !== 'en' && dir !== 'cimode');
-          let failed = false;
-          for (const lang of langs) {
-            for (const ns of namespaces) {
-              const en = read('en', ns);
-              const keys = read(lang, ns);
-              const missing = [...en].filter(key => !keys.has(key));
-              const extra = [...keys].filter(key => !en.has(key));
-              if (missing.length > 0) {
-                failed = true;
-                console.error(`${lang}/${ns} is MISSING ${missing.length} keys:\n  ${missing.join('\n  ')}`);
-              }
-              if (extra.length > 0) {
-                failed = true;
-                console.error(`${lang}/${ns} has ${extra.length} keys en lacks:\n  ${extra.join('\n  ')}`);
-              }
-              if (missing.length === 0 && extra.length === 0) {
-                console.log(`${lang}/${ns}: parity OK (${keys.size} keys)`);
-              }
-            }
-          }
-          process.exit(failed ? 1 : 0);
-          EOF
-
-      - name: Build
-        run: npm run build
 
   docs:
     name: Docs Build & Link Check
@@ -200,5 +132,5 @@ jobs:
 
   codeql-analysis:
     name: CodeQL
-    needs: [jsonschema, sorted, actionlint, lint-and-format, web, docs]
+    needs: [jsonschema, sorted, actionlint, lint-and-format, docs]
     uses: ./.github/workflows/codeql.yml

@@ -24,9 +24,11 @@ It regenerates every ~2 hours from the admitted repositories' GitHub releases.
 Package archives themselves are downloaded from each repository's own release
 assets — this catalog serves metadata, never bytes.
 
-The same URL's root serves the catalog **web UI** ([web/](web/), React + Vite,
-built into the Pages payload by the data job) — a human view of the same
-public data, plus OIDC sign-in for private catalogs.
+The same URL's root serves the catalog **web UI** — the
+[STARTcloud UI](https://github.com/STARTcloud/startcloud-ui), fetched at the
+version pinned by `startcloudUiVersion` in `package.json` and merged into the
+Pages payload by the data job — a human view of the same public data, plus
+OIDC sign-in for private catalogs.
 
 ## How it works (the HACS model, adapted)
 
@@ -211,10 +213,10 @@ issue.
 | [action.yml](action.yml) | Reusable validation action for authors' CI |
 | [schema/](schema/) | JSON Schemas for catalog.json, sources.yml, removed.yml |
 | [scripts/](scripts/) | The validator and the catalog builders — public + per-org (Python) |
-| [web/](web/) | The catalog web UI (React + Vite), built into the Pages payload |
-| [worker/](worker/) | The Cloudflare Worker gating `/private/*`, push, and admin endpoints — CI-deployed on change; every secret lives only in Cloudflare |
+| [package.json](package.json) | `startcloudUiVersion`, the pinned [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui) release the data job fetches into the Pages payload; `bump-ui-pin.yml` opens a PR when a newer one exists |
+| [worker/](worker/) | The Cloudflare Worker gating `/private/*`, push, admin and `/api/status` — CI-deployed on change; every secret lives only in Cloudflare |
 | [docs/](docs/) | The documentation site (Jekyll + Just the Docs), built into the Pages payload at `/docs/` |
-| [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker |
+| [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker, bump-ui-pin |
 
 ## This repository's own releases
 

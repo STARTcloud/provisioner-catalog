@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.60](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.59...provisioner-catalog-v0.0.60) (2026-09-03)
+
+
+### Features
+
+* api stuff ([8f4cce2](https://github.com/STARTcloud/provisioner-catalog/commit/8f4cce210dfa4411bef8ffeb8e494e4267e8a1fe))
+* one API client over the session for every request ([f9ba8c3](https://github.com/STARTcloud/provisioner-catalog/commit/f9ba8c3b8e581998cabe5ba31844184067ea9822))
+
 ## [0.0.59](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.58...provisioner-catalog-v0.0.59) (2026-09-03)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.61](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.60...provisioner-catalog-v0.0.61) (2026-09-04)
+
+
+### Features
+
+* shared login, register and invitation pages ([72f63d0](https://github.com/STARTcloud/provisioner-catalog/commit/72f63d05e655b3edb4f8c7cd796f8c1d7c3d5c1f))
+
+
+### Bug Fixes
+
+* log failed requests, guard the callback entry, make table sorting keyboard-operable ([a62905a](https://github.com/STARTcloud/provisioner-catalog/commit/a62905ad281dabb3705b3e25e60639fbf9ef4745))
+
 ## [0.0.60](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.59...provisioner-catalog-v0.0.60) (2026-09-03)
 
 

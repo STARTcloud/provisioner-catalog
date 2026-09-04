@@ -1,4 +1,4 @@
-import { createApiClient, createI18n, createNotificationsClient, createPush } from './chrome';
+import { createApiClient, createI18n, createNotificationsClient, createPush, log } from './chrome';
 import { createBrowserOidc, createReturnTo, createSessionEvents } from './session';
 
 export const APP_NAME = 'Provisioner Catalog';
@@ -45,6 +45,13 @@ export const client = createApiClient({
   baseUrl: API_ORIGIN,
   requestOrigin: requestOriginFor(API_ORIGIN),
   session,
+  onError: error =>
+    log.api.error('Request failed', {
+      method: error.request.method,
+      url: error.request.url,
+      status: error.status,
+      message: error.message,
+    }),
 });
 
 export const notificationsAdapter = {

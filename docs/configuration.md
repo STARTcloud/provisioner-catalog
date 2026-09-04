@@ -78,7 +78,7 @@ All workflows live in `.github/workflows/`. Admission is human (PRs); data is sc
 | `checks.yml` | `pull_request` (`opened`, `synchronize`, `reopened`) to `main` | The admission gate. `preflight` clones `main` to `/tmp/repositories/default` and extracts the one added repository; `editable` runs `scripts.check.edits`; `owner`, `releases`, `removed`, `existing`, `catalog` (the local `action.yml` against the candidate) run only when a repository was added; `completed` fails if any dependency failed or was cancelled. Concurrency group `checks-<ref>`, cancel-in-progress. | Nothing; merging is admission only |
 | `generate-catalog-data.yml` | `schedule` (`0 */2 * * *`); `workflow_call`; `workflow_dispatch` | See below. | `catalog.json`, `health.json`, `version.txt` and the STARTcloud UI to GitHub Pages; `orgs/<uuid>/catalog.json` and `health.json` committed to the private store |
 | `deploy-worker.yml` | `push` to `main` touching `worker/**`; `workflow_dispatch` | `cloudflare/wrangler-action@v4` with `workingDirectory: worker` and `CLOUDFLARE_API_TOKEN`. | The Cloudflare Worker |
-| `dependency-bump.yml` | `repository_dispatch` (`dependency-update`, sent by the STARTcloud UI's release workflow with `repo`, `tag` and `sha`); `workflow_dispatch` with a required `tag` | Rewrites `startcloudUiVersion` in `package.json` to the tag, commits `fix: bump startcloud-ui to <tag>` on `bump/startcloud-ui` as `startcloud-bot[bot]`, opens the pull request and enables squash auto-merge, all with a GitHub App token minted from `BOT_APP_ID` / `BOT_PRIVATE_KEY`; when `main` already pins the tag it closes any open bump PR instead. | One bump PR per UI release, merged when `ci.yml` is green |
+| `dependency-bump.yml` | `repository_dispatch` (`dependency-update`, sent by the STARTcloud UI's release workflow with `repo`, `tag` and `sha`); `workflow_dispatch` with a required `tag` | Rewrites `startcloudUiVersion` in `package.json` to the tag, commits `fix: bump startcloud-ui to <tag>` on `bump/startcloud-ui` as `startcloud-bot[bot]`, and opens the pull request, all with a GitHub App token minted from `BOT_APP_ID` / `BOT_PRIVATE_KEY` so `ci.yml` runs on it; when `main` already pins the tag it closes any open bump PR instead. Merging is a human's. | One bump PR per UI release |
 | `codeql.yml` | `schedule` (`17 5 * * 4`); `workflow_call` | CodeQL matrix over `actions` and `python`, build mode `none`. | Code-scanning alerts |
 
 ### The release gate
@@ -229,7 +229,7 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 | `startcloudUiVersion` in `package.json` | The STARTcloud UI release the data job fetches |
 | Artifact | `https://github.com/STARTcloud/startcloud-ui/releases/download/v<version>/startcloud-ui-<version>.tar.gz`, the contents of the UI's `dist/` |
 | Fetched into | `ui/` (gitignored), then copied over `dist/` beside `catalog.json`, `health.json`, `version.txt` and `docs/` |
-| Kept current by | `dependency-bump.yml`, which answers the UI's `dependency-update` dispatch with an auto-merging `fix:` PR; merging it mints a release whose data run ships the new UI |
+| Kept current by | `dependency-bump.yml`, which answers the UI's `dependency-update` dispatch with a `fix:` PR for a human to merge; merging it mints a release whose data run ships the new UI |
 
 ### What the UI reads from this host
 

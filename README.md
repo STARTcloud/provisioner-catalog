@@ -213,7 +213,7 @@ issue.
 | [action.yml](action.yml) | Reusable validation action for authors' CI |
 | [schema/](schema/) | JSON Schemas for catalog.json, sources.yml, removed.yml |
 | [scripts/](scripts/) | The validator and the catalog builders — public + per-org (Python) |
-| [package.json](package.json) | `startcloudUiVersion`, the pinned [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui) release the data job fetches into the Pages payload; every UI release dispatches `dependency-update` here and `dependency-bump.yml` answers with an auto-merging bump PR |
+| [package.json](package.json) | `startcloudUiVersion`, the pinned [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui) release the data job fetches into the Pages payload; every UI release dispatches `dependency-update` here and `dependency-bump.yml` answers with a bump PR for a human to merge |
 | [worker/](worker/) | The Cloudflare Worker gating `/private/*`, push, admin and `/api/status` — CI-deployed on change; every secret lives only in Cloudflare |
 | [docs/](docs/) | The documentation site (Jekyll + Just the Docs), built into the Pages payload at `/docs/` |
 | [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker, dependency-bump |

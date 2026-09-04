@@ -173,7 +173,6 @@
     "sidecarGaps": "checksum sidecars incomplete"
   },
   "errors": {
-    "noPrivateCatalog": "No private catalog published for this organization yet.",
     "accessDenied": "Access denied by the catalog gate."
   }
 }

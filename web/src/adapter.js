@@ -25,10 +25,7 @@ const fetchPublic = () => {
   return publicPromise;
 };
 
-const PRIVATE_KEYS = { 404: 'errors.noPrivateCatalog' };
-
-const fetchPrivate = (uuid, file) =>
-  client.get(encodePath('private', uuid, file), { messageKeys: PRIVATE_KEYS });
+const fetchPrivate = (uuid, file) => client.get(encodePath('private', uuid, file));
 
 const fetchOrg = uuid => {
   if (!privatePromises.has(uuid)) {
@@ -43,7 +40,7 @@ const fetchOrg = uuid => {
   return privatePromises.get(uuid);
 };
 
-const NOTICE_TYPES = { 'errors.noPrivateCatalog': 'info', 'errors.accessDenied': 'warning' };
+const NOTICE_TYPES = { 'errors.accessDenied': 'warning' };
 
 const noticeKeyOf = error => (NOTICE_TYPES[error.messageKey] ? error.messageKey : '');
 

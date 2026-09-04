@@ -10,7 +10,7 @@ permalink: /guides/notifications/
 
 {: .no_toc }
 
-How the catalog tells people about new provisioner versions and finished rebuilds: the in-app bell feed shared across the STARTcloud estate, and OS toasts delivered by the catalog's own Web Push stack.
+How the catalog tells people about new provisioner versions and finished rebuilds: Notification Channel Notifications, the feed shared across the STARTcloud estate and shown in the notifications modal, and toasts, the OS notifications delivered by the catalog's own Web Push stack. In-app notices (the banners and cards the page itself raises) are a third thing and belong to the navbar contract, not to this guide.
 
 ## Table of contents
 
@@ -23,20 +23,20 @@ How the catalog tells people about new provisioner versions and finished rebuild
 
 ## Two channels
 
-The catalog produces into two independent channels. The bell feed is the source of truth; a toast is best-effort delivery on top of it.
+The catalog produces into two independent channels. The Notification Channel Notification is the source of truth; a toast is best-effort delivery on top of it.
 
 | Channel | Who runs it | What the user sees | How the catalog writes to it |
 | --- | --- | --- | --- |
-| **Notification hub** | The STARTcloud auth server (the OIDC issuer) | The notification bell in the catalog UI and in every other estate app; the full inbox at `<issuer>/notifications` | `POST /api/notify` on the issuer, S2S, with a `client_credentials` token carrying the `notifications:write` scope (`scripts/notify.py`) |
-| **Web Push** | The catalog itself: its own VAPID key pair, its own service worker, the Cloudflare Worker on `/push/*` | An OS-level toast from `provisioner-catalog.startcloud.com` | `POST /push/dispatch` on the Worker, authenticated with a shared dispatch key; the Worker encrypts and sends to every matching subscription |
+| **Notification Channel Notifications** | The STARTcloud auth server (the OIDC issuer), the notification hub | The Notifications row of the user menu in the catalog UI and in every other estate app, opening the modal; the full inbox at `<issuer>/notifications` | `POST /api/notify` on the issuer, S2S, with a `client_credentials` token carrying the `notifications:write` scope (`scripts/notify.py`) |
+| **Toasts** | The catalog itself: its own VAPID key pair, its own service worker, the Cloudflare Worker on `/push/*` | An OS notification from `provisioner-catalog.startcloud.com` | `POST /push/dispatch` on the Worker, authenticated with a shared dispatch key; the Worker encrypts and sends to every matching subscription |
 
-The split follows the hub's contract: the hub never toasts a producer's events, so an app that wants OS toasts for its own events runs its own push stack on its own origin. The bell carries everything regardless of whether a toast was delivered.
+The split follows the hub's contract: the hub never toasts a producer's events, so an app that wants toasts for its own events runs its own push stack on its own origin. The Notification Channel carries everything regardless of whether a toast was delivered.
 
 Hub notifications are always written as `type: SYSTEM`, `severity: INFO`, with push-tier delivery hints `ttl: 86400` and `urgency: normal`, and carry a producer-chosen `idempotencyKey` so a re-run never duplicates a row. Push events carry `title`, `body`, `navigate` (the catalog root), and a `tag` so repeated toasts for the same family collapse in the OS.
 
 ## What triggers a notification
 
-| Event | Where it fires | Hub (bell) | Web Push (toast) |
+| Event | Where it fires | Notification Channel Notification | Toast |
 | --- | --- | --- | --- |
 | New version in the **public** catalog | `scripts/build_catalog.py`, after the immutability tripwire passes | none | scope `public`: every subscription |
 | New version in a **private** org catalog | `scripts/build_org_catalogs.py`, per org | recipient `{org_uuid}`: every member of that organization | scope `org`: subscriptions whose token listed that org |
@@ -51,37 +51,38 @@ Details per trigger:
 - **Rebuild completion** fires only for runs started through `workflow_dispatch` with a non-empty `requested_by` input, which is what the admin button provides. The job runs with `always()`, so a failed build still notifies. Title: `Catalog rebuild finished: <build result>`; body: `Build <result>, deploy <result>.`; tag `catalog-rebuild`; idempotency key `catalog:rebuild:<run id>`.
 - **Notifications never fail the build.** Missing credentials log `hub notification skipped (no credentials)` or `push dispatch skipped (no key)`; a delivery error logs a warning and the run continues.
 
-## The bell
+## The Notifications row and modal
 
-The bell (`web/src/NotificationBell.jsx`) is the catalog's view of the hub inbox.
+The user menu's Notifications row (`web/src/chrome/NotificationsItem.jsx`) and the modal it opens (`web/src/chrome/NotificationsModal.jsx`, titled "Notification Channel Notifications") are the catalog's view of the hub inbox, shared byte for byte with BoxVault.
 
-- **Requires the `notifications` scope on the access token.** The SPA requests `openid profile email organizations notifications` at sign-in; the bell renders only when the signed-in user's token scope contains `notifications`. A user token without it is refused by the hub's read API, so the bell hides rather than erroring.
+- **Requires the `notifications` scope on the access token.** The SPA requests `openid profile email organizations notifications entitlements` at sign-in; the row renders only when the signed-in user's token scope contains `notifications`. A user token without it is refused by the hub's read API, so the row hides rather than erroring.
 - **Polling:** the unread count (`GET /api/notifications/unread-count`) is fetched on sign-in and every 60 seconds; the badge shows the count when it is above zero.
-- **Opening the menu** loads the first page of 20 entries (`GET /api/notifications?page=0&size=20`). Each entry shows an icon by type (shield for `SECURITY` and `OAUTH`, envelope for `ACCOUNT`, cog for `ADMIN` and `SYSTEM`, warning triangle for `ALERT`), colored by severity, plus title, body, and local timestamp; unread entries are bold with a dot.
+- **Opening the modal** loads the first page of 20 entries (`GET /api/notifications?page=0&size=20`). Each entry shows an icon by type (shield for `SECURITY` and `OAUTH`, envelope for `ACCOUNT`, cog for `ADMIN` and `SYSTEM`, warning triangle for `ALERT`), colored by severity, plus title, body, and relative time; unread entries are bold with a dot, and hovering a row shows mark-read and dismiss.
 - **Clicking an entry** marks it read (`POST /api/notifications/<id>/read`) and, when the entry carries an `https://` `navigate` URL, opens it in the current tab.
 - **Mark all read** calls `POST /api/notifications/read-all`.
 - **View all** links to the hub's own inbox page at `<issuer>/notifications` in a new tab.
+- **The paper-plane glyph, "Send a test Notification Channel Notification"**, posts `POST /push/test-channel` on the Worker with the user's token; the Worker writes one hub notification addressed to the caller's uuid and the row appears in the modal on its next load.
 
-In production the bell calls the issuer directly; the Vite dev server proxies `/api/notifications` to `auth_target` from `web/config.yaml`.
+In production the modal calls the issuer directly through the shared API client; the Vite dev server proxies `/api/notifications` to `auth_target` from `web/config.yaml`.
 
-## Enabling OS toasts
+## Enabling toasts
 
-Toasts are opt-in per browser through the user menu (`web/src/UserMenu.jsx`, `web/src/push.js`, `web/public/notification-sw.js`).
+Toasts are opt-in per browser through the modal's footer switch (`web/src/chrome/NotificationsModal.jsx`, `web/src/chrome/push.js`, `web/public/notification-sw.js`).
 
-**The toggle.** Signed-in users see **Enable notifications** in the user menu. Clicking it:
+**The switch.** "Toasts (OS notifications) on this device". Switching it on:
 
-1. Checks support: `serviceWorker`, `PushManager`, and `Notification` must all exist. Otherwise the menu shows "Notifications are not supported in this browser."
-2. Calls `Notification.requestPermission()`. Anything but `granted` shows "Notification permission was denied."
-3. Registers `/notification-sw.js`, fetches the catalog's VAPID public key from `GET /push/vapid-key`, subscribes with `userVisibleOnly: true`, and uploads `PushSubscription.toJSON()` to `POST /push/subscriptions` with the user's Bearer token.
-4. Records `catalog.push_enabled` in `localStorage`; the menu item flips to **Disable notifications** with a slashed bell.
+1. Checks support: `serviceWorker`, `PushManager`, and `Notification` must all exist. Otherwise the modal shows "This browser does not support toasts."
+2. Calls `Notification.requestPermission()`. The browser prompts only while the permission is undecided; anything but `granted` shows "The browser denied notification permission."
+3. Registers `/notification-sw.js`, fetches the catalog's VAPID public key from `GET /push/vapid-key`, subscribes with `userVisibleOnly: true`, and uploads `PushSubscription.toJSON()` to `POST /push/subscriptions` with the user's token.
+4. Records `catalog.push_enabled` in `localStorage`; the switch stays on and the screen glyph **Send a test toast** appears on the footer's right, which posts `POST /push/test-toast` so the Worker pushes one toast to the caller's own subscriptions.
 
-**Why a click is required.** Browsers only show the notification permission prompt in response to a user gesture, so the subscription can never be created silently on page load; it has to start from the menu item.
+**Why a click is required.** Browsers only show the notification permission prompt in response to a user gesture, so the subscription can never be created silently on page load; it has to start from the switch.
 
 **Per-browser subscription.** A push subscription belongs to one browser profile on one device. The Worker stores each one in its `SUBS` KV namespace keyed by a hash of the push endpoint, together with the user's uuid and the organization uuids from the token at upload time. Enabling on a second browser is a second subscription.
 
-**Resync on page load.** On every load the SPA re-uploads the current subscription when `catalog.push_enabled` is set and push is supported. This refreshes the stored uuid and organization list from the current token and covers browsers that rotate subscriptions without firing `pushsubscriptionchange`. If the browser no longer has a subscription, the flag is cleared and the menu shows **Enable notifications** again. Resync failures are silent.
+**Resync on page load.** On every load the SPA re-uploads the current subscription when `catalog.push_enabled` is set and push is supported. This refreshes the stored uuid and organization list from the current token and covers browsers that rotate subscriptions without firing `pushsubscriptionchange`. If the browser no longer has a subscription, the flag is cleared and the switch shows off again. Resync failures are silent.
 
-**Disable.** The toggle calls `DELETE /push/subscriptions?endpoint=<endpoint>` with the Bearer token, then unsubscribes in the browser and clears the flag. Signing out does not unsubscribe; disable first if the browser should stop receiving toasts.
+**Disable.** Switching off calls `DELETE /push/subscriptions?endpoint=<endpoint>` with the user's token, then unsubscribes in the browser and clears the flag. Signing out does not unsubscribe; switch off first if the browser should stop receiving toasts.
 
 **Service worker behaviour.**
 
@@ -141,6 +142,7 @@ Values are never documented here; only the names and where each lives.
 | --- | --- |
 | `VAPID_PRIVATE_KEY` | Signs VAPID headers; push stays inert until both VAPID values are set |
 | `DISPATCH_KEY` | Shared key checked on `/push/dispatch` |
+| `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | The catalog's machine client for the hub, the same one the data job uses as `CATALOG_HUB_*`; `/push/test-channel` answers 503 without them |
 | `DISPATCH_PAT` | GitHub token the Worker uses to dispatch the data workflow and read its runs; `/admin/*` answers 503 without it |
 | `GITHUB_PAT` | Read-only token for the private store (private catalogs, not notifications) |
 
@@ -153,17 +155,21 @@ Values are never documented here; only the names and where each lives.
 
 ## Troubleshooting
 
-**The bell is missing.** Either nobody is signed in or the access token lacks the `notifications` scope. After the scope is granted on the client, sign out and back in to get a token that carries it.
+**The Notifications row is missing.** Either nobody is signed in or the access token lacks the `notifications` scope. After the scope is granted on the client, sign out and back in to get a token that carries it.
 
-**"Could not load notifications."** The hub read API refused or was unreachable. Check that the token still carries `notifications` and that the issuer is up.
+**"Failed to load notifications."** The hub read API refused or was unreachable. Check that the token still carries `notifications` and that the issuer is up.
 
-**"Notifications are not supported in this browser."** The page could not find `serviceWorker`, `PushManager`, or `Notification`. Push needs a secure context; on Safari it requires the platform's Web Push support (on iOS, a Home Screen web app).
+**"This browser does not support toasts."** The page could not find `serviceWorker`, `PushManager`, or `Notification`. Push needs a secure context; on Safari it requires the platform's Web Push support (on iOS, a Home Screen web app).
 
-**"Notification permission was denied."** The browser blocked the prompt or the site is set to block notifications. Reset the site's notification permission in the browser and click the toggle again.
+**No permission prompt appeared.** The browser prompts only while the permission is undecided; when it is already allowed the switch just subscribes, and when it is blocked the switch shows "The browser denied notification permission", so reset the site's notification permission in the browser and switch on again.
 
-**"Could not enable notifications."** The subscribe flow failed after permission. `GET /push/vapid-key` answers 503 `push not configured` when `VAPID_PUBLIC_KEY` is unset; `POST /push/subscriptions` answers 401 on a missing or expired token and 400 on a malformed subscription.
+**"Failed to enable toasts."** The subscribe flow failed after permission. `GET /push/vapid-key` answers 503 `push not configured` when `VAPID_PUBLIC_KEY` is unset; `POST /push/subscriptions` answers 401 on a missing or expired token and 400 on a malformed subscription.
 
-**Toasts stopped arriving.** Browsers rotate subscriptions; reload the catalog so the page-load resync uploads the current one. If the browser dropped the subscription entirely, the menu shows **Enable notifications** again and it must be re-enabled. A push service answering 403, 404, or 410 causes the Worker to delete that subscription.
+**"Test failed: …" on the test toast.** `POST /push/test-toast` answered 503 `push not configured` (no VAPID keys on the Worker) or 401; `delivered: 0` with the switch on means the push service rejected every send, so switch off and on again to re-subscribe.
+
+**"Test failed: …" on the test Notification Channel Notification.** `POST /push/test-channel` answered 503 `hub not configured` (no `HUB_CLIENT_ID` / `HUB_CLIENT_SECRET` on the Worker), 502 `hub token failed` (the client is not granted `notifications:write`) or 502 `hub write failed` (the hub refused the write).
+
+**Toasts stopped arriving.** Browsers rotate subscriptions; reload the catalog so the page-load resync uploads the current one. If the browser dropped the subscription entirely, the switch shows off again and it must be switched on. A push service answering 403, 404, or 410 causes the Worker to delete that subscription.
 
 **No toasts for a private catalog.** Organization membership is captured from the token when the subscription is uploaded. After joining an organization, sign in again and reload so the resync stores the new organization list.
 

@@ -190,6 +190,7 @@ Set with `wrangler secret put <NAME>` from `worker/`; they live only in Cloudfla
 | `DISPATCH_PAT` | Token with permission to dispatch workflows and list runs on `DISPATCH_REPO`, for `/admin/*` |
 | `DISPATCH_KEY` | Shared secret the data job sends as `X-Dispatch-Key`; must equal the job's `CATALOG_PUSH_DISPATCH_KEY` |
 | `VAPID_PRIVATE_KEY` | The P-256 private scalar paired with `VAPID_PUBLIC_KEY`, for signing push requests |
+| `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | The catalog's machine client on the auth server (the same credentials the data job holds as `CATALOG_HUB_CLIENT_ID` / `CATALOG_HUB_CLIENT_SECRET`), for `/push/test-channel` |
 
 ### Endpoints
 
@@ -204,6 +205,8 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `POST /push/subscriptions` | Bearer | `SUBS` | `204`; `400` when the body lacks an `https://` endpoint of at most 512 characters plus `keys.p256dh` and `keys.auth` |
 | `DELETE /push/subscriptions?endpoint=` | Bearer | `SUBS` | `204`; `400` without `endpoint` |
 | `POST /push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
+| `POST /push/test-toast` | Bearer | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}` to the caller's own subscriptions; `503` when either VAPID key is unset |
+| `POST /push/test-channel` | Bearer | `ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | `200 {"delivered":1}` after one hub write addressed to the caller; `503` without the hub credentials; `502` when discovery, the token grant or the write fails |
 | `OPTIONS *` | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
 Any other path under those prefixes returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.

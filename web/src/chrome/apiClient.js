@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { CanceledError, create, isCancel } from 'axios';
 
 const CONTENT_TYPES = { json: 'application/json', 'octet-stream': 'application/octet-stream' };
 const MESSAGE_KEYS = {
@@ -10,7 +10,7 @@ const MESSAGE_KEYS = {
 const textOf = value => (typeof value === 'string' ? value : '');
 
 const isAbort = error =>
-  axios.isCancel(error) || error?.name === 'AbortError' || error?.name === 'CanceledError';
+  isCancel(error) || error?.name === 'AbortError' || error?.name === 'CanceledError';
 
 /**
  * Build a path from raw segments, each URL-encoded, so a name carrying a
@@ -73,7 +73,7 @@ export class ApiError extends Error {
  * @returns {Object} `request`, `get`, `post`, `put`, `patch`, `delete`, `raw`, `resolve`
  */
 export const createApiClient = ({ baseUrl, requestOrigin = baseUrl, session, onError = null }) => {
-  const http = axios.create();
+  const http = create();
 
   const resolve = path => `${baseUrl}${path}`;
 
@@ -132,7 +132,7 @@ export const createApiClient = ({ baseUrl, requestOrigin = baseUrl, session, onE
       });
     try {
       if (signal?.aborted) {
-        throw new axios.CanceledError();
+        throw new CanceledError();
       }
       const response = await attempt().catch(error =>
         recover({ error, auth, skipAuthRefresh, attempt })

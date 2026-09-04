@@ -607,6 +607,31 @@ const eventTargets = (event, subscriptions) => {
   return subscriptions;
 };
 
+const eventPayload = event =>
+  JSON.stringify({
+    title: String(event.title || ''),
+    body: String(event.body || ''),
+    tag: String(event.tag || 'catalog-update'),
+    data: { navigate: String(event.navigate || '') },
+  });
+
+const deliverTo = async (targets, payload, env) => {
+  let delivered = 0;
+  for (const { key, record } of targets) {
+    try {
+      const response = await sendPush(record, payload, env);
+      if ([403, 404, 410].includes(response.status)) {
+        await env.SUBS.delete(key);
+      } else if (response.ok || response.status === 201) {
+        delivered += 1;
+      }
+    } catch {
+      delivered += 0;
+    }
+  }
+  return delivered;
+};
+
 const handleDispatch = async (request, env, cors) => {
   const dispatchKey = request.headers.get('X-Dispatch-Key') || '';
   if (!env.DISPATCH_KEY || dispatchKey !== env.DISPATCH_KEY) {
@@ -628,26 +653,109 @@ const handleDispatch = async (request, env, cors) => {
   const subscriptions = await listSubscriptions(env);
   let delivered = 0;
   for (const event of events) {
-    const payload = JSON.stringify({
-      title: String(event.title || ''),
-      body: String(event.body || ''),
-      tag: String(event.tag || 'catalog-update'),
-      data: { navigate: String(event.navigate || '') },
-    });
-    for (const { key, record } of eventTargets(event, subscriptions)) {
-      try {
-        const response = await sendPush(record, payload, env);
-        if ([403, 404, 410].includes(response.status)) {
-          await env.SUBS.delete(key);
-        } else if (response.ok || response.status === 201) {
-          delivered += 1;
-        }
-      } catch {
-        delivered += 0;
-      }
-    }
+    delivered += await deliverTo(eventTargets(event, subscriptions), eventPayload(event), env);
   }
   return jsonResponse(200, { delivered }, cors);
+};
+
+const TEST_TITLE = 'Provisioner Catalog test';
+const TEST_TOAST_BODY = 'A test toast from the Provisioner Catalog.';
+const TEST_CHANNEL_BODY = 'A test Notification Channel Notification from the Provisioner Catalog.';
+
+const handleTestToast = async (request, env, cors) => {
+  let payload;
+  try {
+    payload = await authPayload(request, env);
+  } catch (verifyError) {
+    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+  }
+  if (!payload) {
+    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+  }
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
+    return jsonResponse(503, { error: 'push not configured' }, cors);
+  }
+  const uuid = String(payload.UUID || payload.sub || '');
+  const targets = (await listSubscriptions(env)).filter(({ record }) => record.uuid === uuid);
+  const event = {
+    title: TEST_TITLE,
+    body: TEST_TOAST_BODY,
+    tag: 'catalog-test',
+    navigate: new URL('/', request.url).toString(),
+  };
+  const delivered = await deliverTo(targets, eventPayload(event), env);
+  return jsonResponse(200, { delivered }, cors);
+};
+
+const hubToken = async env => {
+  const discovery = await fetch(`${env.ISSUER}/.well-known/openid-configuration`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!discovery.ok) {
+    throw new Error(`OIDC discovery failed (${discovery.status})`);
+  }
+  const { token_endpoint: tokenEndpoint } = await discovery.json();
+  const response = await fetch(tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${env.HUB_CLIENT_ID}:${env.HUB_CLIENT_SECRET}`)}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
+    body: new URLSearchParams({ grant_type: 'client_credentials', scope: 'notifications:write' }),
+  });
+  if (!response.ok) {
+    throw new Error(`hub token failed (${response.status})`);
+  }
+  const { access_token: accessToken } = await response.json();
+  return accessToken;
+};
+
+const handleTestChannel = async (request, env, cors) => {
+  let payload;
+  try {
+    payload = await authPayload(request, env);
+  } catch (verifyError) {
+    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+  }
+  if (!payload) {
+    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+  }
+  if (!env.HUB_CLIENT_ID || !env.HUB_CLIENT_SECRET) {
+    return jsonResponse(503, { error: 'hub not configured' }, cors);
+  }
+  const uuid = String(payload.UUID || payload.sub || '');
+  let token;
+  try {
+    token = await hubToken(env);
+  } catch (tokenError) {
+    return jsonResponse(502, { error: tokenError.message }, cors);
+  }
+  const upstream = await fetch(`${env.ISSUER}/api/notify`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      recipient: { user_uuid: uuid },
+      notification: {
+        title: TEST_TITLE,
+        body: TEST_CHANNEL_BODY,
+        navigate: new URL('/', request.url).toString(),
+        tag: 'catalog-test',
+      },
+      type: 'SYSTEM',
+      severity: 'INFO',
+      delivery: { ttl: 86400, urgency: 'normal' },
+      idempotencyKey: `catalog:test:${uuid}:${Date.now()}`,
+    }),
+  });
+  if (!upstream.ok) {
+    return jsonResponse(502, { error: `hub write failed (${upstream.status})` }, cors);
+  }
+  return jsonResponse(200, { delivered: 1 }, cors);
 };
 
 const HEALTH_TTL_MS = 60 * 1000;
@@ -867,6 +975,12 @@ export default {
     }
     if (pathname === '/push/dispatch' && request.method === 'POST') {
       return handleDispatch(request, env, cors);
+    }
+    if (pathname === '/push/test-toast' && request.method === 'POST') {
+      return handleTestToast(request, env, cors);
+    }
+    if (pathname === '/push/test-channel' && request.method === 'POST') {
+      return handleTestChannel(request, env, cors);
     }
     if (pathname === '/watches' && request.method === 'GET') {
       return handleWatchList(request, env, cors);

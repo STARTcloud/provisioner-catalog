@@ -173,7 +173,6 @@
     "sidecarGaps": "sumas de verificación incompletas"
   },
   "errors": {
-    "noPrivateCatalog": "Aún no se ha publicado un catálogo privado para esta organización.",
     "accessDenied": "Acceso denegado por la puerta del catálogo."
   }
 }

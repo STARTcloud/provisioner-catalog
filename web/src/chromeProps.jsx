@@ -47,13 +47,16 @@ export const client = createApiClient({
   session,
 });
 
-export const notificationsAdapter = createNotificationsClient({
-  client: createApiClient({
-    baseUrl: ISSUER,
-    requestOrigin: requestOriginFor(ISSUER),
-    session,
+export const notificationsAdapter = {
+  ...createNotificationsClient({
+    client: createApiClient({
+      baseUrl: ISSUER,
+      requestOrigin: requestOriginFor(ISSUER),
+      session,
+    }),
   }),
-});
+  sendTest: () => client.post('/push/test-channel', {}),
+};
 
 export const push = createPush({
   storageKey: 'catalog.push_enabled',
@@ -69,6 +72,7 @@ export const pushAdapter = {
   setEnabled: push.setPushEnabled,
   subscribe: push.subscribePush,
   unsubscribe: push.unsubscribePush,
+  sendTest: () => client.post('/push/test-toast', {}),
 };
 
 export const fetchHealth = () => client.get('/health', { auth: false });

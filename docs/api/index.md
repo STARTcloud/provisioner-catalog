@@ -404,6 +404,27 @@ Each target receives an `aes128gcm`-encrypted payload `{ "title", "body", "tag",
 | `401` | `{ "error": "bad dispatch key" }` — header missing, wrong, or the Worker has no `DISPATCH_KEY` |
 | `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
 
+### POST /push/test-toast
+
+Bearer JWT. Sends one toast, `Provisioner Catalog test`, to every subscription stored under the caller's `UUID` (falling back to `sub`), the same delivery as `/push/dispatch` with `scope: user`; the web UI's "Send a test toast" button calls it.
+
+| Status | Body |
+| --- | --- |
+| `200` | `{ "delivered": <count> }` — `0` when the caller has no live subscription |
+| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
+
+### POST /push/test-channel
+
+Bearer JWT. Writes one Notification Channel Notification addressed to the caller's uuid through the hub's `POST /api/notify`, with a `client_credentials` token minted from the Worker's `HUB_CLIENT_ID` / `HUB_CLIENT_SECRET` secrets (scope `notifications:write`); the web UI's "Send a test Notification Channel Notification" button calls it.
+
+| Status | Body |
+| --- | --- |
+| `200` | `{ "delivered": 1 }` |
+| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `502` | `{ "error": "OIDC discovery failed (<status>)" }` / `{ "error": "hub token failed (<status>)" }` / `{ "error": "hub write failed (<status>)" }` |
+| `503` | `{ "error": "hub not configured" }` — the Worker has no hub client credentials |
+
 ### GET /watches
 
 Bearer JWT (same verification as private catalogs). The caller's watched provisioners, stored in the same KV namespace under `watch:<UUID>` (falling back to `sub`); an item id is `<organization>/<name>`, the organization being the repository owner for public provisioners and the IdP organization name for private ones.

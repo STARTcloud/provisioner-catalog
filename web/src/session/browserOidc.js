@@ -273,10 +273,7 @@ export const createBrowserOidc = ({
 
   const headers = async (method, url) => {
     const token = await getAccessToken();
-    if (!token) {
-      throw new Error('not signed in');
-    }
-    return requestHeaders(method, url, token);
+    return token ? requestHeaders(method, url, token) : {};
   };
 
   const refresh = async () => {

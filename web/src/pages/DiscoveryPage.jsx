@@ -32,15 +32,7 @@ const matchesQuery = (org, term) =>
 const OrgIcon = ({ org, gravatarUrl, orgMark }) => {
   const iconUrl = org.logo || gravatarUrl;
   if (iconUrl) {
-    return (
-      <img
-        src={iconUrl}
-        alt=""
-        className="rounded-circle me-2"
-        width="24"
-        height="24"
-      />
-    );
+    return <img src={iconUrl} alt="" className="rounded-circle me-2" width="24" height="24" />;
   }
   return orgMark;
 };
@@ -308,7 +300,9 @@ const DiscoveryPage = ({ session, returnTo, organizations, orgMark, joinIntentKe
 
       <Modal show={Boolean(requestingOrg)} onHide={closeRequest}>
         <Modal.Header closeButton>
-          <Modal.Title as="h5">{t('discovery.modal.title', { orgName: requestingName })}</Modal.Title>
+          <Modal.Title as="h5">
+            {t('discovery.modal.title', { orgName: requestingName })}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>

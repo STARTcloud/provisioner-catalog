@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.65](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.64...provisioner-catalog-v0.0.65) (2026-09-04)
+
+
+### Features
+
+* answer the STARTcloud UI status contract with brand, auth, collections and feature tokens ([9bce5c9](https://github.com/STARTcloud/provisioner-catalog/commit/9bce5c9b5515c9d90604f39e6a35ee5776745220))
+
 ## [0.0.64](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.63...provisioner-catalog-v0.0.64) (2026-09-04)
 
 

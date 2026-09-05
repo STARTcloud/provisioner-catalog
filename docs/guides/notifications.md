@@ -53,9 +53,9 @@ Details per trigger:
 
 ## The Notifications row and modal
 
-The user menu's Notifications row (`src/chrome/NotificationsItem.jsx` in the STARTcloud UI) and the modal it opens (`src/chrome/NotificationsModal.jsx`, titled "Notification Channel Notifications") are the catalog's view of the hub inbox, the same code BoxVault renders.
+The user menu's Notifications row (`src/components/layout/NotificationsItem.jsx` in the STARTcloud UI) and the modal it opens (`src/components/layout/NotificationsModal.jsx`, titled "Notification Channel Notifications") are the catalog's view of the hub inbox, the same code BoxVault renders.
 
-- **Requires the `notifications` scope on the access token.** The SPA requests `openid profile email organizations notifications entitlements` at sign-in; the row renders only when the signed-in user's token scope contains `notifications`. A user token without it is refused by the hub's read API, so the row hides rather than erroring.
+- **Requires the `notifications` feature and scope.** The Worker's `/api/status` advertises `notifications`, and the SPA requests the `idp.scopes` it answers (`openid profile email organizations notifications entitlements`) at sign-in; the row renders only when the signed-in user's token scope contains `notifications`. A user token without it is refused by the hub's read API, so the row hides rather than erroring.
 - **Polling:** the unread count (`GET /api/notifications/unread-count`) is fetched on sign-in and every 60 seconds; the badge shows the count when it is above zero.
 - **Opening the modal** loads the first page of 20 entries (`GET /api/notifications?page=0&size=20`). Each entry shows an icon by type (shield for `SECURITY` and `OAUTH`, envelope for `ACCOUNT`, cog for `ADMIN` and `SYSTEM`, warning triangle for `ALERT`), colored by severity, plus title, body, and relative time; unread entries are bold with a dot, and hovering a row shows mark-read and dismiss.
 - **Clicking an entry** marks it read (`POST /api/notifications/<id>/read`) and, when the entry carries an `https://` `navigate` URL, opens it in the current tab.
@@ -67,20 +67,20 @@ In production the modal calls the issuer directly through the shared API client;
 
 ## Enabling toasts
 
-Toasts are opt-in per browser through the modal's footer switch (`src/chrome/NotificationsModal.jsx`, `src/chrome/push.js` and `public/notification-sw.js` in the STARTcloud UI).
+Toasts are opt-in per browser through the modal's footer switch (`src/components/layout/NotificationsModal.jsx`, `src/features/notifications/api/push.js` and `public/notification-sw.js` in the STARTcloud UI).
 
 **The switch.** "Toasts (OS notifications) on this device". Switching it on:
 
 1. Checks support: `serviceWorker`, `PushManager`, and `Notification` must all exist. Otherwise the modal shows "This browser does not support toasts."
 2. Calls `Notification.requestPermission()`. The browser prompts only while the permission is undecided; anything but `granted` shows "The browser denied notification permission."
 3. Registers `/notification-sw.js`, fetches the catalog's VAPID public key from `GET /push/vapid-key`, subscribes with `userVisibleOnly: true`, and uploads `PushSubscription.toJSON()` to `POST /push/subscriptions` with the user's token.
-4. Records `catalog.push_enabled` in `localStorage`; the switch stays on and the screen glyph **Send a test toast** appears on the footer's right, which posts `POST /push/test-toast` so the Worker pushes one toast to the caller's own subscriptions.
+4. Records `push_enabled` in `localStorage`; the switch stays on and the screen glyph **Send a test toast** appears on the footer's right, which posts `POST /push/test-toast` so the Worker pushes one toast to the caller's own subscriptions.
 
 **Why a click is required.** Browsers only show the notification permission prompt in response to a user gesture, so the subscription can never be created silently on page load; it has to start from the switch.
 
 **Per-browser subscription.** A push subscription belongs to one browser profile on one device. The Worker stores each one in its `SUBS` KV namespace keyed by a hash of the push endpoint, together with the user's uuid and the organization uuids from the token at upload time. Enabling on a second browser is a second subscription.
 
-**Resync on page load.** On every load the SPA re-uploads the current subscription when `catalog.push_enabled` is set and push is supported. This refreshes the stored uuid and organization list from the current token and covers browsers that rotate subscriptions without firing `pushsubscriptionchange`. If the browser no longer has a subscription, the flag is cleared and the switch shows off again. Resync failures are silent.
+**Resync on page load.** On every load the SPA re-uploads the current subscription when `push_enabled` is set and push is supported. This refreshes the stored uuid and organization list from the current token and covers browsers that rotate subscriptions without firing `pushsubscriptionchange`. If the browser no longer has a subscription, the flag is cleared and the switch shows off again. Resync failures are silent.
 
 **Disable.** Switching off calls `DELETE /push/subscriptions?endpoint=<endpoint>` with the user's token, then unsubscribes in the browser and clears the flag. Signing out does not unsubscribe; switch off first if the browser should stop receiving toasts.
 
@@ -94,7 +94,7 @@ Toasts are opt-in per browser through the modal's footer switch (`src/chrome/Not
 
 ## The admin rebuild button
 
-Users whose token `authorities` include `ROLE_ADMIN` see **Rebuild catalog data** in the user menu.
+Users whose token `authorities` include `ROLE_ADMIN` see **Rebuild catalog data** in the user menu while the Worker's `/api/status` advertises `rebuild`.
 
 1. The SPA posts to `/admin/rebuild` with the Bearer token. The Worker verifies the JWT, requires `ROLE_ADMIN`, and dispatches `generate-catalog-data.yml` on `main` in the catalog repository with inputs `requested_by` (the caller's uuid) and `forceRepositoryUpdate: true`, then answers `202 {"status":"queued"}`.
 2. The menu shows "Rebuild running…" and the item's icon becomes a spinner. The SPA polls `GET /admin/rebuild/status` every 10 seconds, up to 90 times. The Worker returns the status and conclusion of the workflow's most recent run.

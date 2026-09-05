@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.66](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.65...provisioner-catalog-v0.0.66) (2026-09-05)
+
+
+### Features
+
+* answer the STARTcloud UI API surface under /api alongside the existing Worker paths ([7ff86f4](https://github.com/STARTcloud/provisioner-catalog/commit/7ff86f418ff4f3982ec0660056a78adf53eff1ea))
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.3.0 ([#83](https://github.com/STARTcloud/provisioner-catalog/issues/83)) ([a641951](https://github.com/STARTcloud/provisioner-catalog/commit/a6419519ab07addeea5d2e4bc13c6fae289ef7d1))
+
 ## [0.0.65](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.64...provisioner-catalog-v0.0.65) (2026-09-04)
 
 

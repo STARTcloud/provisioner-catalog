@@ -2,7 +2,7 @@
   "name": "provisioner-catalog",
   "version": "0.0.65",
   "description": "STARTcloud Provisioner Catalog — the published catalog data, the private-catalog Worker and the docs, served with the pinned STARTcloud UI.",
-  "startcloudUiVersion": "0.2.0",
+  "startcloudUiVersion": "0.3.0",
   "private": true,
   "scripts": {
     "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore worker/node_modules --ignore vendor --ignore _site --ignore ui --ignore CHANGELOG.md",

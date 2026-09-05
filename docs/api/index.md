@@ -10,7 +10,7 @@ permalink: /api/
 
 {: .no_toc }
 
-The STARTcloud Provisioner Catalog exposes two static JSON documents on `https://provisioner-catalog.startcloud.com` — `catalog.json`, the wire contract agents parse, and `health.json`, the UI-only companion — plus a Cloudflare Worker that gates per-organization private catalogs, serves the push-notification and admin routes and answers a health document. Everything below is the exact shape each endpoint speaks.
+The STARTcloud Provisioner Catalog exposes two static JSON documents on `https://provisioner-catalog.startcloud.com` — `catalog.json`, the wire contract agents parse, and `health.json`, the UI-only companion — plus a Cloudflare Worker that gates per-organization private catalogs, serves the push-notification and admin routes and answers a health document. Every Worker route also answers under the `/api/` prefix, the one API surface the STARTcloud UI calls on every host; each section below names its alias beside the path. Everything below is the exact shape each endpoint speaks.
 
 ## Table of contents
 
@@ -31,6 +31,8 @@ The public path is static: GitHub Actions rebuilds the documents from the admitt
 | `https://provisioner-catalog.startcloud.com/health.json` | GET | The web UI only | Measured quality tiers, rule results and live health rendered as badges. Agents never read it |
 
 Both documents carry `format_version`, a constant `1`. It is the contract agents gate on and is separate from this repository's own release version; it bumps only on a breaking change to the document shape.
+
+The Worker answers the same two documents at `GET /api/catalog` and `GET /api/catalog/health`, the paths the web UI calls: each is a same-origin fetch of `/catalog.json` or `/health.json` from Pages, returned verbatim with the Worker's JSON headers (`Content-Type: application/json; charset=utf-8`, `Cache-Control: private, no-store`) and CORS. A document Pages lacks answers `404 { "error": "no catalog published" }` / `{ "error": "no health published" }`; any other Pages failure `502 { "error": "pages fetch failed (<status>)" }`. Agents keep reading `/catalog.json` directly.
 
 Published JSON Schemas (draft 2020-12):
 
@@ -253,12 +255,12 @@ This is what a consumer can rely on: a `(name, version, url)` triple seen in the
 
 Organizations on the STARTcloud IdP can share private provisioners with their members through the same host. The documents have the exact `catalog.json` and `health.json` shapes above; only visibility differs. A Cloudflare Worker routed on `/private/*` proxies them from the private store repository. See the [private catalogs guide](../guides/private-catalogs/) for setup.
 
-| Endpoint | Method | Auth |
-| --- | --- | --- |
-| `/private/{org-uuid}/catalog.json` | GET | Bearer JWT, member of `{org-uuid}` |
-| `/private/{org-uuid}/health.json` | GET | Bearer JWT, member of `{org-uuid}` |
+| Endpoint | Alias | Method | Auth |
+| --- | --- | --- | --- |
+| `/private/{org-uuid}/catalog.json` | `/api/private/{org-uuid}/catalog` | GET | Bearer JWT, member of `{org-uuid}` |
+| `/private/{org-uuid}/health.json` | `/api/private/{org-uuid}/health` | GET | Bearer JWT, member of `{org-uuid}` |
 
-`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). Any other path under `/private/`, `/push/`, `/admin/` or `/watches/` returns `404`; `/health` answers the Worker's health document, `/config` the estate settings and `/api/status` the app identity; other paths outside those are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
+`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). The alias is the same handler, auth and responses, with the `.json` suffix dropped. Any other path under `/private/`, `/push/`, `/admin/`, `/watches/` or `/api/` returns `404`; `/health` answers the Worker's health document, `/config` the estate settings and `/api/status` the app identity; other paths outside those are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
 
 ### Bearer token requirements
 
@@ -288,7 +290,7 @@ Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public
 | `403` | `{ "error": "not a member of this organization" }` | Valid token, org uuid absent from `organizations` |
 | `404` | `{ "error": "no catalog published for this organization" }` / `{ "error": "no health published for this organization" }` | Member, but the store has no file for the org yet |
 | `404` | `{ "error": "not found" }` | Path does not match a Worker route |
-| `405` | `{ "error": "method not allowed" }` | `/private/…` path with a non-GET method |
+| `405` | `{ "error": "method not allowed" }` | `/private/…` or `/api/private/…` path with a non-GET method |
 | `502` | `{ "error": "store fetch failed (<status>)" }` | The private store returned a non-2xx, non-404 status |
 
 Every response carries `Content-Type: application/json; charset=utf-8` and `Cache-Control: private, no-store`. Errors never redirect.
@@ -312,9 +314,9 @@ The Worker always sets `Vary: Origin`. When the request `Origin` is in `ALLOWED_
 
 ## Push and admin endpoints
 
-The same Worker is routed on `/push/*`, `/watches` and `/admin/*`. Web-push subscriptions are stored in a Cloudflare KV namespace keyed by a sha256 of the subscription endpoint, watches in the same namespace keyed by the user's uuid; the data job delivers events through `/push/dispatch` and resolves watchers through `/watches/watchers`.
+The same Worker is routed on `/push/*`, `/watches` and `/admin/*`, and answers each of those routes again under `/api/` (`/api/push/*`, `/api/watches`, `/api/admin/*`, plus `/api/health` and `/api/config`) with the same auth, handler and responses. Web-push subscriptions are stored in a Cloudflare KV namespace keyed by a sha256 of the subscription endpoint, watches in the same namespace keyed by the user's uuid; the data job delivers events through `/push/dispatch` and resolves watchers through `/watches/watchers`.
 
-### GET /push/vapid-key
+### GET /push/vapid-key (also /api/push/vapid-key)
 
 No auth.
 
@@ -323,7 +325,7 @@ No auth.
 | `200` | `{ "publicKey": "<VAPID public key, base64url>" }` |
 | `503` | `{ "error": "push not configured" }` — the Worker has no `VAPID_PUBLIC_KEY` |
 
-### POST /push/subscriptions
+### POST /push/subscriptions (also /api/push/subscriptions)
 
 Bearer JWT (same verification as private catalogs; no org membership needed). The body is the browser's `PushSubscription.toJSON()`:
 
@@ -342,7 +344,7 @@ Bearer JWT (same verification as private catalogs; no org membership needed). Th
 | `400` | `{ "error": "invalid subscription" }` — body is not JSON or fails the shape check |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
-### DELETE /push/subscriptions?endpoint=…
+### DELETE /push/subscriptions?endpoint=… (also /api/push/subscriptions)
 
 Bearer JWT. Deletes the record for the given endpoint.
 
@@ -352,7 +354,7 @@ Bearer JWT. Deletes the record for the given endpoint.
 | `400` | `{ "error": "endpoint required" }` |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
-### POST /push/dispatch
+### POST /push/dispatch (also /api/push/dispatch)
 
 Authenticated by the `X-Dispatch-Key` header, which must equal the Worker's `DISPATCH_KEY` secret. This is the data job's entry point, not a browser one.
 
@@ -404,7 +406,7 @@ Each target receives an `aes128gcm`-encrypted payload `{ "title", "body", "tag",
 | `401` | `{ "error": "bad dispatch key" }` — header missing, wrong, or the Worker has no `DISPATCH_KEY` |
 | `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
 
-### POST /push/test-toast
+### POST /push/test-toast (also /api/push/test-toast)
 
 Bearer JWT. Sends one toast, `Provisioner Catalog test`, to every subscription stored under the caller's `UUID` (falling back to `sub`), the same delivery as `/push/dispatch` with `scope: user`; the web UI's "Send a test toast" button calls it.
 
@@ -414,7 +416,7 @@ Bearer JWT. Sends one toast, `Provisioner Catalog test`, to every subscription s
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 | `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
 
-### POST /push/test-channel
+### POST /push/test-channel (also /api/push/test-channel)
 
 Bearer JWT. Writes one Notification Channel Notification addressed to the caller's uuid through the hub's `POST /api/notify`, with a `client_credentials` token minted from the Worker's `HUB_CLIENT_ID` / `HUB_CLIENT_SECRET` secrets (scope `notifications:write`); the web UI's "Send a test Notification Channel Notification" button calls it.
 
@@ -425,7 +427,7 @@ Bearer JWT. Writes one Notification Channel Notification addressed to the caller
 | `502` | `{ "error": "OIDC discovery failed (<status>)" }` / `{ "error": "hub token failed (<status>)" }` / `{ "error": "hub write failed (<status>)" }` |
 | `503` | `{ "error": "hub not configured" }` — the Worker has no hub client credentials |
 
-### GET /watches
+### GET /watches (also /api/watches)
 
 Bearer JWT (same verification as private catalogs). The caller's watched provisioners, stored in the same KV namespace under `watch:<UUID>` (falling back to `sub`); an item id is `<organization>/<name>`, the organization being the repository owner for public provisioners and the IdP organization name for private ones.
 
@@ -434,7 +436,7 @@ Bearer JWT (same verification as private catalogs). The caller's watched provisi
 | `200` | `{ "items": ["STARTcloud/startcloud_generic_provisioner", …] }` |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
-### POST /watches
+### POST /watches (also /api/watches)
 
 Bearer JWT. Body `{ "id": "<organization>/<name>" }`; the id must match `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`. Adding an id already watched is a no-op.
 
@@ -444,7 +446,7 @@ Bearer JWT. Body `{ "id": "<organization>/<name>" }`; the id must match `^[A-Za-
 | `400` | `{ "error": "invalid watch" }` |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
-### DELETE /watches?id=…
+### DELETE /watches?id=… (also /api/watches)
 
 Bearer JWT. Removes the id from the caller's watches; the record disappears with its last id.
 
@@ -454,7 +456,7 @@ Bearer JWT. Removes the id from the caller's watches; the record disappears with
 | `400` | `{ "error": "id required" }` |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
-### GET /watches/watchers?item=…
+### GET /watches/watchers?item=… (also /api/watches/watchers)
 
 Authenticated by the `X-Dispatch-Key` header like `/push/dispatch`; the data job's lookup of who watches an item before it notifies them.
 
@@ -464,7 +466,7 @@ Authenticated by the `X-Dispatch-Key` header like `/push/dispatch`; the data job
 | `400` | `{ "error": "item required" }` — missing or malformed item id |
 | `401` | `{ "error": "bad dispatch key" }` |
 
-### POST /admin/rebuild
+### POST /admin/rebuild (also /api/admin/rebuild)
 
 Bearer JWT whose `authorities` claim contains `ROLE_ADMIN`. Fires a `workflow_dispatch` of `generate-catalog-data.yml` on `STARTcloud/provisioner-catalog` at `ref: main` with inputs `requested_by` (the caller's `UUID`, falling back to `sub`) and `forceRepositoryUpdate: "true"`, so the run publishes even when the data is unchanged and notifies the requester when it finishes.
 
@@ -476,7 +478,7 @@ Bearer JWT whose `authorities` claim contains `ROLE_ADMIN`. Fires a `workflow_di
 | `502` | `{ "error": "dispatch failed (<status>)" }` — GitHub answered anything but `204` |
 | `503` | `{ "error": "dispatch not configured" }` — the Worker has no `DISPATCH_PAT` |
 
-### GET /admin/rebuild/status
+### GET /admin/rebuild/status (also /api/admin/rebuild/status)
 
 Same auth as `/admin/rebuild`. Reads the single most recent run of the same workflow.
 
@@ -490,7 +492,7 @@ Same auth as `/admin/rebuild`. Reads the single most recent run of the same work
 
 The web UI polls this every 10 seconds (at most 90 times) after a rebuild, reporting success once it has seen `queued`/`in_progress` followed by `completed`.
 
-### GET /health
+### GET /health (also /api/health)
 
 No auth. The Worker's own health document, in the shape BoxVault's `/api/health` speaks so the shared footer renders both: every `services` value is a coarse status word, `ok`, `warning (<status>)` or `error (<reason>)`, and `status` is `error` when any service is, else `warning` when any is, else `ok`. The Worker caches the document for 60 seconds; the web UI's footer polls it every 60 seconds and shows the overall state as the heart, the per-service words on hover.
 
@@ -509,7 +511,7 @@ No auth. The Worker's own health document, in the shape BoxVault's `/api/health`
 }
 ```
 
-### GET /config
+### GET /config (also /api/config)
 
 No auth. The estate settings the web UI needs at runtime, the same role BoxVault's `/api/config/hyperweaver` plays: `hyperweaver.url` is the Hyperweaver origin from the Worker's `HYPERWEAVER_URL` var, an empty string when none is configured, in which case the UI draws no Deploy control.
 
@@ -640,7 +642,7 @@ The static documents are plain GitHub Pages files — a missing document is a Pa
 | `400` | Malformed body or missing query parameter |
 | `401` | Missing or invalid Bearer JWT, or a bad `X-Dispatch-Key` |
 | `403` | Valid token without the required org membership or `ROLE_ADMIN` |
-| `404` | Unknown route, or no catalog/health file published for the org |
-| `405` | Non-GET method on a `/private/…` path |
-| `502` | The private store or GitHub Actions API answered with an unexpected status |
+| `404` | Unknown route (including any unknown `/api/…` path), or no catalog/health file published for the org or on Pages |
+| `405` | Non-GET method on a `/private/…` or `/api/private/…` path |
+| `502` | The private store, Pages or GitHub Actions API answered with an unexpected status |
 | `503` | The Worker lacks the secret the route needs (VAPID keys, `DISPATCH_PAT`) |

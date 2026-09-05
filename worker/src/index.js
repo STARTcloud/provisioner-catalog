@@ -18,6 +18,9 @@
 
 const PATH_RE =
   /^\/private\/(?<uuid>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/(?<file>catalog|health)\.json$/i;
+const API_PATH_RE =
+  /^\/api\/private\/(?<uuid>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/(?<file>catalog|health)$/i;
+const API_PREFIX = '/api';
 const LEEWAY_SECONDS = 60;
 
 // JWKS cache, per isolate. Refetched when a kid is unknown (key rotation) or
@@ -315,6 +318,27 @@ const handlePrivate = async (request, env, cors, match) => {
   }
   const catalog = await upstream.text();
   return new Response(catalog, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'private, no-store',
+      ...cors,
+    },
+  });
+};
+
+const handlePublic = async (request, file, cors) => {
+  const upstream = await fetch(new URL(`/${file}.json`, request.url), {
+    headers: { Accept: 'application/json' },
+  });
+  if (upstream.status === 404) {
+    return jsonResponse(404, { error: `no ${file} published` }, cors);
+  }
+  if (!upstream.ok) {
+    return jsonResponse(502, { error: `pages fetch failed (${upstream.status})` }, cors);
+  }
+  const document = await upstream.text();
+  return new Response(document, {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
@@ -966,7 +990,10 @@ const handleWatchers = async (request, env, cors) => {
   return jsonResponse(200, { uuids: await listWatchers(env, item) }, cors);
 };
 
-const WORKER_PREFIXES = ['/private/', '/push/', '/admin/', '/watches/'];
+const WORKER_PREFIXES = ['/private/', '/push/', '/admin/', '/watches/', `${API_PREFIX}/`];
+
+const routeOf = pathname =>
+  pathname.startsWith(`${API_PREFIX}/`) ? pathname.slice(API_PREFIX.length) : pathname;
 
 const isPageRequest = (request, pathname) =>
   request.method === 'GET' &&
@@ -995,57 +1022,64 @@ export default {
     }
 
     const { pathname } = new URL(request.url);
+    const route = routeOf(pathname);
 
     if (pathname === '/api/status' && request.method === 'GET') {
       return handleStatus(request, env, cors);
     }
-    if (pathname === '/health' && request.method === 'GET') {
+    if (pathname === '/api/catalog' && request.method === 'GET') {
+      return handlePublic(request, 'catalog', cors);
+    }
+    if (pathname === '/api/catalog/health' && request.method === 'GET') {
+      return handlePublic(request, 'health', cors);
+    }
+    if (route === '/health' && request.method === 'GET') {
       return handleHealth(request, env, cors);
     }
-    if (pathname === '/config' && request.method === 'GET') {
+    if (route === '/config' && request.method === 'GET') {
       return handleConfig(env, cors);
     }
-    if (pathname === '/admin/rebuild' && request.method === 'POST') {
+    if (route === '/admin/rebuild' && request.method === 'POST') {
       return handleRebuild(request, env, cors);
     }
-    if (pathname === '/admin/rebuild/status' && request.method === 'GET') {
+    if (route === '/admin/rebuild/status' && request.method === 'GET') {
       return handleRebuildStatus(request, env, cors);
     }
-    if (pathname === '/push/vapid-key' && request.method === 'GET') {
+    if (route === '/push/vapid-key' && request.method === 'GET') {
       if (!env.VAPID_PUBLIC_KEY) {
         return jsonResponse(503, { error: 'push not configured' }, cors);
       }
       return jsonResponse(200, { publicKey: env.VAPID_PUBLIC_KEY }, cors);
     }
-    if (pathname === '/push/subscriptions' && request.method === 'POST') {
+    if (route === '/push/subscriptions' && request.method === 'POST') {
       return handleSubscribe(request, env, cors);
     }
-    if (pathname === '/push/subscriptions' && request.method === 'DELETE') {
+    if (route === '/push/subscriptions' && request.method === 'DELETE') {
       return handleUnsubscribe(request, env, cors);
     }
-    if (pathname === '/push/dispatch' && request.method === 'POST') {
+    if (route === '/push/dispatch' && request.method === 'POST') {
       return handleDispatch(request, env, cors);
     }
-    if (pathname === '/push/test-toast' && request.method === 'POST') {
+    if (route === '/push/test-toast' && request.method === 'POST') {
       return handleTestToast(request, env, cors);
     }
-    if (pathname === '/push/test-channel' && request.method === 'POST') {
+    if (route === '/push/test-channel' && request.method === 'POST') {
       return handleTestChannel(request, env, cors);
     }
-    if (pathname === '/watches' && request.method === 'GET') {
+    if (route === '/watches' && request.method === 'GET') {
       return handleWatchList(request, env, cors);
     }
-    if (pathname === '/watches' && request.method === 'POST') {
+    if (route === '/watches' && request.method === 'POST') {
       return handleWatch(request, env, cors);
     }
-    if (pathname === '/watches' && request.method === 'DELETE') {
+    if (route === '/watches' && request.method === 'DELETE') {
       return handleUnwatch(request, env, cors);
     }
-    if (pathname === '/watches/watchers' && request.method === 'GET') {
+    if (route === '/watches/watchers' && request.method === 'GET') {
       return handleWatchers(request, env, cors);
     }
 
-    const match = PATH_RE.exec(pathname);
+    const match = PATH_RE.exec(pathname) || API_PATH_RE.exec(pathname);
     if (!match) {
       if (WORKER_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
         return jsonResponse(404, { error: 'not found' }, cors);

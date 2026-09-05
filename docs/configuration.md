@@ -162,6 +162,7 @@ One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the 
 | `/watches` | The caller's watched provisioners |
 | `/api/status` | The app identity and capabilities the STARTcloud UI probes before it renders |
 | `/health`, `/config` | The Worker's health document and the estate settings |
+| `/api/*` | The one API surface the STARTcloud UI calls on every host: every route above again under `/api/` with the same handler (`/api/private/<uuid>/catalog` and `/health` without `.json`, `/api/push/*`, `/api/admin/*`, `/api/watches`, `/api/health`, `/api/config`), plus `/api/catalog` and `/api/catalog/health` proxying `/catalog.json` and `/health.json` from Pages; any other `/api/*` path is the Worker's JSON `404`, never the `index.html` fallback |
 
 ### KV binding
 
@@ -200,21 +201,26 @@ Set with `wrangler secret put <NAME>` from `worker/`; they live only in Cloudfla
 
 Bearer verification, where required, means: RS256 signature against the issuer's JWKS (cached per isolate for an hour, refetched on an unknown `kid`), `iss === ISSUER`, `aud` contains `AUDIENCE`, `exp` and `nbf` with 60 seconds of leeway.
 
-| Method and path | Auth | Needs | Responses |
-| --- | --- | --- | --- |
-| `GET /private/<uuid>/catalog.json`, `GET /private/<uuid>/health.json` | Bearer; `uuid` must appear in the token's `organizations[]` | `ISSUER`, `AUDIENCE`, `STORE_REPO`, `GITHUB_PAT` | `200` file, `401` missing or invalid token, `403` not a member, `404` nothing published for that org, `502` store fetch failed, `405` non-GET |
-| `POST /admin/rebuild` | Bearer with `ROLE_ADMIN` in `authorities` | `DISPATCH_PAT`, `DISPATCH_REPO`, `DISPATCH_WORKFLOW` | `202 {"status":"queued"}`, `403` no admin role, `503` when `DISPATCH_PAT` is unset, `502` when GitHub does not return 204 |
-| `GET /admin/rebuild/status` | Same | Same | `200 {"status","conclusion"}` of the latest run of `DISPATCH_WORKFLOW`; `503` and `502` as above |
-| `GET /push/vapid-key` | None | `VAPID_PUBLIC_KEY` | `200 {"publicKey"}`, `503` when unset |
-| `POST /push/subscriptions` | Bearer | `SUBS` | `204`; `400` when the body lacks an `https://` endpoint of at most 512 characters plus `keys.p256dh` and `keys.auth` |
-| `DELETE /push/subscriptions?endpoint=` | Bearer | `SUBS` | `204`; `400` without `endpoint` |
-| `POST /push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
-| `POST /push/test-toast` | Bearer | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}` to the caller's own subscriptions; `503` when either VAPID key is unset |
-| `POST /push/test-channel` | Bearer | `ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | `200 {"delivered":1}` after one hub write addressed to the caller; `503` without the hub credentials; `502` when discovery, the token grant or the write fails |
-| `GET /api/status` | None | `ISSUER`, `AUDIENCE`, the published `version.txt` on this host | `200` with the status document below, cached for 60 seconds; `version` is empty when `version.txt` cannot be read |
-| `OPTIONS *` | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
+| Method and path | Alias | Auth | Needs | Responses |
+| --- | --- | --- | --- | --- |
+| `GET /private/<uuid>/catalog.json`, `GET /private/<uuid>/health.json` | `GET /api/private/<uuid>/catalog`, `GET /api/private/<uuid>/health` | Bearer; `uuid` must appear in the token's `organizations[]` | `ISSUER`, `AUDIENCE`, `STORE_REPO`, `GITHUB_PAT` | `200` file, `401` missing or invalid token, `403` not a member, `404` nothing published for that org, `502` store fetch failed, `405` non-GET |
+| `GET /api/catalog`, `GET /api/catalog/health` | | None | `/catalog.json` and `/health.json` published on this host | `200` the Pages document verbatim with the Worker's JSON headers; `404` when Pages has none; `502` on any other Pages failure |
+| `POST /admin/rebuild` | `POST /api/admin/rebuild` | Bearer with `ROLE_ADMIN` in `authorities` | `DISPATCH_PAT`, `DISPATCH_REPO`, `DISPATCH_WORKFLOW` | `202 {"status":"queued"}`, `403` no admin role, `503` when `DISPATCH_PAT` is unset, `502` when GitHub does not return 204 |
+| `GET /admin/rebuild/status` | `GET /api/admin/rebuild/status` | Same | Same | `200 {"status","conclusion"}` of the latest run of `DISPATCH_WORKFLOW`; `503` and `502` as above |
+| `GET /push/vapid-key` | `GET /api/push/vapid-key` | None | `VAPID_PUBLIC_KEY` | `200 {"publicKey"}`, `503` when unset |
+| `POST /push/subscriptions` | `POST /api/push/subscriptions` | Bearer | `SUBS` | `204`; `400` when the body lacks an `https://` endpoint of at most 512 characters plus `keys.p256dh` and `keys.auth` |
+| `DELETE /push/subscriptions?endpoint=` | `DELETE /api/push/subscriptions?endpoint=` | Bearer | `SUBS` | `204`; `400` without `endpoint` |
+| `POST /push/dispatch` | `POST /api/push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
+| `POST /push/test-toast` | `POST /api/push/test-toast` | Bearer | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}` to the caller's own subscriptions; `503` when either VAPID key is unset |
+| `POST /push/test-channel` | `POST /api/push/test-channel` | Bearer | `ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | `200 {"delivered":1}` after one hub write addressed to the caller; `503` without the hub credentials; `502` when discovery, the token grant or the write fails |
+| `GET /watches`, `POST /watches`, `DELETE /watches?id=` | `GET /api/watches`, `POST /api/watches`, `DELETE /api/watches?id=` | Bearer | `SUBS` | `200 {"items"}`; `204` watched or unwatched; `400` invalid or missing id |
+| `GET /watches/watchers?item=` | `GET /api/watches/watchers?item=` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `SUBS` | `200 {"uuids"}`; `401` bad key; `400` malformed item |
+| `GET /health` | `GET /api/health` | None | `ISSUER`, `STORE_REPO`, `GITHUB_PAT`, `/catalog.json` on this host | `200` the health document, cached for 60 seconds |
+| `GET /config` | `GET /api/config` | None | `HYPERWEAVER_URL` | `200 {"hyperweaver":{"url"}}`, an empty string when unset |
+| `GET /api/status` | | None | `ISSUER`, `AUDIENCE`, the published `version.txt` on this host | `200` with the status document below, cached for 60 seconds; `version` is empty when `version.txt` cannot be read |
+| `OPTIONS *` | | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
-Any other path under those prefixes returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.
+An alias is the same handler with the same auth and responses; the old path keeps answering. Any other path under those prefixes, `/api/` included, returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.
 
 ### The status document
 
@@ -284,10 +290,10 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 | Path | Purpose |
 | --- | --- |
 | `/api/status` | `role`, `version`, `brand`, `auth`, `idp`, `collections`, `features`, `links` and `ticket`, before anything renders; the version is the footer's and the About page's, `features` decides which surfaces exist |
-| `/catalog.json`, `/health.json` | The public catalog and its health companion |
-| `/private/<uuid>/catalog.json`, `/private/<uuid>/health.json` | The private catalogs of the signed-in user's organizations |
-| `/health`, `/config` | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
-| `/push/*`, `/watches`, `/admin/*` | Toasts, watches and the admin rebuild |
+| `/catalog.json`, `/health.json` (`/api/catalog`, `/api/catalog/health`) | The public catalog and its health companion |
+| `/private/<uuid>/catalog.json`, `/private/<uuid>/health.json` (`/api/private/<uuid>/catalog`, `/api/private/<uuid>/health`) | The private catalogs of the signed-in user's organizations |
+| `/health`, `/config` (`/api/health`, `/api/config`) | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
+| `/push/*`, `/watches`, `/admin/*` (`/api/push/*`, `/api/watches`, `/api/admin/*`) | Toasts, watches and the admin rebuild |
 
 The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
 

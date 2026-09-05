@@ -60,6 +60,12 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - `curl https://provisioner-catalog.startcloud.com/config` → `{"hyperweaver":{"url":"…"}}` (empty until `HYPERWEAVER_URL` is set)
 - `curl https://provisioner-catalog.startcloud.com/watches` → `{"error":"missing bearer token"}` (the route answers; the UI calls it with the user's token)
   with `worker`, `idp`, `pages` and `store` all `ok`; the footer heart reads it.
+- Every Worker route also answers under `/api/`, the paths the STARTcloud UI calls on every host; the old paths keep answering unchanged:
+  - `curl https://provisioner-catalog.startcloud.com/api/catalog` → the public `catalog.json`, proxied from Pages with the Worker's JSON headers; `/api/catalog/health` the same for `health.json`
+  - `curl https://provisioner-catalog.startcloud.com/api/private/00000000-0000-0000-0000-000000000000/catalog` → `401 {"error":"missing bearer token"}`, the same gate as `/private/<uuid>/catalog.json`; `/api/private/<uuid>/health` likewise
+  - `curl https://provisioner-catalog.startcloud.com/api/health` → the same document as `/health`; `/api/config` the same as `/config`
+  - `curl https://provisioner-catalog.startcloud.com/api/watches` → `{"error":"missing bearer token"}`; `/api/push/vapid-key`, `/api/push/subscriptions`, `/api/push/test-toast`, `/api/push/test-channel`, `/api/admin/rebuild` and `/api/admin/rebuild/status` answer as their unprefixed routes do
+  - `curl https://provisioner-catalog.startcloud.com/api/anything-else` → `404 {"error":"not found"}` from the Worker, never the Pages `index.html` fallback
 
 ## Config changes
 

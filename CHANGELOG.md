@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.68](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.67...provisioner-catalog-v0.0.68) (2026-09-05)
+
+
+### Bug Fixes
+
+* docs ([6083568](https://github.com/STARTcloud/provisioner-catalog/commit/6083568828aa6940e939556d2cdbd3601c521880))
+
 ## [0.0.67](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.66...provisioner-catalog-v0.0.67) (2026-09-05)
 
 

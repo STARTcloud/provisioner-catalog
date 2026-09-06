@@ -84,6 +84,15 @@ Toasts are opt-in per browser through the modal's footer switch (`src/components
 
 **Disable.** Switching off calls `DELETE /push/subscriptions?endpoint=<endpoint>` with the user's token, then unsubscribes in the browser and clears the flag. Signing out does not unsubscribe; switch off first if the browser should stop receiving toasts.
 
+**Refused writes.** The Worker's write routes (and their `/api/` twins) refuse with `application/problem+json` (RFC 9457, the Universal Validation Contract): `type` under `https://auth.startcloud.com/probs/`, `title`, `status` and, on 422, `errors[]` of `{ pointer, rule, params, detail }`, the body the STARTcloud UI reads as `ApiError.fieldErrors`. Every other answer (401, 403, 404, 502, 503, the 204s) is unchanged.
+
+| Route | 400 `bad-request` | 422 `validation` |
+| --- | --- | --- |
+| `POST /push/subscriptions` | the body is not JSON | one entry per failing member: `/endpoint` (`required`, `type`, `pattern` `https`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`) |
+| `DELETE /push/subscriptions` | no `endpoint` query parameter | never |
+| `POST /watches` | the body is not JSON | `/id` (`required`, `type`, `pattern` `watchId`) |
+| `DELETE /watches` | no `id` query parameter | never |
+
 **Service worker behaviour.**
 
 - `push`: decodes the JSON payload and calls `showNotification` with the title (falling back to `Provisioner Catalog`), body, icon, tag, data, and actions.
@@ -163,7 +172,7 @@ Values are never documented here; only the names and where each lives.
 
 **No permission prompt appeared.** The browser prompts only while the permission is undecided; when it is already allowed the switch just subscribes, and when it is blocked the switch shows "The browser denied notification permission", so reset the site's notification permission in the browser and switch on again.
 
-**"Failed to enable toasts."** The subscribe flow failed after permission. `GET /push/vapid-key` answers 503 `push not configured` when `VAPID_PUBLIC_KEY` is unset; `POST /push/subscriptions` answers 401 on a missing or expired token and 400 on a malformed subscription.
+**"Failed to enable toasts."** The subscribe flow failed after permission. `GET /push/vapid-key` answers 503 `push not configured` when `VAPID_PUBLIC_KEY` is unset; `POST /push/subscriptions` answers 401 on a missing or expired token, 400 `bad-request` on a body that is not JSON and 422 `validation` with `errors[]` on a subscription that breaks a rule.
 
 **"Test failed: …" on the test toast.** `POST /push/test-toast` answered 503 `push not configured` (no VAPID keys on the Worker) or 401; `delivered: 0` with the switch on means the push service rejected every send, so switch off and on again to re-subscribe.
 

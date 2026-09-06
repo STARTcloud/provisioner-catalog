@@ -68,6 +68,32 @@ const jsonResponse = (status, body, corsHeaders) =>
     },
   });
 
+const PROBLEM_TYPE_BASE = 'https://auth.startcloud.com/probs/';
+const VALIDATION_TITLE = 'The request did not pass validation.';
+const BAD_REQUEST_TITLE = 'The request could not be read.';
+
+const problemResponse = (status, { type, title, errors }, corsHeaders) =>
+  new Response(JSON.stringify({ type: `${PROBLEM_TYPE_BASE}${type}`, title, status, errors }), {
+    status,
+    headers: {
+      'Content-Type': 'application/problem+json',
+      'Cache-Control': 'private, no-store',
+      ...corsHeaders,
+    },
+  });
+
+const stringErrors = (pointer, value, name) => {
+  if (value === undefined) {
+    return [{ pointer, rule: 'required', params: {}, detail: `${name} is required` }];
+  }
+  if (typeof value !== 'string') {
+    return [
+      { pointer, rule: 'type', params: { type: 'string' }, detail: `${name} must be a string` },
+    ];
+  }
+  return [];
+};
+
 const corsFor = (request, env) => {
   const origin = request.headers.get('Origin');
   const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(entry => entry.trim());
@@ -432,12 +458,31 @@ const subscriptionKey = async endpoint => {
   return `sub:${bytesToB64url(new Uint8Array(digest))}`;
 };
 
-const isValidSubscription = body =>
-  typeof body?.endpoint === 'string' &&
-  body.endpoint.startsWith('https://') &&
-  body.endpoint.length <= 512 &&
-  typeof body?.keys?.p256dh === 'string' &&
-  typeof body?.keys?.auth === 'string';
+const subscriptionErrors = body => {
+  const endpoint = body?.endpoint;
+  const errors = stringErrors('/endpoint', endpoint, 'endpoint');
+  if (typeof endpoint === 'string') {
+    if (!endpoint.startsWith('https://')) {
+      errors.push({
+        pointer: '/endpoint',
+        rule: 'pattern',
+        params: { pattern: 'https' },
+        detail: 'endpoint must match https',
+      });
+    }
+    if (endpoint.length > 512) {
+      errors.push({
+        pointer: '/endpoint',
+        rule: 'maxLength',
+        params: { maxLength: 512 },
+        detail: 'endpoint must be at most 512 characters',
+      });
+    }
+  }
+  errors.push(...stringErrors('/keys/p256dh', body?.keys?.p256dh, 'keys.p256dh'));
+  errors.push(...stringErrors('/keys/auth', body?.keys?.auth, 'keys.auth'));
+  return errors;
+};
 
 const handleSubscribe = async (request, env, cors) => {
   let payload;
@@ -453,10 +498,11 @@ const handleSubscribe = async (request, env, cors) => {
   try {
     body = await request.json();
   } catch {
-    return jsonResponse(400, { error: 'invalid subscription' }, cors);
+    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
   }
-  if (!isValidSubscription(body)) {
-    return jsonResponse(400, { error: 'invalid subscription' }, cors);
+  const errors = subscriptionErrors(body);
+  if (errors.length > 0) {
+    return problemResponse(422, { type: 'validation', title: VALIDATION_TITLE, errors }, cors);
   }
   const organizations = Array.isArray(payload.organizations) ? payload.organizations : [];
   const record = {
@@ -482,7 +528,7 @@ const handleUnsubscribe = async (request, env, cors) => {
   }
   const endpoint = new URL(request.url).searchParams.get('endpoint') || '';
   if (!endpoint) {
-    return jsonResponse(400, { error: 'endpoint required' }, cors);
+    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
   }
   await env.SUBS.delete(await subscriptionKey(endpoint));
   return new Response(null, { status: 204, headers: cors });
@@ -891,6 +937,20 @@ const WATCH_ID_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 const watchKey = payload => `${WATCH_PREFIX}${String(payload.UUID || payload.sub || '')}`;
 
+const watchErrors = body => {
+  const id = body?.id;
+  const errors = stringErrors('/id', id, 'id');
+  if (typeof id === 'string' && !WATCH_ID_RE.test(id)) {
+    errors.push({
+      pointer: '/id',
+      rule: 'pattern',
+      params: { pattern: 'watchId' },
+      detail: 'id must match watchId',
+    });
+  }
+  return errors;
+};
+
 const readWatches = async (env, key) => {
   const value = await env.SUBS.get(key);
   return value ? JSON.parse(value) : [];
@@ -923,12 +983,13 @@ const handleWatch = async (request, env, cors) => {
   try {
     body = await request.json();
   } catch {
-    return jsonResponse(400, { error: 'invalid watch' }, cors);
+    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
   }
-  const id = typeof body?.id === 'string' ? body.id : '';
-  if (!WATCH_ID_RE.test(id)) {
-    return jsonResponse(400, { error: 'invalid watch' }, cors);
+  const errors = watchErrors(body);
+  if (errors.length > 0) {
+    return problemResponse(422, { type: 'validation', title: VALIDATION_TITLE, errors }, cors);
   }
+  const { id } = body;
   const key = watchKey(payload);
   const items = await readWatches(env, key);
   if (!items.includes(id)) {
@@ -950,7 +1011,7 @@ const handleUnwatch = async (request, env, cors) => {
   }
   const id = new URL(request.url).searchParams.get('id') || '';
   if (!id) {
-    return jsonResponse(400, { error: 'id required' }, cors);
+    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
   }
   const key = watchKey(payload);
   const items = (await readWatches(env, key)).filter(entry => entry !== id);

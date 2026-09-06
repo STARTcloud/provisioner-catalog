@@ -66,6 +66,10 @@ in Cloudflare; `.wrangler/` stays gitignored.
   - `curl https://provisioner-catalog.startcloud.com/api/health` → the same document as `/health`; `/api/config` the same as `/config`
   - `curl https://provisioner-catalog.startcloud.com/api/watches` → `{"error":"missing bearer token"}`; `/api/push/vapid-key`, `/api/push/subscriptions`, `/api/push/test-toast`, `/api/push/test-channel`, `/api/admin/rebuild` and `/api/admin/rebuild/status` answer as their unprefixed routes do
   - `curl https://provisioner-catalog.startcloud.com/api/anything-else` → `404 {"error":"not found"}` from the Worker, never the Pages `index.html` fallback
+- A refused write on `/watches` or `/push/subscriptions` (and their `/api/` twins) answers `application/problem+json` (RFC 9457, the Universal Validation Contract), the body the STARTcloud UI reads as `ApiError.problem` and `ApiError.fieldErrors`:
+  - `400 {"type":"https://auth.startcloud.com/probs/bad-request","title":"The request could not be read.","status":400}` when the request could not be read: a `POST` body that is not JSON, a `DELETE /watches` without `id`, a `DELETE /push/subscriptions` without `endpoint`
+  - `422 {"type":"https://auth.startcloud.com/probs/validation","title":"The request did not pass validation.","status":422,"errors":[{"pointer":"/id","rule":"pattern","params":{"pattern":"watchId"},"detail":"id must match watchId"}]}` when a value breaks a rule, one `errors[]` entry per failing member: `POST /watches` checks `/id` (`required`, `type`, `pattern` `watchId`); `POST /push/subscriptions` checks `/endpoint` (`required`, `type`, `pattern` `https`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`)
+  - every other answer (401, 403, 404, 502, 503, the 204s) is unchanged
 
 ## Config changes
 

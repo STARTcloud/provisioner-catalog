@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.68](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.67...provisioner-catalog-v0.0.68) (2026-09-06)
+
+
+### Bug Fixes
+
+* answer the Worker's refused writes as problem details ([fac6e8b](https://github.com/STARTcloud/provisioner-catalog/commit/fac6e8b6c9171133877beb98f0bf715222cd56f3))
+* bump startcloud-ui to v0.5.0 ([#87](https://github.com/STARTcloud/provisioner-catalog/issues/87)) ([4a70812](https://github.com/STARTcloud/provisioner-catalog/commit/4a708129678a265a5494ff18002135b474b98110))
+* docs ([6083568](https://github.com/STARTcloud/provisioner-catalog/commit/6083568828aa6940e939556d2cdbd3601c521880))
+
 ## [0.0.67](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.66...provisioner-catalog-v0.0.67) (2026-09-05)
 
 

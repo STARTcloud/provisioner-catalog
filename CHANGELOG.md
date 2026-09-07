@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.69](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.68...provisioner-catalog-v0.0.69) (2026-09-07)
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.7.0 ([#88](https://github.com/STARTcloud/provisioner-catalog/issues/88)) ([be3737e](https://github.com/STARTcloud/provisioner-catalog/commit/be3737eff05ce106e74ed72e57d2bece58d05dc1))
+* converge catalog docs and Worker on the moved contracts ([0313845](https://github.com/STARTcloud/provisioner-catalog/commit/031384527f3a9837aad17d071a0f20a29b2b3f7f))
+
 ## [0.0.68](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.67...provisioner-catalog-v0.0.68) (2026-09-06)
 
 

@@ -150,7 +150,8 @@ never read it — the wire contract stays catalog.json alone.
   alias) → **Silver** (CHANGELOG + README in the archive, release in the last
   12 months, ansible-lint in CI) → **Gold** (every config field labeled +
   tooltipped, every role documented, example Hosts) → **Platinum** (automated
-  tests, multi-provider, release cadence).
+  tests, multi-provider, release cadence) → **Diamond** (a passing boot check
+  run on every verified provider).
 - **Security is never graded** — the safety scan, sidecar verification and
   the immutability tripwire are hard gates; a package that violates them
   never appears in the data at all. Ejecting a bad actor entirely is

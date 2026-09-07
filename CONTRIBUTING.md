@@ -146,8 +146,11 @@ welcome:
     --published-url https://provisioner-catalog.startcloud.com/catalog.json
   ```
 
-- Keep it static: no server code, no site generators, no runtime dependencies
-  beyond the workflows. Everything stays hand-editable.
+- Keep the public catalog path static: `catalog.json` is built by the
+  workflows and served by GitHub Pages with nothing in front of it. The
+  Cloudflare Worker under `worker/` gates only `/private/*`, push, watches,
+  admin and `/api/*`, and the Jekyll build produces `/docs/`. Everything stays
+  hand-editable.
 
 ## Code of Conduct and license
 

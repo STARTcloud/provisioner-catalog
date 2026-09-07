@@ -40,7 +40,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - Same URL with a valid Bearer token for a member org → that org's catalog.json.
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
-- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `health` the footer heart):
+- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `footer` the footer, `health` the heart in it):
 
   ```json
   {
@@ -50,14 +50,14 @@ in Cloudflare; `.wrangler/` stays gitignored.
     "auth": ["idp"],
     "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
     "collections": ["provisioners"],
-    "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health"],
+    "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
     "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
     "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
   }
   ```
 
 - `curl https://provisioner-catalog.startcloud.com/health` → `{"status":"ok",…}`
-- `curl https://provisioner-catalog.startcloud.com/config` → `{"hyperweaver":{"url":"…"}}` (empty until `HYPERWEAVER_URL` is set)
+- `curl https://provisioner-catalog.startcloud.com/config` → `{"hyperweaver":{"url":"…"}}`, the `HYPERWEAVER_URL` var
 - `curl https://provisioner-catalog.startcloud.com/watches` → `{"error":"missing bearer token"}` (the route answers; the UI calls it with the user's token)
   with `worker`, `idp`, `pages` and `store` all `ok`; the footer heart reads it.
 - Every Worker route also answers under `/api/`, the paths the STARTcloud UI calls on every host; the old paths keep answering unchanged:
@@ -68,12 +68,13 @@ in Cloudflare; `.wrangler/` stays gitignored.
   - `curl https://provisioner-catalog.startcloud.com/api/anything-else` → `404 {"error":"not found"}` from the Worker, never the Pages `index.html` fallback
 - A refused write on `/watches` or `/push/subscriptions` (and their `/api/` twins) answers `application/problem+json` (RFC 9457, the Universal Validation Contract), the body the STARTcloud UI reads as `ApiError.problem` and `ApiError.fieldErrors`:
   - `400 {"type":"https://auth.startcloud.com/probs/bad-request","title":"The request could not be read.","status":400}` when the request could not be read: a `POST` body that is not JSON, a `DELETE /watches` without `id`, a `DELETE /push/subscriptions` without `endpoint`
-  - `422 {"type":"https://auth.startcloud.com/probs/validation","title":"The request did not pass validation.","status":422,"errors":[{"pointer":"/id","rule":"pattern","params":{"pattern":"watchId"},"detail":"id must match watchId"}]}` when a value breaks a rule, one `errors[]` entry per failing member: `POST /watches` checks `/id` (`required`, `type`, `pattern` `watchId`); `POST /push/subscriptions` checks `/endpoint` (`required`, `type`, `pattern` `https`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`)
+  - `422 {"type":"https://auth.startcloud.com/probs/validation","title":"The request did not pass validation.","status":422,"errors":[{"pointer":"/id","rule":"pattern","params":{"pattern":"watchId"},"detail":"id must match watchId"}]}` when a value breaks a rule, one `errors[]` entry per failing member: `POST /watches` checks `/id` (`required`, `type`, `pattern` `watchId`); `POST /push/subscriptions` checks `/endpoint` (`required`, `type`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`)
   - every other answer (401, 403, 404, 502, 503, the 204s) is unchanged
 
 ## Config changes
 
-Vars (`ISSUER`, `AUDIENCE`, `STORE_REPO`, `ALLOWED_ORIGINS`) live in
+Vars (`ISSUER`, `AUDIENCE`, `STORE_REPO`, `ALLOWED_ORIGINS`, `VAPID_PUBLIC_KEY`,
+`VAPID_SUBJECT`, `DISPATCH_REPO`, `DISPATCH_WORKFLOW`, `HYPERWEAVER_URL`) live in
 `wrangler.toml` — edit and `wrangler deploy` again. When the prod IdP host
 replaces dev-auth, change `ISSUER` here (it must match the `iss` claim in
 tokens exactly) and redeploy.

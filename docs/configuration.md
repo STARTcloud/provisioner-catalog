@@ -168,7 +168,7 @@ One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the 
 
 | Binding | Contents |
 | --- | --- |
-| `SUBS` | Web Push subscriptions keyed `sub:<base64url sha256 of endpoint>`; each record holds `endpoint`, `p256dh`, `auth`, the subscriber's `uuid`, and the lowercased `orgs` from their token |
+| `SUBS` | Web Push subscriptions keyed `sub:<base64url sha256 of endpoint>`, each record holding `endpoint`, `p256dh`, `auth`, the subscriber's `uuid`, and the lowercased `orgs` from their token; watch lists keyed `watch:<uuid>`, a JSON array of `<organization>/<name>` ids; DPoP replay keys `jti:<jti>`, expiring after 300 seconds |
 
 ### Vars
 
@@ -179,11 +179,12 @@ Plain-text values under `[vars]`; edit and redeploy to change.
 | `ISSUER` | OIDC issuer, matched exactly against the token's `iss` claim and used for discovery (`/.well-known/openid-configuration`) and the JWKS |
 | `AUDIENCE` | Required member of the token's `aud` claim; the registered client id `provisioner-catalog` |
 | `STORE_REPO` | The private store repository (`STARTcloud/provisioner-catalogs-private`) whose `orgs/<uuid>/<file>.json` is proxied through the GitHub contents API |
-| `ALLOWED_ORIGINS` | Comma-separated origins granted CORS (`GET, POST, DELETE, OPTIONS`; headers `Authorization, Content-Type`); the production host and `http://localhost:8080` |
+| `ALLOWED_ORIGINS` | Comma-separated origins granted CORS (`GET, POST, DELETE, OPTIONS`; headers `Authorization, Content-Type, DPoP`); the production host and `http://localhost:8080` |
 | `VAPID_PUBLIC_KEY` | The application server key returned by `/push/vapid-key` and sent in the `vapid` authorization header |
 | `VAPID_SUBJECT` | The `mailto:` subject claim of the VAPID JWT |
 | `DISPATCH_REPO` | Repository whose workflow `/admin/rebuild` dispatches (`STARTcloud/provisioner-catalog`) |
 | `DISPATCH_WORKFLOW` | The workflow file dispatched (`generate-catalog-data.yml`) |
+| `HYPERWEAVER_URL` | The Hyperweaver origin `/config` answers as `hyperweaver.url`; the UI draws no Deploy control while it is empty |
 
 ### Secrets
 
@@ -199,7 +200,7 @@ Set with `wrangler secret put <NAME>` from `worker/`; they live only in Cloudfla
 
 ### Endpoints
 
-Bearer verification, where required, means: RS256 signature against the issuer's JWKS (cached per isolate for an hour, refetched on an unknown `kid`), `iss === ISSUER`, `aud` contains `AUDIENCE`, `exp` and `nbf` with 60 seconds of leeway.
+Bearer verification, where required, means: RS256 signature against the issuer's JWKS (cached per isolate for an hour, refetched on an unknown `kid`), `iss === ISSUER`, `aud` contains `AUDIENCE`, `exp` and `nbf` with 60 seconds of leeway. A token carrying `cnf.jkt` is accepted only under the `DPoP` scheme with a `DPoP` proof header bound to that key, the request method and URL, the token hash and an unseen `jti`.
 
 | Method and path | Alias | Auth | Needs | Responses |
 | --- | --- | --- | --- | --- |
@@ -208,19 +209,19 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `POST /admin/rebuild` | `POST /api/admin/rebuild` | Bearer with `ROLE_ADMIN` in `authorities` | `DISPATCH_PAT`, `DISPATCH_REPO`, `DISPATCH_WORKFLOW` | `202 {"status":"queued"}`, `403` no admin role, `503` when `DISPATCH_PAT` is unset, `502` when GitHub does not return 204 |
 | `GET /admin/rebuild/status` | `GET /api/admin/rebuild/status` | Same | Same | `200 {"status","conclusion"}` of the latest run of `DISPATCH_WORKFLOW`; `503` and `502` as above |
 | `GET /push/vapid-key` | `GET /api/push/vapid-key` | None | `VAPID_PUBLIC_KEY` | `200 {"publicKey"}`, `503` when unset |
-| `POST /push/subscriptions` | `POST /api/push/subscriptions` | Bearer | `SUBS` | `204`; `400` when the body lacks an `https://` endpoint of at most 512 characters plus `keys.p256dh` and `keys.auth` |
-| `DELETE /push/subscriptions?endpoint=` | `DELETE /api/push/subscriptions?endpoint=` | Bearer | `SUBS` | `204`; `400` without `endpoint` |
+| `POST /push/subscriptions` | `POST /api/push/subscriptions` | Bearer | `SUBS` | `204`; `400` `bad-request` problem when the body is not JSON; `422` `validation` problem with `errors[]` when the body lacks an `https://` endpoint of at most 512 characters plus `keys.p256dh` and `keys.auth` |
+| `DELETE /push/subscriptions?endpoint=` | `DELETE /api/push/subscriptions?endpoint=` | Bearer | `SUBS` | `204`; `400` `bad-request` problem without `endpoint` |
 | `POST /push/dispatch` | `POST /api/push/dispatch` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}`; `401` bad key; `503` when either VAPID key is unset; `400` invalid body. Subscriptions answering `403`, `404` or `410` are deleted |
 | `POST /push/test-toast` | `POST /api/push/test-toast` | Bearer | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUBS` | `200 {"delivered"}` to the caller's own subscriptions; `503` when either VAPID key is unset |
 | `POST /push/test-channel` | `POST /api/push/test-channel` | Bearer | `ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | `200 {"delivered":1}` after one hub write addressed to the caller; `503` without the hub credentials; `502` when discovery, the token grant or the write fails |
-| `GET /watches`, `POST /watches`, `DELETE /watches?id=` | `GET /api/watches`, `POST /api/watches`, `DELETE /api/watches?id=` | Bearer | `SUBS` | `200 {"items"}`; `204` watched or unwatched; `400` invalid or missing id |
+| `GET /watches`, `POST /watches`, `DELETE /watches?id=` | `GET /api/watches`, `POST /api/watches`, `DELETE /api/watches?id=` | Bearer | `SUBS` | `200 {"items"}`; `204` watched or unwatched; `400` `bad-request` problem when the body is not JSON or `id` is missing; `422` `validation` problem when `id` breaks a rule |
 | `GET /watches/watchers?item=` | `GET /api/watches/watchers?item=` | `X-Dispatch-Key` equal to `DISPATCH_KEY` | `DISPATCH_KEY`, `SUBS` | `200 {"uuids"}`; `401` bad key; `400` malformed item |
 | `GET /health` | `GET /api/health` | None | `ISSUER`, `STORE_REPO`, `GITHUB_PAT`, `/catalog.json` on this host | `200` the health document, cached for 60 seconds |
 | `GET /config` | `GET /api/config` | None | `HYPERWEAVER_URL` | `200 {"hyperweaver":{"url"}}`, an empty string when unset |
 | `GET /api/status` | | None | `ISSUER`, `AUDIENCE`, the published `version.txt` on this host | `200` with the status document below, cached for 60 seconds; `version` is empty when `version.txt` cannot be read |
 | `OPTIONS *` | | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
-An alias is the same handler with the same auth and responses; the old path keeps answering. Any other path under those prefixes, `/api/` included, returns `404`; paths outside them are proxied to GitHub Pages. Worker responses carry `Cache-Control: private, no-store`.
+An alias is the same handler with the same auth and responses; the old path keeps answering. Any other path under those prefixes, `/api/` included, returns `404`; paths outside them are proxied to GitHub Pages, and `/notification-sw.js` is passed through with `Cache-Control: no-cache` and `Service-Worker-Allowed: /push/` added. Worker responses carry `Cache-Control: private, no-store`; a refused write is `application/problem+json`.
 
 ### The status document
 
@@ -234,7 +235,7 @@ An alias is the same handler with the same auth and responses; the old path keep
   "auth": ["idp"],
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
-  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
 }
@@ -251,7 +252,7 @@ An alias is the same handler with the same auth and responses; the old path keep
 | `links` | `docs` and `contact` |
 | `ticket` | Support ticket constants; BoxVault answers `null` and serves them at `/api/config/ticket` |
 
-Feature tokens and what each gates; the catalog answers the six marked:
+Feature tokens and what each gates; the catalog answers the seven marked:
 
 | Token | Surface | Catalog |
 | --- | --- | --- |
@@ -268,7 +269,8 @@ Feature tokens and what each gates; the catalog answers the six marked:
 | `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
 | `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
 | `notifications` | the Notifications menu row (still needs the scope) | yes |
-| `health` | the footer health heart from `/api/health` | yes |
+| `health` | the footer health heart from `/api/health` (still needs `footer`) | yes |
+| `footer` | the footer itself | yes |
 
 ---
 
@@ -304,11 +306,11 @@ The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public cl
 | Item | Value |
 | --- | --- |
 | `.python-version` | `3.14`; every workflow uses `actions/setup-python` with `python-version-file: ".python-version"` and a pip cache keyed on `requirements.txt` |
-| `requirements.txt` | `PyYAML==6.0.3`, `jsonschema==4.26.0`, `PyJWT==2.13.0`, `cryptography==50.0.0` |
+| `requirements.txt` | `PyYAML==6.0.3`, `jsonschema==4.26.0`, `PyJWT==2.13.0`, `cryptography==50.0.1`, `Jinja2==3.1.6` |
 | `scripts/setup` | `python3 -m pip install -r requirements.txt`; every workflow job runs `bash scripts/setup` after checkout |
 | `action.yml` | Installs the same `requirements.txt` from `github.action_path` before running `scripts.validate_repo` |
 
-`PyJWT` and `cryptography` exist for the GitHub App JWT in `build_org_catalogs`; the public builder and the validator need only `PyYAML` and `jsonschema`.
+`PyJWT` and `cryptography` exist for the GitHub App JWT in `build_org_catalogs`; `Jinja2` renders `Hosts.template.yml` for the quality rules in `scripts/quality.py`, which the validator imports; the public builder and the validator need `PyYAML`, `jsonschema` and `Jinja2`.
 
 Scripts are run as modules from the repository root:
 

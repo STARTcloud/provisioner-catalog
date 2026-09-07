@@ -62,13 +62,13 @@ An organization whose catalog the gate refuses shows "Access denied by the catal
 
 When your token carries at least two organizations, the user menu gains an active-organization entry. It opens a modal listing every organization with its logo, description, roles, and primary flag. Picking one sets the active organization for org-scoped actions such as the support ticket and leaves the page where it is. The active organization is remembered in the browser, validated against your token on every load, and falls back to your primary organization, then the first.
 
-### Notifications bell
+### Notifications
 
-Signed in with the `notifications` scope, a bell appears in the header. It polls the IdP for your unread count once a minute and shows it as a badge. Opening the bell lists your latest notifications; selecting one marks it read and, when it carries a link, navigates to it. **Mark all read** and **View all** (which opens the IdP's notification page) sit at the top and bottom of the list.
+Signed in with the `notifications` scope, a **Notifications** row with a bell glyph appears in the user menu. It polls the IdP for your unread count once a minute and shows it as a badge. Opening the row lists your latest notifications in a modal; selecting one marks it read and, when it carries a link, navigates to it. **Mark all read** and **View all** (which opens the IdP's notification page) sit at the top and bottom of the list.
 
-### Push toggle
+### Toasts
 
-The user menu's **Enable notifications** entry registers the browser's service worker, asks for notification permission, subscribes with the catalog's VAPID key, and stores the subscription with the catalog gate. The entry flips to **Disable notifications** once enabled, which removes the subscription. Browsers without service worker or push support show "Notifications are not supported in this browser."
+The modal's footer switch **Toasts (OS notifications) on this device** registers the browser's service worker, asks for notification permission, subscribes with the catalog's VAPID key, and stores the subscription with the catalog gate. Switching it off removes the subscription. Browsers without service worker or push support show "This browser does not support toasts."
 
 Push messages are sent when a new provisioner version appears in the public catalog, when a new version appears in one of your organizations' private catalogs, and when a catalog rebuild you requested finishes.
 

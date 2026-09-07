@@ -196,7 +196,7 @@ The catalog serves metadata, never bytes. Removal deletes nothing from the autho
 | JSON schema | `python3 -m scripts.validate_schemas` | `sources.yml` against `schema/sources.schema.json` and `removed.yml` against `schema/removed.schema.json` (JSON Schema draft 2020-12 with format checking), plus case-insensitive duplicate detection across `sources` entries |
 | Sorted | `python3 -m scripts.is_sorted` | `sources.yml` entries are in case-folded alphabetical order; on failure it prints the expected and actual order |
 
-Both schemas set `additionalProperties: false` at every level and `uniqueItems: true` on the array, so a stray key, a second key on an entry, or an exact duplicate fails validation. `is_sorted.py` checks `sources.yml` only. `validate_schemas.py` also accepts `--catalog` to validate a generated `catalog.json` against `schema/catalog.schema.json`, which the data job does on every build.
+Both schemas set `additionalProperties: false` at every level and `uniqueItems: true` on the array, so a stray key, a second key on an entry, or an exact duplicate fails validation. `is_sorted.py` checks `sources.yml` only. `validate_schemas.py` also accepts `--catalog` to validate a generated `catalog.json` against `schema/catalog.schema.json` by hand; the data job does not call it, since `scripts.build_catalog` validates its own `catalog.json` and `health.json` against both schemas before writing them.
 
 The same workflow runs actionlint over the workflows, lints the Markdown and formatting, builds the docs, and chains CodeQL.
 

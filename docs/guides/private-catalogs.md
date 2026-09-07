@@ -86,7 +86,7 @@ The same download path is what lets a private repository run the validation acti
 
 ## Membership and the gate
 
-The Cloudflare Worker `provisioner-catalog-gate` is routed on `provisioner-catalog.startcloud.com/*`. It answers `/private/*`, `/push/*` and `/admin/*` itself and proxies every other request to GitHub Pages, so the public `catalog.json` is never touched; a page request (a `GET` for `text/html` with no file extension) that Pages answers with `404` gets `index.html` instead, so a deep link into the web UI loads. The DNS record must be **proxied** in Cloudflare, or the route never fires.
+The Cloudflare Worker `provisioner-catalog-gate` is routed on `provisioner-catalog.startcloud.com/*`. It answers `/private/*`, `/push/*`, `/admin/*`, `/watches`, `/health`, `/config`, `/api/status` and every route again under `/api/*` itself and proxies every other request to GitHub Pages, so the public `catalog.json` is never touched; a page request (a `GET` for `text/html` with no file extension) that Pages answers with `404` gets `index.html` instead, so a deep link into the web UI loads. The DNS record must be **proxied** in Cloudflare, or the route never fires.
 
 ### Route
 
@@ -95,11 +95,11 @@ GET /private/<org-uuid>/catalog.json
 GET /private/<org-uuid>/health.json
 ```
 
-The uuid is matched case-insensitively and lowercased. Any other path under `/private/`, `/push/` or `/admin/` answers `404`; any method other than `GET` on a matching path answers `405`; `OPTIONS` answers `204` with CORS headers for origins listed in `ALLOWED_ORIGINS`.
+The uuid is matched case-insensitively and lowercased. Any other path under `/private/`, `/push/`, `/admin/`, `/watches/` or `/api/` answers `404`; any method other than `GET` on a matching path answers `405`; `OPTIONS` answers `204` with CORS headers for origins listed in `ALLOWED_ORIGINS`.
 
 ### Token verification
 
-The request must carry `Authorization: Bearer <access token>`. The Worker verifies it with nothing but the token:
+The request must carry `Authorization: Bearer <access token>`, or `Authorization: DPoP <access token>` with a `DPoP` proof header when the token is key-bound (`cnf.jkt`). The Worker verifies it with nothing but the token and, for a key-bound token, the proof:
 
 1. The token has three segments and `alg` is `RS256`.
 2. The key with the token's `kid` is found in the IdP's JWKS, discovered from `ISSUER/.well-known/openid-configuration`. The JWKS is cached per isolate for one hour and refetched once on an unknown `kid`, which covers key rotation.
@@ -118,7 +118,7 @@ The token's `organizations` claim is an array of objects with a `uuid`. The requ
 | --- | --- | --- | --- |
 | `200` | the org's `catalog.json` or `health.json` | `Cache-Control: private, no-store` | member, file published |
 | `401` | `{"error":"missing bearer token"}` | `WWW-Authenticate: Bearer` | no `Bearer` authorization header |
-| `401` | `{"error":"invalid token: <reason>"}` | `WWW-Authenticate: Bearer error="invalid_token"` | one of: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid` |
+| `401` | `{"error":"invalid token: <reason>"}` | `WWW-Authenticate: Bearer error="invalid_token"` | one of: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
 | `403` | `{"error":"not a member of this organization"}` | | valid token, org uuid not in `organizations` |
 | `404` | `{"error":"no catalog published for this organization"}` (or `no health …`) | | the store has no `orgs/<uuid>/<file>.json` |
 | `404` | `{"error":"not found"}` | | path does not match the route shape |
@@ -138,7 +138,7 @@ The catalog web UI at the domain root renders private catalogs beside the public
 ### Sign-in
 
 - **OIDC authorization-code + PKCE (S256)** against the STARTcloud IdP, as a public client (`client_id` `provisioner-catalog`, no secret).
-- **Scopes requested**: `openid profile email organizations notifications`.
+- **Scopes requested**: `openid profile email organizations notifications entitlements`.
 - **Redirect URI**: `<origin>/callback`, registered exact-match for `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`.
 - The PKCE state and verifier are kept in `localStorage` rather than `sessionStorage`, so a magic-link sign-in that completes in a new tab still finds them.
 - The callback page exchanges the code, applies the account's theme and language preferences, and returns to `/`.
@@ -152,7 +152,7 @@ After sign-in the UI decodes the access token, reads its `organizations` claim, 
 | --- | --- |
 | `404` | nothing — the organization has no private rows yet |
 | `401` / `403` | "Access denied by the catalog gate." as a notice at the top of the page |
-| anything else | the raw request error |
+| anything else | nothing — the organization shows no private rows and no notice |
 
 A multi-org user sees every org they belong to. That is the cross-sharing mechanism: an organization shares a provisioner by adding the repository to its own entry, and members of that org see it wherever else they belong.
 
@@ -184,11 +184,11 @@ Each data run compares the new org catalog with the one already in the store. Fo
 | delivery | ttl 86400, urgency normal |
 | idempotencyKey | `catalog:<org-uuid>:<family>:<version>` |
 
-It is posted to `<CATALOG_HUB_ISSUER>/api/notify` with a client-credentials token (scope `notifications:write`) obtained from `CATALOG_HUB_CLIENT_ID` and `CATALOG_HUB_CLIENT_SECRET` at the IdP's discovered token endpoint. Without those credentials the notification is skipped and logged. Members read it from the bell in the web UI, which appears when the token's scope includes `notifications`.
+It is posted to `<CATALOG_HUB_ISSUER>/api/notify` with a client-credentials token (scope `notifications:write`) obtained from `CATALOG_HUB_CLIENT_ID` and `CATALOG_HUB_CLIENT_SECRET` at the IdP's discovered token endpoint. Without those credentials the notification is skipped and logged. Members read it from the Notifications row of the user menu in the web UI, which appears when the token's scope includes `notifications`.
 
 **A push event** with `scope: org` and the org uuid, batched and posted once per run to `CATALOG_PUSH_DISPATCH_URL` (default `https://provisioner-catalog.startcloud.com/push/dispatch`) with the `X-Dispatch-Key` header set from `CATALOG_PUSH_DISPATCH_KEY`. The Worker's `/push/dispatch` route checks that key against its `DISPATCH_KEY` secret, delivers web push (VAPID, `aes128gcm`) to every subscription whose recorded organizations include that uuid, and prunes subscriptions that answer `403`, `404`, or `410`.
 
-A member enables push from the user menu ("Enable notifications"): the browser permission prompt, the service worker, `GET /push/vapid-key`, then `POST /push/subscriptions` with the Bearer token. The subscription record stores the user's uuid and the organizations in their token at that moment, and is re-posted on every page load while push stays enabled.
+A member enables push from the switch in the Notifications modal's footer ("Toasts (OS notifications) on this device"): the browser permission prompt, the service worker, `GET /push/vapid-key`, then `POST /push/subscriptions` with the Bearer token. The subscription record stores the user's uuid and the organizations in their token at that moment, and is re-posted on every page load while push stays enabled.
 
 The public builder sends only push events (scope `public`); the org-addressed hub notification is specific to private catalogs.
 
@@ -196,7 +196,7 @@ The public builder sends only push events (scope `public`); the org-addressed hu
 
 ### Worker deployment
 
-`deploy-worker.yml` deploys on every push to `main` that touches `worker/**`, and on manual dispatch, using `cloudflare/wrangler-action@v3` with `CLOUDFLARE_API_TOKEN`. A manual `wrangler deploy` from `worker/` does the same.
+`deploy-worker.yml` deploys on every push to `main` that touches `worker/**`, and on manual dispatch, using `cloudflare/wrangler-action@v4` with `CLOUDFLARE_API_TOKEN`. A manual `wrangler deploy` from `worker/` does the same.
 
 Configuration lives in `worker/wrangler.toml`:
 
@@ -208,8 +208,9 @@ Configuration lives in `worker/wrangler.toml`:
 | `ALLOWED_ORIGINS` | Comma-separated origins allowed cross-origin (production is same-origin; the dev server is listed). |
 | `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` | Web push application server identity. |
 | `DISPATCH_REPO`, `DISPATCH_WORKFLOW` | Where the admin rebuild button dispatches (`generate-catalog-data.yml`). |
+| `HYPERWEAVER_URL` | The Hyperweaver origin `/config` answers for the UI's Deploy controls. |
 
-The KV namespace bound as `SUBS` holds push subscriptions.
+The KV namespace bound as `SUBS` holds push subscriptions, watch lists and DPoP replay keys.
 
 ### Secrets
 
@@ -219,8 +220,9 @@ Cloudflare (`wrangler secret put <NAME>`):
 | --- | --- |
 | `GITHUB_PAT` | Reading `orgs/<uuid>/*.json` from the store |
 | `VAPID_PRIVATE_KEY` | Signing web push requests |
-| `DISPATCH_KEY` | Authenticating `/push/dispatch` calls from the data job |
+| `DISPATCH_KEY` | Authenticating `/push/dispatch` and `/watches/watchers` calls from the data job |
 | `DISPATCH_PAT` | Dispatching the data job from `/admin/rebuild` |
+| `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET` | The catalog's machine client on the auth server, for `/push/test-channel` |
 
 GitHub Actions (the data job):
 

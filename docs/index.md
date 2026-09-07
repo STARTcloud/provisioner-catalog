@@ -30,7 +30,7 @@ Agents fetch exactly one document, `https://provisioner-catalog.startcloud.com/c
 - **Private per-organization catalogs**: a Cloudflare Worker on `/private/*` verifies the caller's Bearer JWT against the IdP's JWKS and serves `orgs/<org-uuid>/catalog.json` only to members of that organization
 - **Immutability tripwire**: an already-published version whose asset hashes differently fails the build loudly; rebuilt artifacts must ship as a new version
 - **Measured quality tiers**: `health.json` carries a machine-measured tier per family (Unrated, Bronze, Silver, Gold, Platinum, Diamond) recomputed on every data run and never author-declared; agents never read it
-- **Notifications**: new versions dispatch Web Push events through the Worker, private-catalog releases post hub notifications through the IdP, and the web UI shows an inbox bell
+- **Notifications**: new versions dispatch Web Push events through the Worker, private-catalog releases post hub notifications through the IdP, and the web UI lists the inbox in the Notifications modal opened from the user menu
 - **Admin rebuild**: users with `ROLE_ADMIN` trigger the data job from the web UI through `/admin/rebuild` and poll its run status
 - **Validation GitHub Action**: `uses: STARTcloud/provisioner-catalog@main` validates a repository's published releases against the artifact contract in the author's own CI, and `--tree` mode checks a working-tree manifest before a release exists
 
@@ -44,7 +44,7 @@ graph TD
     E["hyperweaver-agent / zoneweaver-agent"] -- fetch catalog.json --> C;
     F["Web browser"] -- HTTPS --> D;
     D -- OIDC authorization code + PKCE --> G["STARTcloud IdP"];
-    D -- Bearer JWT --> H["Cloudflare Worker (/private/*, /push/*, /admin/*)"];
+    D -- Bearer JWT --> H["Cloudflare Worker (/private/*, /push/*, /admin/*, /watches, /health, /config, /api/*)"];
     H -- verifies JWT via JWKS --> G;
     I["Private store repo (orgs/uuid/catalog.json)"] -- read-only token --> H;
     B -- GitHub App token, commits back --> I;

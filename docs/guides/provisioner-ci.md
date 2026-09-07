@@ -12,7 +12,7 @@ permalink: /guides/provisioner-ci/
 
 For anyone publishing a provisioner package to this catalog: what CI a provisioner repository carries, and why it is shaped that way.
 
-Every `*_provisioner` repository runs one set of nine CI files, byte-identical, copied from the reference and never edited per repository. Anything that must differ between provisioners is decided inside those files from data the repository already carries. The reference is [STARTcloud/startcloud_generic_provisioner](https://github.com/STARTcloud/startcloud_generic_provisioner) — copy its [`.github/`](https://github.com/STARTcloud/startcloud_generic_provisioner/tree/main/.github) as is.
+Every `*_provisioner` repository adopts one set of nine CI files, copied byte-identical from the reference and never edited per repository; a repository admitted before the set existed adopts it through the steps under [Adopting](#adopting). The catalog measures only the `ansible/ansible-lint` step and the `Molecule (…)` and `Boot (<provider>)` check runs, never the files themselves. Anything that must differ between provisioners is decided inside those files from data the repository already carries. The reference is [STARTcloud/startcloud_generic_provisioner](https://github.com/STARTcloud/startcloud_generic_provisioner) — copy its [`.github/`](https://github.com/STARTcloud/startcloud_generic_provisioner/tree/main/.github) as is.
 
 ## Table of contents
 

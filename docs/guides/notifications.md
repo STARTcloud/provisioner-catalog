@@ -73,8 +73,8 @@ Toasts are opt-in per browser through the modal's footer switch (`src/components
 
 1. Checks support: `serviceWorker`, `PushManager`, and `Notification` must all exist. Otherwise the modal shows "This browser does not support toasts."
 2. Calls `Notification.requestPermission()`. The browser prompts only while the permission is undecided; anything but `granted` shows "The browser denied notification permission."
-3. Registers `/notification-sw.js`, fetches the catalog's VAPID public key from `GET /push/vapid-key`, subscribes with `userVisibleOnly: true`, and uploads `PushSubscription.toJSON()` to `POST /push/subscriptions` with the user's token.
-4. Records `push_enabled` in `localStorage`; the switch stays on and the screen glyph **Send a test toast** appears on the footer's right, which posts `POST /push/test-toast` so the Worker pushes one toast to the caller's own subscriptions.
+3. Registers `/notification-sw.js` at scope `/push/`; the Worker passes the file through with `Cache-Control: no-cache` and `Service-Worker-Allowed: /push/`, and the UI release pinned in `package.json` still registers it at the root scope until its bump lands. Then fetches the catalog's VAPID public key from `GET /push/vapid-key`, subscribes with `userVisibleOnly: true`, and uploads `PushSubscription.toJSON()` to `POST /push/subscriptions` with the user's token.
+4. Records `push_enabled` in `localStorage` (the pinned UI release writes it as `catalog.push_enabled` until its bump lands); the switch stays on and the screen glyph **Send a test toast** appears on the footer's right, which posts `POST /push/test-toast` so the Worker pushes one toast to the caller's own subscriptions.
 
 **Why a click is required.** Browsers only show the notification permission prompt in response to a user gesture, so the subscription can never be created silently on page load; it has to start from the switch.
 
@@ -88,7 +88,7 @@ Toasts are opt-in per browser through the modal's footer switch (`src/components
 
 | Route | 400 `bad-request` | 422 `validation` |
 | --- | --- | --- |
-| `POST /push/subscriptions` | the body is not JSON | one entry per failing member: `/endpoint` (`required`, `type`, `pattern` `https`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`) |
+| `POST /push/subscriptions` | the body is not JSON | one entry per failing member: `/endpoint` (`required`, `type`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`) |
 | `DELETE /push/subscriptions` | no `endpoint` query parameter | never |
 | `POST /watches` | the body is not JSON | `/id` (`required`, `type`, `pattern` `watchId`) |
 | `DELETE /watches` | no `id` query parameter | never |
@@ -138,7 +138,7 @@ Values are never documented here; only the names and where each lives.
 | --- | --- |
 | `ISSUER` | Must equal the `iss` claim of user tokens; JWKS is discovered from it |
 | `AUDIENCE` | Registered audience of the `provisioner-catalog` client |
-| `ALLOWED_ORIGINS` | Origins granted CORS on `/push/*` and `/admin/*` |
+| `ALLOWED_ORIGINS` | Comma-separated origins `corsFor` in `worker/src/index.js` grants on every Worker response: a matching request `Origin` is echoed as `Access-Control-Allow-Origin` with methods `GET, POST, DELETE, OPTIONS`, headers `Authorization, Content-Type, DPoP` and `Access-Control-Max-Age: 86400`; every response carries `Vary: Origin` |
 | `VAPID_PUBLIC_KEY` | Served by `GET /push/vapid-key`; the `k=` part of the VAPID header |
 | `VAPID_SUBJECT` | The `sub` claim of the VAPID JWT (a `mailto:` address) |
 | `DISPATCH_REPO` | Repository whose workflow the rebuild button dispatches |
@@ -159,7 +159,7 @@ Values are never documented here; only the names and where each lives.
 
 | Item | Requirement |
 | --- | --- |
-| User client `provisioner-catalog` | Granted the `notifications` scope so the bell can read the inbox |
+| User client `provisioner-catalog` | Granted the `notifications` scope so the Notifications row and modal can read the inbox |
 | Machine client for the catalog | Granted the `notifications:write` scope; its credentials are the two `CATALOG_HUB_*` secrets. One machine client per producer service |
 
 ## Troubleshooting
@@ -192,7 +192,7 @@ Values are never documented here; only the names and where each lives.
 
 **Rebuild answers 503 `dispatch not configured`.** `DISPATCH_PAT` is not set on the Worker. A 502 `dispatch failed (<status>)` is GitHub refusing the dispatch with that token.
 
-**The spinner stops with no message.** Polling stopped on a request error or after 90 polls (15 minutes). The status endpoint reports only the workflow's most recent run, so a scheduled run that started in the meantime is what it observes. The completion notification still arrives through the bell and as a toast when the run ends.
+**The spinner stops with no message.** Polling stopped on a request error or after 90 polls (15 minutes). The status endpoint reports only the workflow's most recent run, so a scheduled run that started in the meantime is what it observes. The completion notification still arrives in the Notifications modal and as a toast when the run ends.
 
 ---
 

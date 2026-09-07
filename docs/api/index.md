@@ -10,7 +10,7 @@ permalink: /api/
 
 {: .no_toc }
 
-The STARTcloud Provisioner Catalog exposes two static JSON documents on `https://provisioner-catalog.startcloud.com` — `catalog.json`, the wire contract agents parse, and `health.json`, the UI-only companion — plus a Cloudflare Worker that gates per-organization private catalogs, serves the push-notification and admin routes and answers a health document. Every Worker route also answers under the `/api/` prefix, the one API surface the STARTcloud UI calls on every host; each section below names its alias beside the path. Everything below is the exact shape each endpoint speaks.
+The STARTcloud Provisioner Catalog exposes two static JSON documents on `https://provisioner-catalog.startcloud.com` — `catalog.json`, the wire contract agents parse, and `health.json`, the UI-only companion — plus a Cloudflare Worker that gates per-organization private catalogs, serves the push-notification and admin routes and answers a health document. Every Worker route also answers under the `/api/` prefix, the one API surface the STARTcloud UI calls on every host; the UI release pinned in `package.json` still calls the unprefixed paths, and both keep answering. Each section below names its alias beside the path. Everything below is the exact shape each endpoint speaks.
 
 ## Table of contents
 
@@ -264,11 +264,12 @@ Organizations on the STARTcloud IdP can share private provisioners with their me
 
 ### Bearer token requirements
 
-The Worker authorizes with nothing but the caller's `Authorization: Bearer <jwt>` header:
+The Worker authorizes with nothing but the caller's `Authorization` header and, for a key-bound token, its `DPoP` proof header:
 
 | Check | Requirement |
 | --- | --- |
-| Header | Must be the `Bearer` scheme followed by a space and the token |
+| Header | `Bearer <token>` for a plain token, or `DPoP <token>` plus a `DPoP` proof header for a token carrying `cnf.jkt`. A key-bound token under `Bearer`, or a plain token under `DPoP`, is refused |
+| DPoP proof | Compact JWS, `typ` `dpop+jwt`, `alg` `ES256`, a public P-256 `jwk` in the header; `htm` equals the request method, `htu` the request origin and path, `iat` within 60 seconds of now, `ath` the sha256 of the token, the key's thumbprint equals the token's `cnf.jkt`, and `jti` unseen (replay keys are kept in KV for 300 seconds) |
 | Structure | Compact JWS with exactly three segments |
 | `alg` | `RS256` only |
 | Signature | Verified against the key whose `kid` matches in the IdP's JWKS, discovered from `<ISSUER>/.well-known/openid-configuration` → `jwks_uri`. The JWKS is cached per isolate for one hour and refetched once on an unknown `kid` (key rotation) |
@@ -278,7 +279,7 @@ The Worker authorizes with nothing but the caller's `Authorization: Bearer <jwt>
 | `nbf` | Optional; not yet valid when `nbf - 60s > now` |
 | `organizations` | Array of `{ "uuid": "…" }` objects; the requested org uuid must appear (case-insensitive). Membership is read access; nothing else grants it |
 
-Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations notifications`). Any client holding a token that satisfies the table above can call the endpoints.
+Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`). Any client holding a token that satisfies the table above can call the endpoints.
 
 ### Responses
 
@@ -286,7 +287,7 @@ Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public
 | --- | --- | --- |
 | `200` | The org's `catalog.json` / `health.json` verbatim | Member of the org and the file exists in the store |
 | `401` | `{ "error": "missing bearer token" }` + `WWW-Authenticate: Bearer` | No `Authorization: Bearer` header |
-| `401` | `{ "error": "invalid token: <reason>" }` + `WWW-Authenticate: Bearer error="invalid_token"` | Verification failed. Reasons: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid` |
+| `401` | `{ "error": "invalid token: <reason>" }` + `WWW-Authenticate: Bearer error="invalid_token"` | Verification failed. Reasons: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
 | `403` | `{ "error": "not a member of this organization" }` | Valid token, org uuid absent from `organizations` |
 | `404` | `{ "error": "no catalog published for this organization" }` / `{ "error": "no health published for this organization" }` | Member, but the store has no file for the org yet |
 | `404` | `{ "error": "not found" }` | Path does not match a Worker route |
@@ -305,7 +306,7 @@ The Worker always sets `Vary: Origin`. When the request `Origin` is in `ALLOWED_
 | --- | --- |
 | `Access-Control-Allow-Origin` | The request origin, echoed |
 | `Access-Control-Allow-Methods` | `GET, POST, DELETE, OPTIONS` |
-| `Access-Control-Allow-Headers` | `Authorization, Content-Type` |
+| `Access-Control-Allow-Headers` | `Authorization, Content-Type, DPoP` |
 | `Access-Control-Max-Age` | `86400` |
 
 `OPTIONS` on any Worker route returns `204` with those headers and no body. Production is same-origin and needs none of this; the entries exist for the local dev server.
@@ -341,7 +342,8 @@ Bearer JWT (same verification as private catalogs; no org membership needed). Th
 | Status | Body |
 | --- | --- |
 | `204` | empty — stored |
-| `400` | `{ "error": "invalid subscription" }` — body is not JSON or fails the shape check |
+| `400` | `application/problem+json` `{ "type": "https://auth.startcloud.com/probs/bad-request", "title": "The request could not be read.", "status": 400 }` — body is not JSON |
+| `422` | `application/problem+json` `{ "type": "https://auth.startcloud.com/probs/validation", "title": "The request did not pass validation.", "status": 422, "errors": [ { "pointer", "rule", "params", "detail" } ] }` — one entry per failing member: `/endpoint` (`required`, `type`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`) |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
 ### DELETE /push/subscriptions?endpoint=… (also /api/push/subscriptions)
@@ -351,7 +353,7 @@ Bearer JWT. Deletes the record for the given endpoint.
 | Status | Body |
 | --- | --- |
 | `204` | empty — deleted (or never existed) |
-| `400` | `{ "error": "endpoint required" }` |
+| `400` | `application/problem+json` `bad-request` as above — no `endpoint` query parameter |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
 ### POST /push/dispatch (also /api/push/dispatch)
@@ -443,7 +445,8 @@ Bearer JWT. Body `{ "id": "<organization>/<name>" }`; the id must match `^[A-Za-
 | Status | Body |
 | --- | --- |
 | `204` | empty — watched |
-| `400` | `{ "error": "invalid watch" }` |
+| `400` | `application/problem+json` `bad-request` as for `/push/subscriptions` — body is not JSON |
+| `422` | `application/problem+json` `validation` with `errors[]` — `/id` (`required`, `type`, `pattern` `watchId`) |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
 ### DELETE /watches?id=… (also /api/watches)
@@ -453,7 +456,7 @@ Bearer JWT. Removes the id from the caller's watches; the record disappears with
 | Status | Body |
 | --- | --- |
 | `204` | empty — unwatched (or never watched) |
-| `400` | `{ "error": "id required" }` |
+| `400` | `application/problem+json` `bad-request` — no `id` query parameter |
 | `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
 
 ### GET /watches/watchers?item=… (also /api/watches/watchers)
@@ -533,7 +536,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
   "auth": ["idp"],
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
-  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
 }
@@ -550,7 +553,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
 | `links` | `docs` and `contact` for the footer and menus |
 | `ticket` | The support ticket constants (`baseUrl`, `reqType`, `fallbackCustomerId`); BoxVault answers `null` because it serves them at `/api/config/ticket` |
 
-Feature tokens across every host and what each gates; the catalog answers the six marked:
+Feature tokens across every host and what each gates; the catalog answers the seven marked:
 
 | Token | Surface | Catalog |
 | --- | --- | --- |
@@ -567,13 +570,14 @@ Feature tokens across every host and what each gates; the catalog answers the si
 | `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
 | `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
 | `notifications` | the Notifications menu row (still needs the scope) | yes |
-| `health` | the footer health heart from `/api/health` | yes |
+| `health` | the footer health heart from `/api/health` (still needs `footer`) | yes |
+| `footer` | the footer itself | yes |
 
 ---
 
 ## Notification hub production
 
-Beyond web push, the data job produces inbox notifications on the STARTcloud IdP's notification hub. The web UI's bell reads that inbox from the IdP (`/api/notifications`, `/api/notifications/unread-count`, read/read-all), not from this catalog.
+Beyond web push, the data job produces inbox notifications on the STARTcloud IdP's notification hub. The web UI's Notifications row and modal read that inbox from the IdP (`/api/notifications`, `/api/notifications/unread-count`, read/read-all), not from this catalog.
 
 ### Authentication
 
@@ -626,7 +630,7 @@ A first publish (no baseline document yet) sends nothing. Push dispatch goes to 
 
 ## Error handling
 
-The static documents are plain GitHub Pages files — a missing document is a Pages `404`. Every Worker error is a JSON object with a single `error` string, `Content-Type: application/json; charset=utf-8` and `Cache-Control: private, no-store`:
+The static documents are plain GitHub Pages files — a missing document is a Pages `404`. Every Worker error is a JSON object with a single `error` string, `Content-Type: application/json; charset=utf-8` and `Cache-Control: private, no-store`, except a refused write on `/push/subscriptions` or `/watches` (and their `/api/` twins), which is `application/problem+json` (RFC 9457) with `type`, `title`, `status` and, on `422`, `errors[]`:
 
 ```json
 {
@@ -638,8 +642,9 @@ The static documents are plain GitHub Pages files — a missing document is a Pa
 | --- | --- |
 | `200` | Success with a JSON body |
 | `202` | Rebuild dispatch accepted |
-| `204` | Success with no body (`OPTIONS`, subscription stored or deleted) |
-| `400` | Malformed body or missing query parameter |
+| `204` | Success with no body (`OPTIONS`, subscription stored or deleted, watch added or removed) |
+| `400` | `bad-request` problem: a body that is not JSON or a missing query parameter on a write route; `{ "error": "invalid body" }` on `/push/dispatch`; `{ "error": "item required" }` on `/watches/watchers` |
+| `422` | `validation` problem with one `errors[]` entry per failing member |
 | `401` | Missing or invalid Bearer JWT, or a bad `X-Dispatch-Key` |
 | `403` | Valid token without the required org membership or `ROLE_ADMIN` |
 | `404` | Unknown route (including any unknown `/api/…` path), or no catalog/health file published for the org or on Pages |

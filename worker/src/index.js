@@ -465,9 +465,9 @@ const subscriptionErrors = body => {
     if (!endpoint.startsWith('https://')) {
       errors.push({
         pointer: '/endpoint',
-        rule: 'pattern',
-        params: { pattern: 'https' },
-        detail: 'endpoint must match https',
+        rule: 'format',
+        params: { format: 'uri' },
+        detail: 'endpoint must be an https uri',
       });
     }
     if (endpoint.length > 512) {
@@ -919,7 +919,15 @@ const handleStatus = async (request, env, cors) => {
           storagePrefix: 'catalog',
         },
         collections: ['provisioners'],
-        features: ['private-catalogs', 'watches', 'deploy', 'rebuild', 'notifications', 'health'],
+        features: [
+          'private-catalogs',
+          'watches',
+          'deploy',
+          'rebuild',
+          'notifications',
+          'health',
+          'footer',
+        ],
         links: { docs: '/docs/', contact: 'https://startcloud.com/#contact' },
         ticket: {
           baseUrl: 'https://xd.prominic.net/app/apprequest.nsf/router?openagent',
@@ -1061,8 +1069,16 @@ const isPageRequest = (request, pathname) =>
   !/\.[a-z0-9]+$/i.test(pathname) &&
   (request.headers.get('Accept') || '').includes('text/html');
 
+const PUSH_WORKER_PATH = '/notification-sw.js';
+
 const handleSite = async (request, pathname) => {
   const upstream = await fetch(request);
+  if (pathname === PUSH_WORKER_PATH) {
+    const headers = new Headers(upstream.headers);
+    headers.set('Cache-Control', 'no-cache');
+    headers.set('Service-Worker-Allowed', '/push/');
+    return new Response(upstream.body, { status: upstream.status, headers });
+  }
   if (upstream.status !== 404 || !isPageRequest(request, pathname)) {
     return upstream;
   }

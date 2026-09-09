@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.71](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.70...provisioner-catalog-v0.0.71) (2026-09-09)
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.10.1 ([#92](https://github.com/STARTcloud/provisioner-catalog/issues/92)) ([296504c](https://github.com/STARTcloud/provisioner-catalog/commit/296504c20967d6b78df9de58bb790218e8d38bd8))
+* bump startcloud-ui to v0.11.0 ([#94](https://github.com/STARTcloud/provisioner-catalog/issues/94)) ([c25f1ec](https://github.com/STARTcloud/provisioner-catalog/commit/c25f1ec99a3030c9123e565e9371bdd3c075d401))
+* problem bodies and nonBlank on every Worker refusal, prettier origin ignore list. ([5791a32](https://github.com/STARTcloud/provisioner-catalog/commit/5791a32ba5169ba7dd032ba2bd3bb9dcfa9e955d))
+* small items ([021a2a1](https://github.com/STARTcloud/provisioner-catalog/commit/021a2a164a7fb3f8965966640f51e2607a2c3e5b))
+
 ## [0.0.70](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.69...provisioner-catalog-v0.0.70) (2026-09-07)
 
 

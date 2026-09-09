@@ -14,7 +14,8 @@ removed.yml
 docs/
 _sass/
 assets/
-*.md
+CHANGELOG.md
+LICENSE.md
 .git/
 .gitignore
 .prettierignore

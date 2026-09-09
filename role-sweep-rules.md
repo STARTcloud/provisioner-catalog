@@ -93,22 +93,19 @@ the top and a "Step 2 - Final" near the bottom — remove ALL of them). The bloc
 looks like this and must go entirely:
 
 ```yaml
--
-  name: "Managing progress for {{ ansible_role_name }}"
+- name: 'Managing progress for {{ ansible_role_name }}'
   when: count_progress | default(false)
   run_once: true
   block:
-    -
-      name: "Incrementing global progress step counter for {{ ansible_role_name }}"
+    - name: 'Incrementing global progress step counter for {{ ansible_role_name }}'
       ansible.builtin.set_fact:
-        global_current_progress_step: "{{ global_current_progress_step | default(0) | int + 1 }}"
-    -
-      name: "Including progress reporting task for {{ ansible_role_name }}"
+        global_current_progress_step: '{{ global_current_progress_step | default(0) | int + 1 }}'
+    - name: 'Including progress reporting task for {{ ansible_role_name }}'
       ansible.builtin.include_role:
         name: startcloud.startcloud_roles.progress
       vars:
         _progress_role_is_setup_run: false
-        current_progress_step: "{{ global_current_progress_step | default(0) }}"
+        current_progress_step: '{{ global_current_progress_step | default(0) }}'
         progress_description: "{{ progress_role_description | default('Processing ' + ansible_role_name) }}"
 ```
 
@@ -150,7 +147,7 @@ galaxy_info:
     #   - name: Windows    (versions: ['2022'])   -> only if windows.yml/win-* exist
   galaxy_tags:
     - <2-5 lowercase single-word tags describing what the role does>
-dependencies: []   # SEE RULE BELOW — PRESERVE the role's existing dependencies verbatim
+dependencies: [] # SEE RULE BELOW — PRESERVE the role's existing dependencies verbatim
 collections:
   - startcloud.startcloud_roles
 ```
@@ -206,10 +203,10 @@ Type inference from the default value:
 `run_tasks` entry is always:
 
 ```yaml
-      run_tasks:
-        type: bool
-        default: true
-        description: Master gate — when false the role loads its vars but runs no tasks.
+run_tasks:
+  type: bool
+  default: true
+  description: Master gate — when false the role loads its vars but runs no tasks.
 ```
 
 ---

@@ -71,24 +71,57 @@ const jsonResponse = (status, body, corsHeaders) =>
 const PROBLEM_TYPE_BASE = 'https://auth.startcloud.com/probs/';
 const VALIDATION_TITLE = 'The request did not pass validation.';
 const BAD_REQUEST_TITLE = 'The request could not be read.';
+const AUTHENTICATION_TITLE = 'The request was not authenticated.';
+const FORBIDDEN_TITLE = 'The request is not permitted.';
+const NOT_FOUND_TITLE = 'The resource was not found.';
+const NON_BLANK_RE = /\S/;
 
-const problemResponse = (status, { type, title, errors }, corsHeaders) =>
-  new Response(JSON.stringify({ type: `${PROBLEM_TYPE_BASE}${type}`, title, status, errors }), {
-    status,
-    headers: {
-      'Content-Type': 'application/problem+json',
-      'Cache-Control': 'private, no-store',
-      ...corsHeaders,
-    },
-  });
+const problemResponse = (status, { type, title, detail, errors }, corsHeaders) =>
+  new Response(
+    JSON.stringify({ type: `${PROBLEM_TYPE_BASE}${type}`, title, status, detail, errors }),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/problem+json',
+        'Cache-Control': 'private, no-store',
+        ...corsHeaders,
+      },
+    }
+  );
+
+const badRequestProblem = (detail, corsHeaders) =>
+  problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE, detail }, corsHeaders);
+
+const authenticationProblem = (detail, corsHeaders) =>
+  problemResponse(
+    401,
+    { type: 'authentication', title: AUTHENTICATION_TITLE, detail },
+    corsHeaders
+  );
+
+const forbiddenProblem = (detail, corsHeaders) =>
+  problemResponse(403, { type: 'forbidden', title: FORBIDDEN_TITLE, detail }, corsHeaders);
+
+const notFoundProblem = (detail, corsHeaders) =>
+  problemResponse(404, { type: 'not-found', title: NOT_FOUND_TITLE, detail }, corsHeaders);
 
 const stringErrors = (pointer, value, name) => {
-  if (value === undefined) {
+  if (value === undefined || value === null) {
     return [{ pointer, rule: 'required', params: {}, detail: `${name} is required` }];
   }
   if (typeof value !== 'string') {
     return [
       { pointer, rule: 'type', params: { type: 'string' }, detail: `${name} must be a string` },
+    ];
+  }
+  if (!NON_BLANK_RE.test(value)) {
+    return [
+      {
+        pointer,
+        rule: 'pattern',
+        params: { pattern: 'nonBlank' },
+        detail: `${name} must not be blank`,
+      },
     ];
   }
   return [];
@@ -312,18 +345,13 @@ const handlePrivate = async (request, env, cors, match) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(
-      401,
-      { error: `invalid token: ${verifyError.message}` },
-      { ...cors, 'WWW-Authenticate': 'Bearer error="invalid_token"' }
-    );
+    return authenticationProblem(`invalid token: ${verifyError.message}`, {
+      ...cors,
+      'WWW-Authenticate': 'Bearer error="invalid_token"',
+    });
   }
   if (!payload) {
-    return jsonResponse(
-      401,
-      { error: 'missing bearer token' },
-      { ...cors, 'WWW-Authenticate': 'Bearer' }
-    );
+    return authenticationProblem('missing bearer token', { ...cors, 'WWW-Authenticate': 'Bearer' });
   }
 
   const organizations = Array.isArray(payload.organizations) ? payload.organizations : [];
@@ -332,12 +360,12 @@ const handlePrivate = async (request, env, cors, match) => {
   );
   if (!member) {
     // Membership = read access; nothing else grants it. Never redirect.
-    return jsonResponse(403, { error: 'not a member of this organization' }, cors);
+    return forbiddenProblem('not a member of this organization', cors);
   }
 
   const upstream = await fetchOrgFile(uuid, file, env);
   if (upstream.status === 404) {
-    return jsonResponse(404, { error: `no ${file} published for this organization` }, cors);
+    return notFoundProblem(`no ${file} published for this organization`, cors);
   }
   if (!upstream.ok) {
     return jsonResponse(502, { error: `store fetch failed (${upstream.status})` }, cors);
@@ -358,7 +386,7 @@ const handlePublic = async (request, file, cors) => {
     headers: { Accept: 'application/json' },
   });
   if (upstream.status === 404) {
-    return jsonResponse(404, { error: `no ${file} published` }, cors);
+    return notFoundProblem(`no ${file} published`, cors);
   }
   if (!upstream.ok) {
     return jsonResponse(502, { error: `pages fetch failed (${upstream.status})` }, cors);
@@ -379,14 +407,14 @@ const handleRebuild = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   const authorities = Array.isArray(payload.authorities) ? payload.authorities : [];
   if (!authorities.includes('ROLE_ADMIN')) {
-    return jsonResponse(403, { error: 'admin role required' }, cors);
+    return forbiddenProblem('admin role required', cors);
   }
   if (!env.DISPATCH_PAT) {
     return jsonResponse(503, { error: 'dispatch not configured' }, cors);
@@ -420,14 +448,14 @@ const handleRebuildStatus = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   const authorities = Array.isArray(payload.authorities) ? payload.authorities : [];
   if (!authorities.includes('ROLE_ADMIN')) {
-    return jsonResponse(403, { error: 'admin role required' }, cors);
+    return forbiddenProblem('admin role required', cors);
   }
   if (!env.DISPATCH_PAT) {
     return jsonResponse(503, { error: 'dispatch not configured' }, cors);
@@ -461,7 +489,7 @@ const subscriptionKey = async endpoint => {
 const subscriptionErrors = body => {
   const endpoint = body?.endpoint;
   const errors = stringErrors('/endpoint', endpoint, 'endpoint');
-  if (typeof endpoint === 'string') {
+  if (errors.length === 0) {
     if (!endpoint.startsWith('https://')) {
       errors.push({
         pointer: '/endpoint',
@@ -489,16 +517,16 @@ const handleSubscribe = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   let body;
   try {
     body = await request.json();
   } catch {
-    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
+    return badRequestProblem('body is not JSON', cors);
   }
   const errors = subscriptionErrors(body);
   if (errors.length > 0) {
@@ -521,14 +549,14 @@ const handleUnsubscribe = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   const endpoint = new URL(request.url).searchParams.get('endpoint') || '';
   if (!endpoint) {
-    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
+    return badRequestProblem('endpoint query parameter required', cors);
   }
   await env.SUBS.delete(await subscriptionKey(endpoint));
   return new Response(null, { status: 204, headers: cors });
@@ -705,7 +733,7 @@ const deliverTo = async (targets, payload, env) => {
 const handleDispatch = async (request, env, cors) => {
   const dispatchKey = request.headers.get('X-Dispatch-Key') || '';
   if (!env.DISPATCH_KEY || dispatchKey !== env.DISPATCH_KEY) {
-    return jsonResponse(401, { error: 'bad dispatch key' }, cors);
+    return authenticationProblem('bad dispatch key', cors);
   }
   if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
     return jsonResponse(503, { error: 'push not configured' }, cors);
@@ -714,7 +742,7 @@ const handleDispatch = async (request, env, cors) => {
   try {
     body = await request.json();
   } catch {
-    return jsonResponse(400, { error: 'invalid body' }, cors);
+    return badRequestProblem('body is not JSON', cors);
   }
   const events = Array.isArray(body?.events) ? body.events : [];
   if (events.length === 0) {
@@ -737,10 +765,10 @@ const handleTestToast = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
     return jsonResponse(503, { error: 'push not configured' }, cors);
@@ -786,10 +814,10 @@ const handleTestChannel = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   if (!env.HUB_CLIENT_ID || !env.HUB_CLIENT_SECRET) {
     return jsonResponse(503, { error: 'hub not configured' }, cors);
@@ -948,7 +976,7 @@ const watchKey = payload => `${WATCH_PREFIX}${String(payload.UUID || payload.sub
 const watchErrors = body => {
   const id = body?.id;
   const errors = stringErrors('/id', id, 'id');
-  if (typeof id === 'string' && !WATCH_ID_RE.test(id)) {
+  if (errors.length === 0 && !WATCH_ID_RE.test(id)) {
     errors.push({
       pointer: '/id',
       rule: 'pattern',
@@ -969,10 +997,10 @@ const handleWatchList = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   return jsonResponse(200, { items: await readWatches(env, watchKey(payload)) }, cors);
 };
@@ -982,16 +1010,16 @@ const handleWatch = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   let body;
   try {
     body = await request.json();
   } catch {
-    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
+    return badRequestProblem('body is not JSON', cors);
   }
   const errors = watchErrors(body);
   if (errors.length > 0) {
@@ -1012,14 +1040,14 @@ const handleUnwatch = async (request, env, cors) => {
   try {
     payload = await authPayload(request, env);
   } catch (verifyError) {
-    return jsonResponse(401, { error: `invalid token: ${verifyError.message}` }, cors);
+    return authenticationProblem(`invalid token: ${verifyError.message}`, cors);
   }
   if (!payload) {
-    return jsonResponse(401, { error: 'missing bearer token' }, cors);
+    return authenticationProblem('missing bearer token', cors);
   }
   const id = new URL(request.url).searchParams.get('id') || '';
   if (!id) {
-    return problemResponse(400, { type: 'bad-request', title: BAD_REQUEST_TITLE }, cors);
+    return badRequestProblem('id query parameter required', cors);
   }
   const key = watchKey(payload);
   const items = (await readWatches(env, key)).filter(entry => entry !== id);
@@ -1050,11 +1078,11 @@ const listWatchers = async (env, item) => {
 const handleWatchers = async (request, env, cors) => {
   const dispatchKey = request.headers.get('X-Dispatch-Key') || '';
   if (!env.DISPATCH_KEY || dispatchKey !== env.DISPATCH_KEY) {
-    return jsonResponse(401, { error: 'bad dispatch key' }, cors);
+    return authenticationProblem('bad dispatch key', cors);
   }
   const item = new URL(request.url).searchParams.get('item') || '';
   if (!WATCH_ID_RE.test(item)) {
-    return jsonResponse(400, { error: 'item required' }, cors);
+    return badRequestProblem('item query parameter must match watchId', cors);
   }
   return jsonResponse(200, { uuids: await listWatchers(env, item) }, cors);
 };
@@ -1159,7 +1187,7 @@ export default {
     const match = PATH_RE.exec(pathname) || API_PATH_RE.exec(pathname);
     if (!match) {
       if (WORKER_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
-        return jsonResponse(404, { error: 'not found' }, cors);
+        return notFoundProblem('not found', cors);
       }
       return handleSite(request, pathname);
     }

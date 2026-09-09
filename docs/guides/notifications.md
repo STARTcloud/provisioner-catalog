@@ -84,13 +84,13 @@ Toasts are opt-in per browser through the modal's footer switch (`src/components
 
 **Disable.** Switching off calls `DELETE /push/subscriptions?endpoint=<endpoint>` with the user's token, then unsubscribes in the browser and clears the flag. Signing out does not unsubscribe; switch off first if the browser should stop receiving toasts.
 
-**Refused writes.** The Worker's write routes (and their `/api/` twins) refuse with `application/problem+json` (RFC 9457, the Universal Validation Contract): `type` under `https://auth.startcloud.com/probs/`, `title`, `status` and, on 422, `errors[]` of `{ pointer, rule, params, detail }`, the body the STARTcloud UI reads as `ApiError.fieldErrors`. Every other answer (401, 403, 404, 502, 503, the 204s) is unchanged.
+**Refused writes.** The Worker's write routes (and their `/api/` twins) refuse with `application/problem+json` (RFC 9457, the Universal Validation Contract): `type` under `https://auth.startcloud.com/probs/`, `title`, `status` and, on 422, `errors[]` of `{ pointer, rule, params, detail }`, the body the STARTcloud UI reads as `ApiError.fieldErrors`. A 401, 403 or 404 is a problem too (`authentication`, `forbidden`, `not-found`, with a `detail` for logs); 502, 503 and the 204s are unchanged.
 
 | Route | 400 `bad-request` | 422 `validation` |
 | --- | --- | --- |
-| `POST /push/subscriptions` | the body is not JSON | one entry per failing member: `/endpoint` (`required`, `type`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`) |
+| `POST /push/subscriptions` | the body is not JSON | one entry per failing member: `/endpoint` (`required`, `type`, `pattern` `nonBlank`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`, `pattern` `nonBlank`) |
 | `DELETE /push/subscriptions` | no `endpoint` query parameter | never |
-| `POST /watches` | the body is not JSON | `/id` (`required`, `type`, `pattern` `watchId`) |
+| `POST /watches` | the body is not JSON | `/id` (`required`, `type`, `pattern` `nonBlank`, `pattern` `watchId`) |
 | `DELETE /watches` | no `id` query parameter | never |
 
 **Service worker behaviour.**

@@ -32,7 +32,7 @@ The public path is static: GitHub Actions rebuilds the documents from the admitt
 
 Both documents carry `format_version`, a constant `1`. It is the contract agents gate on and is separate from this repository's own release version; it bumps only on a breaking change to the document shape.
 
-The Worker answers the same two documents at `GET /api/catalog` and `GET /api/catalog/health`, the paths the web UI calls: each is a same-origin fetch of `/catalog.json` or `/health.json` from Pages, returned verbatim with the Worker's JSON headers (`Content-Type: application/json; charset=utf-8`, `Cache-Control: private, no-store`) and CORS. A document Pages lacks answers `404 { "error": "no catalog published" }` / `{ "error": "no health published" }`; any other Pages failure `502 { "error": "pages fetch failed (<status>)" }`. Agents keep reading `/catalog.json` directly.
+The Worker answers the same two documents at `GET /api/catalog` and `GET /api/catalog/health`, the paths the web UI calls: each is a same-origin fetch of `/catalog.json` or `/health.json` from Pages, returned verbatim with the Worker's JSON headers (`Content-Type: application/json; charset=utf-8`, `Cache-Control: private, no-store`) and CORS. A document Pages lacks answers a `404` `not-found` problem (detail `no catalog published` / `no health published`); any other Pages failure `502 { "error": "pages fetch failed (<status>)" }`. Agents keep reading `/catalog.json` directly.
 
 Published JSON Schemas (draft 2020-12):
 
@@ -286,15 +286,15 @@ Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public
 | Status | Body | When |
 | --- | --- | --- |
 | `200` | The org's `catalog.json` / `health.json` verbatim | Member of the org and the file exists in the store |
-| `401` | `{ "error": "missing bearer token" }` + `WWW-Authenticate: Bearer` | No `Authorization: Bearer` header |
-| `401` | `{ "error": "invalid token: <reason>" }` + `WWW-Authenticate: Bearer error="invalid_token"` | Verification failed. Reasons: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
-| `403` | `{ "error": "not a member of this organization" }` | Valid token, org uuid absent from `organizations` |
-| `404` | `{ "error": "no catalog published for this organization" }` / `{ "error": "no health published for this organization" }` | Member, but the store has no file for the org yet |
-| `404` | `{ "error": "not found" }` | Path does not match a Worker route |
+| `401` | `authentication` problem, detail `missing bearer token`, + `WWW-Authenticate: Bearer` | No `Authorization: Bearer` header |
+| `401` | `authentication` problem, detail `invalid token: <reason>`, + `WWW-Authenticate: Bearer error="invalid_token"` | Verification failed. Reasons: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
+| `403` | `forbidden` problem, detail `not a member of this organization` | Valid token, org uuid absent from `organizations` |
+| `404` | `not-found` problem, detail `no catalog published for this organization` / `no health published for this organization` | Member, but the store has no file for the org yet |
+| `404` | `not-found` problem, detail `not found` | Path does not match a Worker route |
 | `405` | `{ "error": "method not allowed" }` | `/private/…` or `/api/private/…` path with a non-GET method |
 | `502` | `{ "error": "store fetch failed (<status>)" }` | The private store returned a non-2xx, non-404 status |
 
-Every response carries `Content-Type: application/json; charset=utf-8` and `Cache-Control: private, no-store`. Errors never redirect.
+A problem is `application/problem+json` (RFC 9457): `{ "type": "https://auth.startcloud.com/probs/<type>", "title": "…", "status": <status>, "detail": "…" }`, the `detail` being the sentence the table names. Every other response carries `Content-Type: application/json; charset=utf-8`; all of them carry `Cache-Control: private, no-store`. Errors never redirect.
 
 Artifact URLs inside a private catalog point at private release assets. Consumers need their own GitHub access to download them, exactly as they need it to clone the repositories.
 
@@ -343,8 +343,8 @@ Bearer JWT (same verification as private catalogs; no org membership needed). Th
 | --- | --- |
 | `204` | empty — stored |
 | `400` | `application/problem+json` `{ "type": "https://auth.startcloud.com/probs/bad-request", "title": "The request could not be read.", "status": 400 }` — body is not JSON |
-| `422` | `application/problem+json` `{ "type": "https://auth.startcloud.com/probs/validation", "title": "The request did not pass validation.", "status": 422, "errors": [ { "pointer", "rule", "params", "detail" } ] }` — one entry per failing member: `/endpoint` (`required`, `type`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`) |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `422` | `application/problem+json` `{ "type": "https://auth.startcloud.com/probs/validation", "title": "The request did not pass validation.", "status": 422, "errors": [ { "pointer", "rule", "params", "detail" } ] }` — one entry per failing member: `/endpoint` (`required`, `type`, `pattern` `nonBlank`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`, `pattern` `nonBlank`); `required` means present, a blank string is `nonBlank`, and every `params.pattern` is a `$defs` name of the Universal Validation Contract |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 
 ### DELETE /push/subscriptions?endpoint=… (also /api/push/subscriptions)
 
@@ -354,7 +354,7 @@ Bearer JWT. Deletes the record for the given endpoint.
 | --- | --- |
 | `204` | empty — deleted (or never existed) |
 | `400` | `application/problem+json` `bad-request` as above — no `endpoint` query parameter |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 
 ### POST /push/dispatch (also /api/push/dispatch)
 
@@ -404,8 +404,8 @@ Each target receives an `aes128gcm`-encrypted payload `{ "title", "body", "tag",
 | Status | Body |
 | --- | --- |
 | `200` | `{ "delivered": <count> }` — `0` when `events` is empty or absent |
-| `400` | `{ "error": "invalid body" }` — body is not JSON |
-| `401` | `{ "error": "bad dispatch key" }` — header missing, wrong, or the Worker has no `DISPATCH_KEY` |
+| `400` | `bad-request` problem, detail `body is not JSON` |
+| `401` | `authentication` problem, detail `bad dispatch key` — header missing, wrong, or the Worker has no `DISPATCH_KEY` |
 | `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
 
 ### POST /push/test-toast (also /api/push/test-toast)
@@ -415,7 +415,7 @@ Bearer JWT. Sends one toast, `Provisioner Catalog test`, to every subscription s
 | Status | Body |
 | --- | --- |
 | `200` | `{ "delivered": <count> }` — `0` when the caller has no live subscription |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 | `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
 
 ### POST /push/test-channel (also /api/push/test-channel)
@@ -425,7 +425,7 @@ Bearer JWT. Writes one Notification Channel Notification addressed to the caller
 | Status | Body |
 | --- | --- |
 | `200` | `{ "delivered": 1 }` |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 | `502` | `{ "error": "OIDC discovery failed (<status>)" }` / `{ "error": "hub token failed (<status>)" }` / `{ "error": "hub write failed (<status>)" }` |
 | `503` | `{ "error": "hub not configured" }` — the Worker has no hub client credentials |
 
@@ -436,7 +436,7 @@ Bearer JWT (same verification as private catalogs). The caller's watched provisi
 | Status | Body |
 | --- | --- |
 | `200` | `{ "items": ["STARTcloud/startcloud_generic_provisioner", …] }` |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 
 ### POST /watches (also /api/watches)
 
@@ -446,8 +446,8 @@ Bearer JWT. Body `{ "id": "<organization>/<name>" }`; the id must match `^[A-Za-
 | --- | --- |
 | `204` | empty — watched |
 | `400` | `application/problem+json` `bad-request` as for `/push/subscriptions` — body is not JSON |
-| `422` | `application/problem+json` `validation` with `errors[]` — `/id` (`required`, `type`, `pattern` `watchId`) |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `422` | `application/problem+json` `validation` with `errors[]` — `/id` (`required`, `type`, `pattern` `nonBlank`, `pattern` `watchId`) |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 
 ### DELETE /watches?id=… (also /api/watches)
 
@@ -457,7 +457,7 @@ Bearer JWT. Removes the id from the caller's watches; the record disappears with
 | --- | --- |
 | `204` | empty — unwatched (or never watched) |
 | `400` | `application/problem+json` `bad-request` — no `id` query parameter |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 
 ### GET /watches/watchers?item=… (also /api/watches/watchers)
 
@@ -466,8 +466,8 @@ Authenticated by the `X-Dispatch-Key` header like `/push/dispatch`; the data job
 | Status | Body |
 | --- | --- |
 | `200` | `{ "uuids": ["<user uuid>", …] }` |
-| `400` | `{ "error": "item required" }` — missing or malformed item id |
-| `401` | `{ "error": "bad dispatch key" }` |
+| `400` | `bad-request` problem, detail `item query parameter must match watchId` — missing or malformed item id |
+| `401` | `authentication` problem, detail `bad dispatch key` |
 
 ### POST /admin/rebuild (also /api/admin/rebuild)
 
@@ -476,8 +476,8 @@ Bearer JWT whose `authorities` claim contains `ROLE_ADMIN`. Fires a `workflow_di
 | Status | Body |
 | --- | --- |
 | `202` | `{ "status": "queued" }` — GitHub accepted the dispatch |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
-| `403` | `{ "error": "admin role required" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
+| `403` | `forbidden` problem, detail `admin role required` |
 | `502` | `{ "error": "dispatch failed (<status>)" }` — GitHub answered anything but `204` |
 | `503` | `{ "error": "dispatch not configured" }` — the Worker has no `DISPATCH_PAT` |
 
@@ -488,8 +488,8 @@ Same auth as `/admin/rebuild`. Reads the single most recent run of the same work
 | Status | Body |
 | --- | --- |
 | `200` | `{ "status": "<run status>", "conclusion": "<run conclusion>" }` — `status` is GitHub's run status (`queued`, `in_progress`, `completed`, …) or `unknown` when no run exists; `conclusion` is GitHub's (`success`, `failure`, …) or `null` while the run is not complete |
-| `401` | `{ "error": "missing bearer token" }` / `{ "error": "invalid token: <reason>" }` |
-| `403` | `{ "error": "admin role required" }` |
+| `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
+| `403` | `forbidden` problem, detail `admin role required` |
 | `502` | `{ "error": "status fetch failed (<status>)" }` |
 | `503` | `{ "error": "dispatch not configured" }` |
 
@@ -630,24 +630,27 @@ A first publish (no baseline document yet) sends nothing. Push dispatch goes to 
 
 ## Error handling
 
-The static documents are plain GitHub Pages files — a missing document is a Pages `404`. Every Worker error is a JSON object with a single `error` string, `Content-Type: application/json; charset=utf-8` and `Cache-Control: private, no-store`, except a refused write on `/push/subscriptions` or `/watches` (and their `/api/` twins), which is `application/problem+json` (RFC 9457) with `type`, `title`, `status` and, on `422`, `errors[]`:
+The static documents are plain GitHub Pages files — a missing document is a Pages `404`. Every Worker `400`, `401`, `403`, `404` and `422` is `application/problem+json` (RFC 9457) with `type` under `https://auth.startcloud.com/probs/`, `title`, `status`, a `detail` sentence for logs and, on `422`, `errors[]`; the STARTcloud UI draws the translation of the `type` and never the `detail`. A `405`, `502` or `503`, statuses the estate's problem registry names no `type` for, stays a JSON object with a single `error` string. Every error carries `Cache-Control: private, no-store`:
 
 ```json
 {
-  "error": "not a member of this organization"
+  "type": "https://auth.startcloud.com/probs/forbidden",
+  "title": "The request is not permitted.",
+  "status": 403,
+  "detail": "not a member of this organization"
 }
 ```
 
-| Status | Meaning |
-| --- | --- |
-| `200` | Success with a JSON body |
-| `202` | Rebuild dispatch accepted |
-| `204` | Success with no body (`OPTIONS`, subscription stored or deleted, watch added or removed) |
-| `400` | `bad-request` problem: a body that is not JSON or a missing query parameter on a write route; `{ "error": "invalid body" }` on `/push/dispatch`; `{ "error": "item required" }` on `/watches/watchers` |
-| `422` | `validation` problem with one `errors[]` entry per failing member |
-| `401` | Missing or invalid Bearer JWT, or a bad `X-Dispatch-Key` |
-| `403` | Valid token without the required org membership or `ROLE_ADMIN` |
-| `404` | Unknown route (including any unknown `/api/…` path), or no catalog/health file published for the org or on Pages |
-| `405` | Non-GET method on a `/private/…` or `/api/private/…` path |
-| `502` | The private store, Pages or GitHub Actions API answered with an unexpected status |
-| `503` | The Worker lacks the secret the route needs (VAPID keys, `DISPATCH_PAT`) |
+| Status | Type | Meaning |
+| --- | --- | --- |
+| `200` | | Success with a JSON body |
+| `202` | | Rebuild dispatch accepted |
+| `204` | | Success with no body (`OPTIONS`, subscription stored or deleted, watch added or removed) |
+| `400` | `bad-request` | A body that is not JSON, a missing query parameter on a write route, or a malformed `item` on `/watches/watchers` |
+| `422` | `validation` | One `errors[]` entry per failing member |
+| `401` | `authentication` | Missing or invalid Bearer JWT, or a bad `X-Dispatch-Key` |
+| `403` | `forbidden` | Valid token without the required org membership or `ROLE_ADMIN` |
+| `404` | `not-found` | Unknown route (including any unknown `/api/…` path), or no catalog/health file published for the org or on Pages |
+| `405` | | Non-GET method on a `/private/…` or `/api/private/…` path |
+| `502` | | The private store, Pages or GitHub Actions API answered with an unexpected status |
+| `503` | | The Worker lacks the secret the route needs (VAPID keys, `DISPATCH_PAT`) |

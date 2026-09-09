@@ -117,15 +117,15 @@ The token's `organizations` claim is an array of objects with a `uuid`. The requ
 | Status | Body | Extra headers | Meaning |
 | --- | --- | --- | --- |
 | `200` | the org's `catalog.json` or `health.json` | `Cache-Control: private, no-store` | member, file published |
-| `401` | `{"error":"missing bearer token"}` | `WWW-Authenticate: Bearer` | no `Bearer` authorization header |
-| `401` | `{"error":"invalid token: <reason>"}` | `WWW-Authenticate: Bearer error="invalid_token"` | one of: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
-| `403` | `{"error":"not a member of this organization"}` | | valid token, org uuid not in `organizations` |
-| `404` | `{"error":"no catalog published for this organization"}` (or `no health …`) | | the store has no `orgs/<uuid>/<file>.json` |
-| `404` | `{"error":"not found"}` | | path does not match the route shape |
+| `401` | `authentication` problem, detail `missing bearer token` | `WWW-Authenticate: Bearer` | no `Bearer` authorization header |
+| `401` | `authentication` problem, detail `invalid token: <reason>` | `WWW-Authenticate: Bearer error="invalid_token"` | one of: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
+| `403` | `forbidden` problem, detail `not a member of this organization` | | valid token, org uuid not in `organizations` |
+| `404` | `not-found` problem, detail `no catalog published for this organization` (or `no health …`) | | the store has no `orgs/<uuid>/<file>.json` |
+| `404` | `not-found` problem, detail `not found` | | path does not match the route shape |
 | `405` | `{"error":"method not allowed"}` | | non-`GET` on a catalog path |
 | `502` | `{"error":"store fetch failed (<status>)"}` | | the store read returned something other than `200`/`404` |
 
-Every JSON response is `Cache-Control: private, no-store`.
+A problem is `application/problem+json` (RFC 9457): `{"type":"https://auth.startcloud.com/probs/<type>","title":"…","status":<status>,"detail":"…"}`. Every response is `Cache-Control: private, no-store`.
 
 ### The store token
 
@@ -243,7 +243,7 @@ Generate a new fine-grained token with the same scope, run `wrangler secret put 
 curl https://provisioner-catalog.startcloud.com/private/00000000-0000-0000-0000-000000000000/catalog.json
 ```
 
-`401 {"error":"missing bearer token"}` means the route and Worker are live. The same URL with a member's Bearer token returns that org's catalog. `https://provisioner-catalog.startcloud.com/catalog.json` must still return the public catalog straight from Pages.
+A `401` `authentication` problem with detail `missing bearer token` means the route and Worker are live. The same URL with a member's Bearer token returns that org's catalog. `https://provisioner-catalog.startcloud.com/catalog.json` must still return the public catalog straight from Pages.
 
 ### Forcing a rebuild
 

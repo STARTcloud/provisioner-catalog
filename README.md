@@ -115,7 +115,7 @@ different visibility:
   repository** (`STARTcloud/provisioner-catalogs-private`), keyed by the IdP
   organization uuid — private repo names never appear in this public repo.
 - The data job's `build-private` job reads each org's source repositories with
-  a **GitHub App installation token** (the *STARTcloud Provisioner Catalog*
+  a **GitHub App installation token** (the _STARTcloud Provisioner Catalog_
   App, Contents: read-only, installed by the owning org on just the selected
   repos), builds `orgs/<org-uuid>/catalog.json` with
   [scripts/build_org_catalogs.py](scripts/build_org_catalogs.py) — including
@@ -207,17 +207,17 @@ issue.
 
 ## Repository layout
 
-| Path | What it is |
-| --- | --- |
-| [sources.yml](sources.yml) | Hand-edited admission list (the only way in) |
-| [removed.yml](removed.yml) | Hand-edited post-admission blacklist |
-| [action.yml](action.yml) | Reusable validation action for authors' CI |
-| [schema/](schema/) | JSON Schemas for catalog.json, sources.yml, removed.yml |
-| [scripts/](scripts/) | The validator and the catalog builders — public + per-org (Python) |
-| [package.json](package.json) | `startcloudUiVersion`, the pinned [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui) release the data job fetches into the Pages payload; every UI release dispatches `dependency-update` here and `dependency-bump.yml` answers with a bump PR for a human to merge |
-| [worker/](worker/) | The Cloudflare Worker gating `/private/*`, push, admin and `/api/status` — CI-deployed on change; every secret lives only in Cloudflare |
-| [docs/](docs/) | The documentation site (Jekyll + Just the Docs), built into the Pages payload at `/docs/` |
-| [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker, dependency-bump |
+| Path                                     | What it is                                                                                                                                                                                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [sources.yml](sources.yml)               | Hand-edited admission list (the only way in)                                                                                                                                                                                                                                   |
+| [removed.yml](removed.yml)               | Hand-edited post-admission blacklist                                                                                                                                                                                                                                           |
+| [action.yml](action.yml)                 | Reusable validation action for authors' CI                                                                                                                                                                                                                                     |
+| [schema/](schema/)                       | JSON Schemas for catalog.json, sources.yml, removed.yml                                                                                                                                                                                                                        |
+| [scripts/](scripts/)                     | The validator and the catalog builders — public + per-org (Python)                                                                                                                                                                                                             |
+| [package.json](package.json)             | `startcloudUiVersion`, the pinned [STARTcloud UI](https://github.com/STARTcloud/startcloud-ui) release the data job fetches into the Pages payload; every UI release dispatches `dependency-update` here and `dependency-bump.yml` answers with a bump PR for a human to merge |
+| [worker/](worker/)                       | The Cloudflare Worker gating `/private/*`, push, admin and `/api/status` — CI-deployed on change; every secret lives only in Cloudflare                                                                                                                                        |
+| [docs/](docs/)                           | The documentation site (Jekyll + Just the Docs), built into the Pages payload at `/docs/`                                                                                                                                                                                      |
+| [.github/workflows/](.github/workflows/) | checks (admission gate), ci, codeql, release-please, generate-catalog-data, deploy-worker, dependency-bump                                                                                                                                                                     |
 
 ## This repository's own releases
 

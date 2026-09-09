@@ -74,6 +74,9 @@ const BAD_REQUEST_TITLE = 'The request could not be read.';
 const AUTHENTICATION_TITLE = 'The request was not authenticated.';
 const FORBIDDEN_TITLE = 'The request is not permitted.';
 const NOT_FOUND_TITLE = 'The resource was not found.';
+const METHOD_NOT_ALLOWED_TITLE = 'The method is not allowed on this route.';
+const BAD_GATEWAY_TITLE = 'A service behind this route failed.';
+const NOT_CONFIGURED_TITLE = 'The feature is not configured on this host.';
 const NON_BLANK_RE = /\S/;
 
 const problemResponse = (status, { type, title, detail, errors }, corsHeaders) =>
@@ -104,6 +107,23 @@ const forbiddenProblem = (detail, corsHeaders) =>
 
 const notFoundProblem = (detail, corsHeaders) =>
   problemResponse(404, { type: 'not-found', title: NOT_FOUND_TITLE, detail }, corsHeaders);
+
+const methodNotAllowedProblem = (detail, corsHeaders) =>
+  problemResponse(
+    405,
+    { type: 'method-not-allowed', title: METHOD_NOT_ALLOWED_TITLE, detail },
+    corsHeaders
+  );
+
+const badGatewayProblem = (detail, corsHeaders) =>
+  problemResponse(502, { type: 'bad-gateway', title: BAD_GATEWAY_TITLE, detail }, corsHeaders);
+
+const notConfiguredProblem = (detail, corsHeaders) =>
+  problemResponse(
+    503,
+    { type: 'not-configured', title: NOT_CONFIGURED_TITLE, detail },
+    corsHeaders
+  );
 
 const stringErrors = (pointer, value, name) => {
   if (value === undefined || value === null) {
@@ -368,7 +388,7 @@ const handlePrivate = async (request, env, cors, match) => {
     return notFoundProblem(`no ${file} published for this organization`, cors);
   }
   if (!upstream.ok) {
-    return jsonResponse(502, { error: `store fetch failed (${upstream.status})` }, cors);
+    return badGatewayProblem(`store fetch failed (${upstream.status})`, cors);
   }
   const catalog = await upstream.text();
   return new Response(catalog, {
@@ -389,7 +409,7 @@ const handlePublic = async (request, file, cors) => {
     return notFoundProblem(`no ${file} published`, cors);
   }
   if (!upstream.ok) {
-    return jsonResponse(502, { error: `pages fetch failed (${upstream.status})` }, cors);
+    return badGatewayProblem(`pages fetch failed (${upstream.status})`, cors);
   }
   const document = await upstream.text();
   return new Response(document, {
@@ -417,7 +437,7 @@ const handleRebuild = async (request, env, cors) => {
     return forbiddenProblem('admin role required', cors);
   }
   if (!env.DISPATCH_PAT) {
-    return jsonResponse(503, { error: 'dispatch not configured' }, cors);
+    return notConfiguredProblem('dispatch not configured', cors);
   }
   const url = `https://api.github.com/repos/${env.DISPATCH_REPO}/actions/workflows/${env.DISPATCH_WORKFLOW}/dispatches`;
   const upstream = await fetch(url, {
@@ -438,7 +458,7 @@ const handleRebuild = async (request, env, cors) => {
     }),
   });
   if (upstream.status !== 204) {
-    return jsonResponse(502, { error: `dispatch failed (${upstream.status})` }, cors);
+    return badGatewayProblem(`dispatch failed (${upstream.status})`, cors);
   }
   return jsonResponse(202, { status: 'queued' }, cors);
 };
@@ -458,7 +478,7 @@ const handleRebuildStatus = async (request, env, cors) => {
     return forbiddenProblem('admin role required', cors);
   }
   if (!env.DISPATCH_PAT) {
-    return jsonResponse(503, { error: 'dispatch not configured' }, cors);
+    return notConfiguredProblem('dispatch not configured', cors);
   }
   const url = `https://api.github.com/repos/${env.DISPATCH_REPO}/actions/workflows/${env.DISPATCH_WORKFLOW}/runs?per_page=1`;
   const upstream = await fetch(url, {
@@ -470,7 +490,7 @@ const handleRebuildStatus = async (request, env, cors) => {
     },
   });
   if (!upstream.ok) {
-    return jsonResponse(502, { error: `status fetch failed (${upstream.status})` }, cors);
+    return badGatewayProblem(`status fetch failed (${upstream.status})`, cors);
   }
   const data = await upstream.json();
   const run = Array.isArray(data.workflow_runs) ? data.workflow_runs[0] : null;
@@ -736,7 +756,7 @@ const handleDispatch = async (request, env, cors) => {
     return authenticationProblem('bad dispatch key', cors);
   }
   if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
-    return jsonResponse(503, { error: 'push not configured' }, cors);
+    return notConfiguredProblem('push not configured', cors);
   }
   let body;
   try {
@@ -771,7 +791,7 @@ const handleTestToast = async (request, env, cors) => {
     return authenticationProblem('missing bearer token', cors);
   }
   if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
-    return jsonResponse(503, { error: 'push not configured' }, cors);
+    return notConfiguredProblem('push not configured', cors);
   }
   const uuid = String(payload.UUID || payload.sub || '');
   const targets = (await listSubscriptions(env)).filter(({ record }) => record.uuid === uuid);
@@ -820,14 +840,14 @@ const handleTestChannel = async (request, env, cors) => {
     return authenticationProblem('missing bearer token', cors);
   }
   if (!env.HUB_CLIENT_ID || !env.HUB_CLIENT_SECRET) {
-    return jsonResponse(503, { error: 'hub not configured' }, cors);
+    return notConfiguredProblem('hub not configured', cors);
   }
   const uuid = String(payload.UUID || payload.sub || '');
   let token;
   try {
     token = await hubToken(env);
   } catch (tokenError) {
-    return jsonResponse(502, { error: tokenError.message }, cors);
+    return badGatewayProblem(tokenError.message, cors);
   }
   const upstream = await fetch(`${env.ISSUER}/api/notify`, {
     method: 'POST',
@@ -851,7 +871,7 @@ const handleTestChannel = async (request, env, cors) => {
     }),
   });
   if (!upstream.ok) {
-    return jsonResponse(502, { error: `hub write failed (${upstream.status})` }, cors);
+    return badGatewayProblem(`hub write failed (${upstream.status})`, cors);
   }
   return jsonResponse(200, { delivered: 1 }, cors);
 };
@@ -1152,7 +1172,7 @@ export default {
     }
     if (route === '/push/vapid-key' && request.method === 'GET') {
       if (!env.VAPID_PUBLIC_KEY) {
-        return jsonResponse(503, { error: 'push not configured' }, cors);
+        return notConfiguredProblem('push not configured', cors);
       }
       return jsonResponse(200, { publicKey: env.VAPID_PUBLIC_KEY }, cors);
     }
@@ -1192,7 +1212,7 @@ export default {
       return handleSite(request, pathname);
     }
     if (request.method !== 'GET') {
-      return jsonResponse(405, { error: 'method not allowed' }, cors);
+      return methodNotAllowedProblem('method not allowed', cors);
     }
     return handlePrivate(request, env, cors, match);
   },

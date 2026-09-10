@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.72](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.71...provisioner-catalog-v0.0.72) (2026-09-10)
+
+
+### Bug Fixes
+
+* answer config as an empty list and record the Worker's config answers ([8d55cde](https://github.com/STARTcloud/provisioner-catalog/commit/8d55cdec4a3b5656068944b13e1da2885954aa25))
+* bump startcloud-ui to v0.12.0 ([#96](https://github.com/STARTcloud/provisioner-catalog/issues/96)) ([ba10689](https://github.com/STARTcloud/provisioner-catalog/commit/ba10689e652fd8c864fa932fe726e25afba9b021))
+* removing notifications.md ([6965ad1](https://github.com/STARTcloud/provisioner-catalog/commit/6965ad1230abde1e75da0c24016d165d1360705a))
+
 ## [0.0.71](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.70...provisioner-catalog-v0.0.71) (2026-09-09)
 
 

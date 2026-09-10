@@ -40,7 +40,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - Same URL with a valid Bearer token for a member org → that org's catalog.json.
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
-- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `footer` the footer, `health` the heart in it):
+- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `config` is `[]` because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `footer` the footer, `health` the heart in it):
 
   ```json
   {
@@ -59,6 +59,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
       "storagePrefix": "catalog"
     },
     "collections": ["provisioners"],
+    "config": [],
     "features": [
       "private-catalogs",
       "watches",
@@ -91,7 +92,8 @@ in Cloudflare; `.wrangler/` stays gitignored.
   - `400 {"type":"https://auth.startcloud.com/probs/bad-request","title":"The request could not be read.","status":400,"detail":"body is not JSON"}` when the request could not be read: a `POST` body that is not JSON, a `DELETE /watches` without `id`, a `DELETE /push/subscriptions` without `endpoint`, a `GET /watches/watchers` whose `item` does not match `watchId`
   - `401` `authentication` on a missing or invalid token and on a bad `X-Dispatch-Key`; `403` `forbidden` on a non-member or a caller without `ROLE_ADMIN`; `404` `not-found` on an unknown route or an unpublished document
   - `422 {"type":"https://auth.startcloud.com/probs/validation","title":"The request did not pass validation.","status":422,"errors":[{"pointer":"/id","rule":"pattern","params":{"pattern":"watchId"},"detail":"id must match watchId"}]}` when a value breaks a rule, one `errors[]` entry per failing member: `POST /watches` checks `/id` (`required`, `type`, `pattern` `nonBlank`, `pattern` `watchId`); `POST /push/subscriptions` checks `/endpoint` (`required`, `type`, `pattern` `nonBlank`, `format` `uri`, `maxLength` 512), `/keys/p256dh` and `/keys/auth` (`required`, `type`, `pattern` `nonBlank`); `required` means present, a blank string is `nonBlank`, every `params.pattern` is a contract `$defs` name
-  - `405`, `502` and `503`, statuses the problem registry names no type for, stay `{"error":"…"}`; the 204s are unchanged
+  - `405 {"type":"https://auth.startcloud.com/probs/method-not-allowed","title":"The method is not allowed on this route.","status":405,"detail":"method not allowed"}` on a non-GET private path; `502` `bad-gateway` when the store, Pages, GitHub Actions, OIDC discovery or the hub fails behind the route; `503` `not-configured` when the Worker lacks the var or secret the route needs; the 204s are unchanged
+  - `GET /api/config/<name>`, `GET /api/config/<name>/schema`, `PUT /api/config/<name>`, `GET /api/config/restart-status`, `POST /api/config/restart` and every `/api/setup` path → the `404` `not-found` problem: the Worker has no configuration files, `status.config` is `[]`, and the Universal Config Contract records it so
 
 ## Config changes
 

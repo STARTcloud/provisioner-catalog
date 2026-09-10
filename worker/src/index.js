@@ -967,6 +967,7 @@ const handleStatus = async (request, env, cors) => {
           storagePrefix: 'catalog',
         },
         collections: ['provisioners'],
+        config: [],
         features: [
           'private-catalogs',
           'watches',

@@ -32,7 +32,7 @@ The public path is static: GitHub Actions rebuilds the documents from the admitt
 
 Both documents carry `format_version`, a constant `1`. It is the contract agents gate on and is separate from this repository's own release version; it bumps only on a breaking change to the document shape.
 
-The Worker answers the same two documents at `GET /api/catalog` and `GET /api/catalog/health`, the paths the web UI calls: each is a same-origin fetch of `/catalog.json` or `/health.json` from Pages, returned verbatim with the Worker's JSON headers (`Content-Type: application/json; charset=utf-8`, `Cache-Control: private, no-store`) and CORS. A document Pages lacks answers a `404` `not-found` problem (detail `no catalog published` / `no health published`); any other Pages failure `502 { "error": "pages fetch failed (<status>)" }`. Agents keep reading `/catalog.json` directly.
+The Worker answers the same two documents at `GET /api/catalog` and `GET /api/catalog/health`, the paths the web UI calls: each is a same-origin fetch of `/catalog.json` or `/health.json` from Pages, returned verbatim with the Worker's JSON headers (`Content-Type: application/json; charset=utf-8`, `Cache-Control: private, no-store`) and CORS. A document Pages lacks answers a `404` `not-found` problem (detail `no catalog published` / `no health published`); any other Pages failure a `502` `bad-gateway` problem, detail `pages fetch failed (<status>)`. Agents keep reading `/catalog.json` directly.
 
 Published JSON Schemas (draft 2020-12):
 
@@ -291,8 +291,8 @@ Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public
 | `403` | `forbidden` problem, detail `not a member of this organization` | Valid token, org uuid absent from `organizations` |
 | `404` | `not-found` problem, detail `no catalog published for this organization` / `no health published for this organization` | Member, but the store has no file for the org yet |
 | `404` | `not-found` problem, detail `not found` | Path does not match a Worker route |
-| `405` | `{ "error": "method not allowed" }` | `/private/…` or `/api/private/…` path with a non-GET method |
-| `502` | `{ "error": "store fetch failed (<status>)" }` | The private store returned a non-2xx, non-404 status |
+| `405` | `method-not-allowed` problem, detail `method not allowed` | `/private/…` or `/api/private/…` path with a non-GET method |
+| `502` | `bad-gateway` problem, detail `store fetch failed (<status>)` | The private store returned a non-2xx, non-404 status |
 
 A problem is `application/problem+json` (RFC 9457): `{ "type": "https://auth.startcloud.com/probs/<type>", "title": "…", "status": <status>, "detail": "…" }`, the `detail` being the sentence the table names. Every other response carries `Content-Type: application/json; charset=utf-8`; all of them carry `Cache-Control: private, no-store`. Errors never redirect.
 
@@ -324,7 +324,7 @@ No auth.
 | Status | Body |
 | --- | --- |
 | `200` | `{ "publicKey": "<VAPID public key, base64url>" }` |
-| `503` | `{ "error": "push not configured" }` — the Worker has no `VAPID_PUBLIC_KEY` |
+| `503` | `not-configured` problem, detail `push not configured` — the Worker has no `VAPID_PUBLIC_KEY` |
 
 ### POST /push/subscriptions (also /api/push/subscriptions)
 
@@ -406,7 +406,7 @@ Each target receives an `aes128gcm`-encrypted payload `{ "title", "body", "tag",
 | `200` | `{ "delivered": <count> }` — `0` when `events` is empty or absent |
 | `400` | `bad-request` problem, detail `body is not JSON` |
 | `401` | `authentication` problem, detail `bad dispatch key` — header missing, wrong, or the Worker has no `DISPATCH_KEY` |
-| `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
+| `503` | `not-configured` problem, detail `push not configured` — VAPID key pair missing |
 
 ### POST /push/test-toast (also /api/push/test-toast)
 
@@ -416,7 +416,7 @@ Bearer JWT. Sends one toast, `Provisioner Catalog test`, to every subscription s
 | --- | --- |
 | `200` | `{ "delivered": <count> }` — `0` when the caller has no live subscription |
 | `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
-| `503` | `{ "error": "push not configured" }` — VAPID key pair missing |
+| `503` | `not-configured` problem, detail `push not configured` — VAPID key pair missing |
 
 ### POST /push/test-channel (also /api/push/test-channel)
 
@@ -426,8 +426,8 @@ Bearer JWT. Writes one Notification Channel Notification addressed to the caller
 | --- | --- |
 | `200` | `{ "delivered": 1 }` |
 | `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
-| `502` | `{ "error": "OIDC discovery failed (<status>)" }` / `{ "error": "hub token failed (<status>)" }` / `{ "error": "hub write failed (<status>)" }` |
-| `503` | `{ "error": "hub not configured" }` — the Worker has no hub client credentials |
+| `502` | `bad-gateway` problem, detail `OIDC discovery failed (<status>)` / `hub token failed (<status>)` / `hub write failed (<status>)` |
+| `503` | `not-configured` problem, detail `hub not configured` — the Worker has no hub client credentials |
 
 ### GET /watches (also /api/watches)
 
@@ -478,8 +478,8 @@ Bearer JWT whose `authorities` claim contains `ROLE_ADMIN`. Fires a `workflow_di
 | `202` | `{ "status": "queued" }` — GitHub accepted the dispatch |
 | `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 | `403` | `forbidden` problem, detail `admin role required` |
-| `502` | `{ "error": "dispatch failed (<status>)" }` — GitHub answered anything but `204` |
-| `503` | `{ "error": "dispatch not configured" }` — the Worker has no `DISPATCH_PAT` |
+| `502` | `bad-gateway` problem, detail `dispatch failed (<status>)` — GitHub answered anything but `204` |
+| `503` | `not-configured` problem, detail `dispatch not configured` — the Worker has no `DISPATCH_PAT` |
 
 ### GET /admin/rebuild/status (also /api/admin/rebuild/status)
 
@@ -490,8 +490,8 @@ Same auth as `/admin/rebuild`. Reads the single most recent run of the same work
 | `200` | `{ "status": "<run status>", "conclusion": "<run conclusion>" }` — `status` is GitHub's run status (`queued`, `in_progress`, `completed`, …) or `unknown` when no run exists; `conclusion` is GitHub's (`success`, `failure`, …) or `null` while the run is not complete |
 | `401` | `authentication` problem, detail `missing bearer token` / `invalid token: <reason>` |
 | `403` | `forbidden` problem, detail `admin role required` |
-| `502` | `{ "error": "status fetch failed (<status>)" }` |
-| `503` | `{ "error": "dispatch not configured" }` |
+| `502` | `bad-gateway` problem, detail `status fetch failed (<status>)` |
+| `503` | `not-configured` problem, detail `dispatch not configured` |
 
 The web UI polls this every 10 seconds (at most 90 times) after a rebuild, reporting success once it has seen `queued`/`in_progress` followed by `completed`.
 
@@ -524,6 +524,8 @@ No auth. The estate settings the web UI needs at runtime, the same role BoxVault
 
 The UI's Deploy controls, for a signed-in viewer whose token carries a Hyperweaver entry in the `entitlements` claim, open `{hyperweaver.url}/?create=machine&provisioner={owner/name}&provisioner_version={version}&provisioner_url={artifact URL}`, the provisioner deep link Hyperweaver's machine wizard reads beside its `box*` parameters.
 
+This name-less route is the catalog's recorded public subset under the Universal Config Contract. The Worker has no configuration files and answers `config: []` in `/api/status`, so the contract's editor routes do not exist here: `GET /api/config/<name>`, `GET /api/config/<name>/schema`, `PUT /api/config/<name>`, `GET /api/config/restart-status`, `POST /api/config/restart`, `POST /api/config/<name>/upload` and every `/api/setup` path answer the `404` `not-found` problem.
+
 ### GET /api/status
 
 No auth. The app identity and capabilities every host of the STARTcloud UI answers before the UI renders anything. `role` names the app (`catalog` here, `boxvault` on BoxVault) and `version` is this repository's released version, read from the `version.txt` the data job publishes beside `catalog.json` and cached for 60 seconds with the rest of the document; an unreadable `version.txt` yields an empty string, never an error. The remaining fields drive the UI at runtime, so a new backend is a new status document, never new UI code.
@@ -536,6 +538,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
   "auth": ["idp"],
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
+  "config": [],
   "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
@@ -549,6 +552,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
 | `auth` | Session methods the UI may create, first entry wins: `idp` is browser OIDC against `idp.issuer`; BoxVault answers `backend`, its own session |
 | `idp` | Present only when `auth` contains `idp`: `issuer` and `clientId` are the Worker's `ISSUER` and `AUDIENCE` vars, `scopes` the authorization request's scope string, `storagePrefix` the prefix of the UI's token storage keys |
 | `collections` | Collection registry entries the UI mounts, in order; the first is implicit (no route segment). Data, never a gate |
+| `config` | The configuration file names the Universal Config Contract's editor draws as tabs; `[]` here, because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page |
 | `features` | The gate: kebab-case tokens, absence hides the surface; a host with no `features` array at all renders everything |
 | `links` | `docs` and `contact` for the footer and menus |
 | `ticket` | The support ticket constants (`baseUrl`, `reqType`, `fallbackCustomerId`); BoxVault answers `null` because it serves them at `/api/config/ticket` |
@@ -630,7 +634,7 @@ A first publish (no baseline document yet) sends nothing. Push dispatch goes to 
 
 ## Error handling
 
-The static documents are plain GitHub Pages files — a missing document is a Pages `404`. Every Worker `400`, `401`, `403`, `404` and `422` is `application/problem+json` (RFC 9457) with `type` under `https://auth.startcloud.com/probs/`, `title`, `status`, a `detail` sentence for logs and, on `422`, `errors[]`; the STARTcloud UI draws the translation of the `type` and never the `detail`. A `405`, `502` or `503`, statuses the estate's problem registry names no `type` for, stays a JSON object with a single `error` string. Every error carries `Cache-Control: private, no-store`:
+The static documents are plain GitHub Pages files — a missing document is a Pages `404`. Every Worker error, `400`, `401`, `403`, `404`, `405`, `422`, `502` and `503`, is `application/problem+json` (RFC 9457) with `type` under `https://auth.startcloud.com/probs/`, `title`, `status`, a `detail` sentence for logs and, on `422`, `errors[]`; the STARTcloud UI draws the translation of the `type` and never the `detail`. Every error carries `Cache-Control: private, no-store`:
 
 ```json
 {
@@ -651,6 +655,6 @@ The static documents are plain GitHub Pages files — a missing document is a Pa
 | `401` | `authentication` | Missing or invalid Bearer JWT, or a bad `X-Dispatch-Key` |
 | `403` | `forbidden` | Valid token without the required org membership or `ROLE_ADMIN` |
 | `404` | `not-found` | Unknown route (including any unknown `/api/…` path), or no catalog/health file published for the org or on Pages |
-| `405` | | Non-GET method on a `/private/…` or `/api/private/…` path |
-| `502` | | The private store, Pages or GitHub Actions API answered with an unexpected status |
-| `503` | | The Worker lacks the secret the route needs (VAPID keys, `DISPATCH_PAT`) |
+| `405` | `method-not-allowed` | Non-GET method on a `/private/…` or `/api/private/…` path |
+| `502` | `bad-gateway` | The private store, Pages, the GitHub Actions API, OIDC discovery or the hub answered with an unexpected status |
+| `503` | `not-configured` | The Worker lacks the var or secret the route needs (VAPID keys, `DISPATCH_PAT`, the hub credentials) |

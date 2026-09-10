@@ -221,7 +221,7 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `GET /api/status` | | None | `ISSUER`, `AUDIENCE`, the published `version.txt` on this host | `200` with the status document below, cached for 60 seconds; `version` is empty when `version.txt` cannot be read |
 | `OPTIONS *` | | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
-An alias is the same handler with the same auth and responses; the old path keeps answering. Any other path under those prefixes, `/api/` included, returns `404`; paths outside them are proxied to GitHub Pages, and `/notification-sw.js` is passed through with `Cache-Control: no-cache` and `Service-Worker-Allowed: /push/` added. Worker responses carry `Cache-Control: private, no-store`; every `400`, `401`, `403`, `404` and `422` is `application/problem+json` with a `type` under `https://auth.startcloud.com/probs/`, while `405`, `502` and `503` stay `{"error":"…"}`.
+An alias is the same handler with the same auth and responses; the old path keeps answering. Any other path under those prefixes, `/api/` included, returns `404`, the Universal Config Contract's `GET /api/config/<name>`, `/schema`, `PUT`, `restart-status`, `restart` and `/api/setup` paths among them, because the Worker has no configuration files and `status.config` is `[]`; paths outside them are proxied to GitHub Pages, and `/notification-sw.js` is passed through with `Cache-Control: no-cache` and `Service-Worker-Allowed: /push/` added. Worker responses carry `Cache-Control: private, no-store`; every `400`, `401`, `403`, `404`, `405`, `422`, `502` and `503` is `application/problem+json` with a `type` under `https://auth.startcloud.com/probs/` (`method-not-allowed`, `bad-gateway` and `not-configured` for the last three).
 
 ### The status document
 
@@ -235,6 +235,7 @@ An alias is the same handler with the same auth and responses; the old path keep
   "auth": ["idp"],
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
+  "config": [],
   "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
@@ -248,6 +249,7 @@ An alias is the same handler with the same auth and responses; the old path keep
 | `auth` | Session methods, first entry wins: `idp` is browser OIDC against `idp.issuer`; BoxVault answers `backend` |
 | `idp` | Present only when `auth` contains `idp`; `issuer`, `clientId`, `scopes`, `storagePrefix` are all required |
 | `collections` | Collection registry entries the UI mounts, in order; data, never a gate |
+| `config` | The configuration file names the Universal Config Contract's editor draws as tabs; `[]` here, because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page |
 | `features` | The gate: absence hides the surface; a host with no `features` array renders everything |
 | `links` | `docs` and `contact` |
 | `ticket` | Support ticket constants; BoxVault answers `null` and serves them at `/api/config/ticket` |

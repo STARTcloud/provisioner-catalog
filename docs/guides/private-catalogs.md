@@ -122,8 +122,8 @@ The token's `organizations` claim is an array of objects with a `uuid`. The requ
 | `403` | `forbidden` problem, detail `not a member of this organization` | | valid token, org uuid not in `organizations` |
 | `404` | `not-found` problem, detail `no catalog published for this organization` (or `no health …`) | | the store has no `orgs/<uuid>/<file>.json` |
 | `404` | `not-found` problem, detail `not found` | | path does not match the route shape |
-| `405` | `{"error":"method not allowed"}` | | non-`GET` on a catalog path |
-| `502` | `{"error":"store fetch failed (<status>)"}` | | the store read returned something other than `200`/`404` |
+| `405` | `method-not-allowed` problem, detail `method not allowed` | | non-`GET` on a catalog path |
+| `502` | `bad-gateway` problem, detail `store fetch failed (<status>)` | | the store read returned something other than `200`/`404` |
 
 A problem is `application/problem+json` (RFC 9457): `{"type":"https://auth.startcloud.com/probs/<type>","title":"…","status":<status>,"detail":"…"}`. Every response is `Cache-Control: private, no-store`.
 

@@ -1,6 +1,6 @@
 {
   "name": "provisioner-catalog",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "STARTcloud Provisioner Catalog — the published catalog data, the private-catalog Worker and the docs, served with the pinned STARTcloud UI.",
   "startcloudUiVersion": "0.21.0",
   "private": true,

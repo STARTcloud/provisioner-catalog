@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.85](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.84...provisioner-catalog-v0.0.85) (2026-09-20)
+
+
+### Bug Fixes
+
+* answer the status payload and the VAPID key in snake_case ([5be27c0](https://github.com/STARTcloud/provisioner-catalog/commit/5be27c07e23a33a3e43cb79b64a5aa86bc81ca96))
+
 ## [0.0.84](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.83...provisioner-catalog-v0.0.84) (2026-09-20)
 
 

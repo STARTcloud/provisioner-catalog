@@ -48,15 +48,15 @@ in Cloudflare; `.wrangler/` stays gitignored.
     "version": "…",
     "brand": {
       "name": "Provisioner Catalog",
-      "logoUrl": "/startcloud.svg",
+      "logo_url": "/startcloud.svg",
       "repo": "https://github.com/STARTcloud/provisioner-catalog"
     },
     "auth": ["idp"],
     "idp": {
       "issuer": "https://dev-auth.startcloud.com",
-      "clientId": "provisioner-catalog",
+      "client_id": "provisioner-catalog",
       "scopes": "openid profile email organizations notifications entitlements",
-      "storagePrefix": "catalog"
+      "storage_prefix": "catalog"
     },
     "collections": ["provisioners"],
     "config": [],
@@ -71,9 +71,9 @@ in Cloudflare; `.wrangler/` stays gitignored.
     ],
     "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
     "ticket": {
-      "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent",
-      "reqType": "sso",
-      "fallbackCustomerId": "A55DF1"
+      "base_url": "https://xd.prominic.net/app/apprequest.nsf/router?openagent",
+      "req_type": "sso",
+      "fallback_customer_id": "A55DF1"
     }
   }
   ```

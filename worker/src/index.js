@@ -867,7 +867,7 @@ const handleTestChannel = async (request, env, cors) => {
       type: 'SYSTEM',
       severity: 'INFO',
       delivery: { ttl: 86400, urgency: 'normal' },
-      idempotencyKey: `catalog:test:${uuid}:${Date.now()}`,
+      idempotency_key: `catalog:test:${uuid}:${Date.now()}`,
     }),
   });
   if (!upstream.ok) {
@@ -956,15 +956,15 @@ const handleStatus = async (request, env, cors) => {
         version: await publishedVersion(request),
         brand: {
           name: 'Provisioner Catalog',
-          logoUrl: '/startcloud.svg',
+          logo_url: '/startcloud.svg',
           repo: 'https://github.com/STARTcloud/provisioner-catalog',
         },
         auth: ['idp'],
         idp: {
           issuer: env.ISSUER,
-          clientId: env.AUDIENCE,
+          client_id: env.AUDIENCE,
           scopes: 'openid profile email organizations notifications entitlements',
-          storagePrefix: 'catalog',
+          storage_prefix: 'catalog',
         },
         collections: ['provisioners'],
         config: [],
@@ -979,9 +979,9 @@ const handleStatus = async (request, env, cors) => {
         ],
         links: { docs: '/docs/', contact: 'https://startcloud.com/#contact' },
         ticket: {
-          baseUrl: 'https://xd.prominic.net/app/apprequest.nsf/router?openagent',
-          reqType: 'sso',
-          fallbackCustomerId: 'A55DF1',
+          base_url: 'https://xd.prominic.net/app/apprequest.nsf/router?openagent',
+          req_type: 'sso',
+          fallback_customer_id: 'A55DF1',
         },
       },
     };
@@ -1175,7 +1175,7 @@ export default {
       if (!env.VAPID_PUBLIC_KEY) {
         return notConfiguredProblem('push not configured', cors);
       }
-      return jsonResponse(200, { publicKey: env.VAPID_PUBLIC_KEY }, cors);
+      return jsonResponse(200, { public_key: env.VAPID_PUBLIC_KEY }, cors);
     }
     if (route === '/push/subscriptions' && request.method === 'POST') {
       return handleSubscribe(request, env, cors);

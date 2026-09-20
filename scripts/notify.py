@@ -84,7 +84,7 @@ def send_hub_notification(rep, recipient, title, body, navigate, tag, idempotenc
                 "type": "SYSTEM",
                 "severity": "INFO",
                 "delivery": {"ttl": 86400, "urgency": "normal"},
-                "idempotencyKey": idempotency_key[:128],
+                "idempotency_key": idempotency_key[:128],
             },
             {"Authorization": f"Bearer {token}"},
         )

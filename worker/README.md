@@ -49,7 +49,8 @@ in Cloudflare; `.wrangler/` stays gitignored.
     "brand": {
       "name": "Provisioner Catalog",
       "logo_url": "/startcloud.svg",
-      "repo": "https://github.com/STARTcloud/provisioner-catalog"
+      "repo": "https://github.com/STARTcloud/provisioner-catalog",
+      "pack": { "name": "startcloud", "css": "/themes/startcloud/startcloud.css" }
     },
     "auth": ["idp"],
     "idp": {

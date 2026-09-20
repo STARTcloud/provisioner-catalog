@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.88](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.87...provisioner-catalog-v0.0.88) (2026-09-20)
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.27.0 ([#128](https://github.com/STARTcloud/provisioner-catalog/issues/128)) ([b2ecca5](https://github.com/STARTcloud/provisioner-catalog/commit/b2ecca5619382ee0e4b0384eac5727f88da625ca))
+
 ## [0.0.87](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.86...provisioner-catalog-v0.0.87) (2026-09-20)
 
 

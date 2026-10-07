@@ -233,7 +233,7 @@ An alias is the same handler with the same auth and responses; the old path keep
   "version": "0.0.64",
   "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
   "auth": ["idp"],
-  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
+  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
   "config": [],
   "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
@@ -299,7 +299,7 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 | `/health`, `/config` (`/api/health`, `/api/config`) | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
 | `/push/*`, `/watches`, `/admin/*` (`/api/push/*`, `/api/watches`, `/api/admin/*`) | Toasts, watches and the admin rebuild |
 
-The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
+The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications:read entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
 
 ---
 

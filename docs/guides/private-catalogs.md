@@ -138,7 +138,7 @@ The catalog web UI at the domain root renders private catalogs beside the public
 ### Sign-in
 
 - **OIDC authorization-code + PKCE (S256)** against the STARTcloud IdP, as a public client (`client_id` `provisioner-catalog`, no secret).
-- **Scopes requested**: `openid profile email organizations notifications entitlements`.
+- **Scopes requested**: `openid profile email organizations notifications:read entitlements`.
 - **Redirect URI**: `<origin>/callback`, registered exact-match for `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`.
 - The PKCE state and verifier are kept in `localStorage` rather than `sessionStorage`, so a magic-link sign-in that completes in a new tab still finds them.
 - The callback page exchanges the code, applies the account's theme and language preferences, and returns to `/`.
@@ -184,7 +184,7 @@ Each data run compares the new org catalog with the one already in the store. Fo
 | delivery | ttl 86400, urgency normal |
 | idempotencyKey | `catalog:<org-uuid>:<family>:<version>` |
 
-It is posted to `<CATALOG_HUB_ISSUER>/api/notify` with a client-credentials token (scope `notifications:write`) obtained from `CATALOG_HUB_CLIENT_ID` and `CATALOG_HUB_CLIENT_SECRET` at the IdP's discovered token endpoint. Without those credentials the notification is skipped and logged. Members read it from the Notifications row of the user menu in the web UI, which appears when the token's scope includes `notifications`.
+It is posted to `<CATALOG_HUB_ISSUER>/api/notify` with a client-credentials token (scope `notifications:write`) obtained from `CATALOG_HUB_CLIENT_ID` and `CATALOG_HUB_CLIENT_SECRET` at the IdP's discovered token endpoint. Without those credentials the notification is skipped and logged. Members read it from the Notifications row of the user menu in the web UI, which appears when the token's scope includes `notifications:read`.
 
 **A push event** with `scope: org` and the org uuid, batched and posted once per run to `CATALOG_PUSH_DISPATCH_URL` (default `https://provisioner-catalog.startcloud.com/push/dispatch`) with the `X-Dispatch-Key` header set from `CATALOG_PUSH_DISPATCH_KEY`. The Worker's `/push/dispatch` route checks that key against its `DISPATCH_KEY` secret, delivers web push (VAPID, `aes128gcm`) to every subscription whose recorded organizations include that uuid, and prunes subscriptions that answer `403`, `404`, or `410`.
 

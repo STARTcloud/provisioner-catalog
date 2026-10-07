@@ -964,7 +964,7 @@ const handleStatus = async (request, env, cors) => {
         idp: {
           issuer: env.ISSUER,
           client_id: env.AUDIENCE,
-          scopes: 'openid profile email organizations notifications entitlements',
+          scopes: 'openid profile email organizations notifications:read entitlements',
           storage_prefix: 'catalog',
         },
         collections: ['provisioners'],

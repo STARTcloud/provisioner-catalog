@@ -56,7 +56,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
     "idp": {
       "issuer": "https://dev-auth.startcloud.com",
       "client_id": "provisioner-catalog",
-      "scopes": "openid profile email organizations notifications entitlements",
+      "scopes": "openid profile email organizations notifications:read entitlements",
       "storage_prefix": "catalog"
     },
     "collections": ["provisioners"],

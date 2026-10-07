@@ -279,7 +279,7 @@ The Worker authorizes with nothing but the caller's `Authorization` header and, 
 | `nbf` | Optional; not yet valid when `nbf - 60s > now` |
 | `organizations` | Array of `{ "uuid": "…" }` objects; the requested org uuid must appear (case-insensitive). Membership is read access; nothing else grants it |
 
-Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations notifications entitlements`). Any client holding a token that satisfies the table above can call the endpoints.
+Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations notifications:read entitlements`). Any client holding a token that satisfies the table above can call the endpoints.
 
 ### Responses
 
@@ -536,7 +536,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
   "version": "0.0.64",
   "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
   "auth": ["idp"],
-  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications entitlements", "storagePrefix": "catalog" },
+  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
   "config": [],
   "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],

@@ -246,14 +246,15 @@ def build_provisioners(
                     evidence = quality.molecule_evidence(
                         latest_data, family, latest, repo, tag, token
                     )
-                    verified = quality.verify_providers(
+                    verified, boxes = quality.verify_providers(
                         latest_data, family, latest, fields, box_cache
                     )
                 else:
                     evidence = {}
                     verified = {}
-                latest_providers, complete = quality.version_providers(
-                    verified, (prev_health.get("versions") or {}).get(latest)
+                    boxes = {}
+                latest_providers, latest_boxes, complete = quality.version_providers(
+                    verified, boxes, (prev_health.get("versions") or {}).get(latest)
                 )
                 boot = quality.booted_providers(repo, tag, token) if tag else {}
                 if None in evidence.values() or not complete or boot is None:
@@ -285,7 +286,13 @@ def build_provisioners(
                     fetch_version, family, list(versions), latest, prev_health, box_cache
                 )
                 version_data = quality.merged_versions(
-                    list(versions), latest, latest_providers, prev_health, backfilled
+                    list(versions),
+                    latest,
+                    latest_providers,
+                    latest_boxes,
+                    rules,
+                    prev_health,
+                    backfilled,
                 )
                 health_map[family] = quality.health_entry(
                     family,

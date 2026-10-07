@@ -33,7 +33,7 @@
             },
             "tier": {
               "description": "Measured tier — recomputed every data run",
-              "enum": ["unrated", "bronze", "silver", "gold", "platinum", "diamond"]
+              "$ref": "#/$defs/tier"
             },
             "presentation": {
               "description": "UI extras parsed from the packaged provisioner.yml (label, icon URL, homepage URL) — empty strings when the manifest omits them",
@@ -46,25 +46,8 @@
                 "homepage": { "type": "string" }
               }
             },
-            "rules": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["bronze", "silver", "gold", "platinum", "diamond"],
-              "properties": {
-                "bronze": { "$ref": "#/$defs/ruleset" },
-                "silver": { "$ref": "#/$defs/ruleset" },
-                "gold": { "$ref": "#/$defs/ruleset" },
-                "platinum": { "$ref": "#/$defs/ruleset" },
-                "diamond": { "$ref": "#/$defs/ruleset" }
-              }
-            },
-            "failed_rules": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^(bronze|silver|gold|platinum|diamond)\\.[a-z0-9_]+$"
-              }
-            },
+            "rules": { "$ref": "#/$defs/rules" },
+            "failed_rules": { "$ref": "#/$defs/failed_rules" },
             "health": {
               "type": "object",
               "additionalProperties": false,
@@ -99,7 +82,7 @@
                   }
                 },
                 "versions": {
-                  "description": "Per recorded version, the providers with a verified image for it — measured once when the version was latest and carried forward, since published bytes never change",
+                  "description": "Per recorded version, the providers with a verified image for it and the box each verified against, plus the quality measured while the version is the latest — carried forward as recorded, since published bytes never change",
                   "type": "object",
                   "additionalProperties": false,
                   "patternProperties": {
@@ -111,7 +94,18 @@
                         "providers": {
                           "type": "array",
                           "items": { "type": "string" }
-                        }
+                        },
+                        "boxes": {
+                          "description": "Per verified provider, the box the box catalog served for it",
+                          "type": "object",
+                          "additionalProperties": { "$ref": "#/$defs/box" }
+                        },
+                        "tier": {
+                          "description": "The family's tier measured while this version is the latest, carried with it; absent on a version never measured as the latest",
+                          "$ref": "#/$defs/tier"
+                        },
+                        "rules": { "$ref": "#/$defs/rules" },
+                        "failed_rules": { "$ref": "#/$defs/failed_rules" }
                       }
                     }
                   }
@@ -129,10 +123,48 @@
     }
   },
   "$defs": {
+    "tier": {
+      "enum": ["unrated", "bronze", "silver", "gold", "platinum", "diamond"]
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bronze", "silver", "gold", "platinum", "diamond"],
+      "properties": {
+        "bronze": { "$ref": "#/$defs/ruleset" },
+        "silver": { "$ref": "#/$defs/ruleset" },
+        "gold": { "$ref": "#/$defs/ruleset" },
+        "platinum": { "$ref": "#/$defs/ruleset" },
+        "diamond": { "$ref": "#/$defs/ruleset" }
+      }
+    },
+    "failed_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(bronze|silver|gold|platinum|diamond)\\.[a-z0-9_]+$"
+      }
+    },
     "ruleset": {
       "type": "object",
       "additionalProperties": {
         "type": "boolean"
+      }
+    },
+    "box": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organization", "name", "version", "architecture", "url"],
+      "properties": {
+        "organization": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string" },
+        "architecture": { "type": "string" },
+        "url": {
+          "description": "The box's provider page on the box catalog that served it: {box_url}/{organization}/{name}/{version}/{provider}",
+          "type": "string",
+          "pattern": "^https://"
+        }
       }
     }
   }

@@ -136,10 +136,48 @@ Only published, non-draft, non-prerelease releases are recorded. A version whose
         "latest_release_at": "2026-07-15T18:04:11Z",
         "artifacts_ok": true,
         "sidecars_ok": true,
-        "providers": ["virtualbox", "zones"],
+        "providers": ["virtualbox", "zone"],
         "versions": {
-          "0.1.26": { "providers": ["virtualbox", "zones"] },
-          "0.1.25": { "providers": ["virtualbox"] }
+          "0.1.26": {
+            "providers": ["virtualbox", "zone"],
+            "boxes": {
+              "virtualbox": {
+                "organization": "STARTcloud",
+                "name": "debian13-server",
+                "version": "2025.8.13",
+                "architecture": "amd64",
+                "url": "https://boxvault.startcloud.com/STARTcloud/debian13-server/2025.8.13/virtualbox"
+              },
+              "zone": {
+                "organization": "STARTcloud",
+                "name": "debian13-server",
+                "version": "2025.8.13",
+                "architecture": "amd64",
+                "url": "https://boxvault.startcloud.com/STARTcloud/debian13-server/2025.8.13/zone"
+              }
+            },
+            "tier": "silver",
+            "rules": {
+              "bronze": { "description": true, "label": true, "semver_versions": true, "latest_alias": true },
+              "silver": { "changelog": true, "readme": true, "release_within_12_months": true, "lint_ci": true },
+              "gold": { "config_fields_documented": false, "roles_documented": true, "example_hosts": false },
+              "platinum": { "automated_tests": false, "multi_provider": true, "release_cadence": true },
+              "diamond": { "booted_providers": false }
+            },
+            "failed_rules": ["gold.config_fields_documented", "gold.example_hosts", "platinum.automated_tests", "diamond.booted_providers"]
+          },
+          "0.1.25": {
+            "providers": ["virtualbox"],
+            "boxes": {
+              "virtualbox": {
+                "organization": "STARTcloud",
+                "name": "debian13-server",
+                "version": "2025.8.13",
+                "architecture": "amd64",
+                "url": "https://boxvault.startcloud.com/STARTcloud/debian13-server/2025.8.13/virtualbox"
+              }
+            }
+          }
         },
         "downloads": 42
       }
@@ -176,10 +214,15 @@ Only published, non-draft, non-prerelease releases are recorded. A version whose
 | `failed_rules` | array of string, `^(bronze\|silver\|gold\|platinum\|diamond)\.[a-z0-9_]+$` | yes | Every failing rule as `tier.rule` |
 | `health.latest_version` | string | yes | Highest semantic version recorded |
 | `health.latest_release_at` | string (date-time) or null | yes | Publish time of the newest release, null when unknown |
-| `health.artifacts_ok` | boolean | yes | False when any versioned asset failed to download during the run |
-| `health.sidecars_ok` | boolean | yes | False when any version lacked a sidecar or its sidecar failed |
+| `health.artifacts_ok` | boolean | yes | False when any versioned asset failed to download during the run; see [Artifacts](../guides/quality-tiers/#artifacts) |
+| `health.sidecars_ok` | boolean | yes | False when any version lacked a sidecar or its sidecar failed; see [Sidecars](../guides/quality-tiers/#sidecars) |
 | `health.providers` | array of string | yes | Providers with a verified image for the latest version — the rendered `Hosts.yml` names a box the box catalog serves for that provider and architecture at that version |
-| `health.versions` | object keyed by version | yes | Per recorded version, `{ "providers": [...] }` — the providers verified for that version, measured once from its archive and carried forward |
+| `health.versions` | object keyed by version | yes | Per recorded version, the entry below, carried forward as recorded |
+| `health.versions.<version>.providers` | array of string | yes | Providers verified for that version, measured once from its archive |
+| `health.versions.<version>.boxes` | object keyed by provider | no | Per verified provider, the box that verified it: `organization`, `name`, `version`, `architecture` and `url`, the box's provider page on the box catalog that served it (`{box_url}/{organization}/{name}/{version}/{provider}`) |
+| `health.versions.<version>.tier` | enum, as `tier` | no | The family's tier measured while that version is the latest, carried with it; absent on a version never measured as the latest |
+| `health.versions.<version>.rules` | object, as `rules` | no | The rule results measured while that version is the latest |
+| `health.versions.<version>.failed_rules` | array of string, as `failed_rules` | no | The failing rules measured while that version is the latest |
 | `health.downloads` | integer ≥ 0 | yes | Total GitHub download count of the family's versioned assets |
 
 Security is never graded here. The archive safety scan, sidecar verification and the immutability tripwire are hard gates — a package that violates them never appears in either document.
@@ -279,7 +322,7 @@ The Worker authorizes with nothing but the caller's `Authorization` header and, 
 | `nbf` | Optional; not yet valid when `nbf - 60s > now` |
 | `organizations` | Array of `{ "uuid": "…" }` objects; the requested org uuid must appear (case-insensitive). Membership is read access; nothing else grants it |
 
-Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations notifications:read entitlements`). Any client holding a token that satisfies the table above can call the endpoints.
+Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations integrations notifications:read entitlements`). Any client holding a token that satisfies the table above can call the endpoints.
 
 ### Responses
 
@@ -536,10 +579,10 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
   "version": "0.0.64",
   "brand": { "name": "Provisioner Catalog", "logoUrl": "/brand/startcloud/mark.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
   "auth": ["idp"],
-  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications:read entitlements", "storagePrefix": "catalog" },
+  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations integrations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
   "config": [],
-  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "search", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
 }
@@ -557,7 +600,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
 | `links` | `docs` and `contact` for the footer and menus |
 | `ticket` | The support ticket constants (`baseUrl`, `reqType`, `fallbackCustomerId`); BoxVault answers `null` because it serves them at `/api/config/ticket` |
 
-Feature tokens across every host and what each gates; the catalog answers the seven marked:
+Feature tokens across every host and what each gates; the catalog answers the eight marked:
 
 | Token | Surface | Catalog |
 | --- | --- | --- |
@@ -574,6 +617,7 @@ Feature tokens across every host and what each gates; the catalog answers the se
 | `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
 | `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
 | `notifications` | the Notifications menu row (still needs the scope) | yes |
+| `search` | the navbar search, its panel and `/search`; the catalog names no `search` member, so the UI searches its collections in the browser, and `GET /opensearch.xml` answers the OpenSearch 1.1 description with the template `<origin>/search?q={searchTerms}` | yes |
 | `health` | the footer health heart from `/api/health` (still needs `footer`) | yes |
 | `footer` | the footer itself | yes |
 

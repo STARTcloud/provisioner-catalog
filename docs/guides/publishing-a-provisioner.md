@@ -64,7 +64,7 @@ The archive must contain `<name>/<version>/provisioner.yml`, and it must be pars
 
 ### Provider verification
 
-The catalog does not take a provider's word for it. For every value the manifest offers on its `VAGRANT_PROVIDER` field it renders the shipped `Hosts.template.yml` with a fixed context and asks the box catalog the render points at whether an image exists. The result feeds `health.providers`, the per-version `health.versions`, the provider chips on the card, and the `platinum.multi_provider` rule; see [Quality Tiers](../quality-tiers/).
+The catalog does not take a provider's word for it. For every value the manifest offers on its `VAGRANT_PROVIDER` field it renders the shipped `Hosts.template.yml` with a fixed context and asks the box catalog the render points at whether an image exists. The result feeds `health.providers`, the per-version `health.versions` with the box each provider verified against and a link to that box's provider page on the box catalog, the provider chips on the card, and the `platinum.multi_provider` rule; see [Quality Tiers](../quality-tiers/).
 
 The render context stands in for what the agents supply at machine-create time, and is deliberately the smallest thing that lets the template's own `default(...)` filters apply:
 

@@ -964,7 +964,7 @@ const handleStatus = async (request, env, cors) => {
         idp: {
           issuer: env.ISSUER,
           client_id: env.AUDIENCE,
-          scopes: 'openid profile email organizations notifications:read entitlements',
+          scopes: 'openid profile email organizations integrations notifications:read entitlements',
           storage_prefix: 'catalog',
         },
         collections: ['provisioners'],
@@ -975,6 +975,7 @@ const handleStatus = async (request, env, cors) => {
           'deploy',
           'rebuild',
           'notifications',
+          'search',
           'health',
           'footer',
         ],
@@ -988,6 +989,27 @@ const handleStatus = async (request, env, cors) => {
     };
   }
   return jsonResponse(200, statusCache.body, cors);
+};
+
+const handleOpenSearch = request => {
+  const { origin } = new URL(request.url);
+  const body = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">',
+    '  <ShortName>Provisioner Catalog</ShortName>',
+    '  <Description>Search the Provisioner Catalog</Description>',
+    `  <Image type="image/svg+xml">${origin}/brand/startcloud/mark.svg</Image>`,
+    `  <Url type="text/html" template="${origin}/search?q={searchTerms}"/>`,
+    '</OpenSearchDescription>',
+    '',
+  ].join('\n');
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/opensearchdescription+xml; charset=utf-8',
+      'Cache-Control': 'no-cache',
+    },
+  });
 };
 
 const WATCH_PREFIX = 'watch:';
@@ -1153,6 +1175,9 @@ export default {
 
     if (pathname === '/api/status' && request.method === 'GET') {
       return handleStatus(request, env, cors);
+    }
+    if (pathname === '/opensearch.xml' && request.method === 'GET') {
+      return handleOpenSearch(request);
     }
     if (pathname === '/api/catalog' && request.method === 'GET') {
       return handlePublic(request, 'catalog', cors);

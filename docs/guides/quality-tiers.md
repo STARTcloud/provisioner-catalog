@@ -122,7 +122,10 @@ Beside every `catalog.json` — public and per-organization private — the data
 | `health.artifacts_ok`       | `false` when any versioned asset of the family failed to download during this run                                         |
 | `health.sidecars_ok`        | `false` when any version lacks a `.sha256` sidecar, its sidecar could not be downloaded, holds no sha256, or does not match the asset |
 | `health.providers`          | Sorted list of the providers with a verified image for the latest version                                                 |
-| `health.versions`           | Per recorded version, `{ "providers": [...] }` — the providers verified for that version. The latest version is measured every run; a version with no entry yet is measured once from its own archive, and every measured entry is carried forward unchanged afterwards, because published bytes never change and neither does what they render |
+| `health.versions`           | Per recorded version, `{ "providers", "boxes", "tier", "rules", "failed_rules" }`. The latest version is measured every run; a version with no entry yet, or with no `boxes`, is measured once from its own archive, and every measured entry is carried forward as recorded, because published bytes never change and neither does what they render |
+| `health.versions.<version>.providers` | The providers verified for that version |
+| `health.versions.<version>.boxes`     | Per verified provider, `{ "organization", "name", "version", "architecture", "url" }` — the box that verified it, `url` being its provider page on the box catalog that served it, `{box_url}/{organization}/{name}/{version}/{provider}` |
+| `health.versions.<version>.tier`, `.rules`, `.failed_rules` | The family's measurement recorded while that version is the latest, then carried with it; a version never measured as the latest carries none |
 | `health.downloads`          | Total GitHub download count of the family's versioned assets across all published releases                                |
 
 A change in `health.json` alone (a tier moving, a download count ticking up) is enough for the data job to redeploy, exactly as a `catalog.json` change is.
@@ -143,6 +146,20 @@ A change in `health.json` alone (a tier moving, a download count ticking up) is 
 | Quality breakdown accordion  | Header "Quality: `<Tier>`"; body is "All quality rules pass." or "Unmet rules:" followed by every `failed_rules` code                                                                                                                  |
 
 Cards without a matching `health.json` entry render with no badge, chips, or breakdown.
+
+---
+
+## Health
+
+Two checks of every run sit beside the tiers. Neither moves a badge.
+
+### Artifacts
+
+`health.artifacts_ok` reports whether every versioned `<name>-<version>.tar.gz` asset of the family downloaded during the run. A failed download is a build error, so that run publishes nothing and the published documents stay as the last good run left them. Fix it by keeping every versioned asset downloadable on its published release: restore a missing asset with its original bytes or delete the release, and ship a rebuilt archive as a new version.
+
+### Sidecars
+
+`health.sidecars_ok` is `false` when a recorded version has no `<asset>.sha256` sidecar on its release; the version stays in the catalog with a build warning. A sidecar that cannot be downloaded, holds no sha256, or disagrees with the asset is a build error, and that run publishes nothing. Fix it by uploading `<name>-<version>.tar.gz.sha256` in `sha256sum` format beside each versioned asset, computed from that asset's exact bytes; the family's `build-provisioner.yml` does this.
 
 ---
 

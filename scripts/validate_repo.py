@@ -397,8 +397,8 @@ def validate_repository(repo: str, token: str | None, rep: Reporter) -> None:
         # the catalog. Grading never gates admission — the checks above do.
         fields = quality.collect_config_fields(manifest or {})
         evidence = quality.molecule_evidence(data, family, latest, repo, entry["tag"], token)
-        verified = quality.verify_providers(data, family, latest, fields, {})
-        latest_providers, complete = quality.version_providers(verified, None)
+        verified, boxes = quality.verify_providers(data, family, latest, fields, {})
+        latest_providers, _, complete = quality.version_providers(verified, boxes, None)
         boot = quality.booted_providers(repo, entry["tag"], token) if entry["tag"] else {}
         rules = quality.evaluate_rules(
             family,
@@ -500,9 +500,9 @@ def validate_tree(path: str, rep: Reporter) -> None:
             metadata = quality.fetch_box_metadata(box["box_url"], box["box"], cache)
             if metadata is None:
                 state = "box catalog did not answer"
-            elif metadata is False or not quality.box_has_provider(
+            elif metadata is False or quality.box_provider_entry(
                 metadata, box["box_version"], provider, box["box_arch"]
-            ):
+            ) is None:
                 state = "no image found"
             else:
                 state = "verified image"

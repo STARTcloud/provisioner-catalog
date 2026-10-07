@@ -456,8 +456,11 @@ def fetch_box_metadata(box_url: str, box: str, cache: dict) -> dict | None | boo
     return result
 
 
-def box_has_provider(metadata: dict, box_version: str, provider: str, box_arch: str) -> bool:
-    """True when the box lists the provider for that version and architecture."""
+def box_provider_entry(
+    metadata: dict, box_version: str, provider: str, box_arch: str
+) -> dict | None:
+    """The box's provider entry for that version and architecture, None when
+    the box does not list one."""
     for version in metadata.get("versions") or []:
         if not isinstance(version, dict):
             continue
@@ -470,21 +473,50 @@ def box_has_provider(metadata: dict, box_version: str, provider: str, box_arch: 
                 continue
             arch = str(entry.get("architecture") or "").lower()
             if not box_arch or not arch or arch == box_arch:
-                return True
-    return False
+                return entry
+    return None
+
+
+def box_record(box: dict, provider: str, entry: dict) -> dict | None:
+    """The verified box as health.json records it, None when the box name
+    carries no organization.
+
+    ``url`` is the box's provider page on the box catalog that served it,
+    ``{box_url}/{organization}/{name}/{version}/{provider}``.
+    """
+    organization, _, name = box["box"].partition("/")
+    if not organization or not name:
+        return None
+    architecture = str(entry.get("architecture") or box["box_arch"]).lower()
+    path = "/".join(
+        urllib.parse.quote(part, safe="")
+        for part in (organization, name, box["box_version"], provider)
+    )
+    return {
+        "organization": organization,
+        "name": name,
+        "version": box["box_version"],
+        "architecture": architecture,
+        "url": f"{box['box_url']}/{path}",
+    }
 
 
 def verify_providers(
     data: bytes, family: str, version: str, fields: list[dict], cache: dict
-) -> dict[str, bool | None]:
-    """Per listed provider: True when the rendered Hosts.yml names a box the
-    box catalog serves for that provider and architecture at that version,
-    False when it does not render for the provider or the catalog has no such
-    image, None when the catalog could not be asked."""
+) -> tuple[dict[str, bool | None], dict[str, dict]]:
+    """(answers, boxes) per listed provider.
+
+    An answer is True when the rendered Hosts.yml names a box the box catalog
+    serves for that provider and architecture at that version, False when it
+    does not render for the provider or the catalog has no such image, None
+    when the catalog could not be asked. ``boxes`` holds box_record() for
+    every True answer whose box name carries an organization.
+    """
     template = archive_text_member(
         data, f"{family}/{version}/templates/Hosts.template.yml", MAX_TEMPLATE_BYTES
     )
     verified: dict[str, bool | None] = {}
+    boxes: dict[str, dict] = {}
     for listed in sorted(listed_providers(fields)):
         provider = _provider_name(listed)
         if template is None:
@@ -503,34 +535,42 @@ def verify_providers(
         elif metadata is False:
             verified[provider] = False
         else:
-            verified[provider] = box_has_provider(
-                metadata, box["box_version"], provider, box["box_arch"]
-            )
-    return verified
+            entry = box_provider_entry(metadata, box["box_version"], provider, box["box_arch"])
+            verified[provider] = entry is not None
+            record = box_record(box, provider, entry) if entry is not None else None
+            if record is not None:
+                boxes[provider] = record
+    return verified, boxes
 
 
 def version_providers(
-    verified: dict[str, bool | None], previous: dict | None
-) -> tuple[list[str], bool]:
-    """(verified provider list, complete) for one version.
+    verified: dict[str, bool | None], boxes: dict[str, dict], previous: dict | None
+) -> tuple[list[str], dict[str, dict], bool]:
+    """(verified provider list, boxes, complete) for one version.
 
-    A provider the catalog could not ask about this run keeps the answer the
-    previously published health.json holds for that version; with no previous
-    answer it is left out and the result is marked incomplete so the next run
-    measures it again instead of carrying a hole forward as truth.
+    A provider the catalog could not ask about this run keeps the answer and
+    the box the previously published health.json holds for that version; with
+    no previous answer it is left out and the result is marked incomplete so
+    the next run measures it again instead of carrying a hole forward as truth.
     """
     previous_list = set((previous or {}).get("providers") or [])
+    previous_boxes = (previous or {}).get("boxes") or {}
     complete = True
     providers: list[str] = []
+    kept: dict[str, dict] = {}
     for provider, answer in verified.items():
         if answer is True:
             providers.append(provider)
+            if provider in boxes:
+                kept[provider] = boxes[provider]
         elif answer is None:
             if provider in previous_list:
                 providers.append(provider)
+                if isinstance(previous_boxes.get(provider), dict):
+                    kept[provider] = previous_boxes[provider]
             else:
                 complete = False
-    return sorted(providers), complete
+    return sorted(providers), dict(sorted(kept.items())), complete
 
 
 def spaced_releases_within_year(release_times: list, year_ago) -> bool:
@@ -695,27 +735,53 @@ def merged_versions(
     versions: list[str],
     latest_version: str,
     latest_providers: list[str],
+    latest_boxes: dict[str, dict],
+    rules: dict[str, dict[str, bool]],
     previous: dict | None,
     backfilled: dict[str, dict] | None = None,
 ) -> dict[str, dict]:
-    """Per-version provider data for health.json.
+    """Per-version provider, box and quality data for health.json.
 
-    The latest version is measured on every run; every other recorded version
-    keeps the entry the previously published health.json holds for it, because
-    published bytes never change and neither does what they render. Versions
-    with no entry yet take the answers backfill_versions measured from their
-    own archives this run.
+    The latest version is measured on every run and records the family's
+    rules, tier and failed rules beside its providers and boxes. Every other
+    recorded version keeps the entry the previously published health.json
+    holds for it as recorded, because published bytes never change and neither
+    does what they render; a carried entry with no ``boxes`` takes the boxes
+    backfill_versions measured from its archive this run, limited to its
+    carried providers. Versions with no entry yet take the providers and boxes
+    backfill_versions measured; quality is recorded only while a version is
+    the latest.
     """
     carried = ((previous or {}).get("versions") or {}) if isinstance(previous, dict) else {}
     filled = backfilled or {}
     merged: dict[str, dict] = {}
     for version in versions:
         if version == latest_version:
-            merged[version] = {"providers": sorted(latest_providers)}
+            merged[version] = {
+                "providers": sorted(latest_providers),
+                "boxes": latest_boxes,
+                "tier": measured_tier(rules),
+                "rules": rules,
+                "failed_rules": failed_rules(rules),
+            }
         elif isinstance(carried.get(version), dict):
-            merged[version] = {"providers": sorted(carried[version].get("providers") or [])}
+            source = carried[version]
+            providers = sorted(source.get("providers") or [])
+            entry: dict = {"providers": providers}
+            if isinstance(source.get("boxes"), dict):
+                entry["boxes"] = source["boxes"]
+            elif isinstance(filled.get(version), dict):
+                measured = filled[version].get("boxes") or {}
+                entry["boxes"] = {p: measured[p] for p in providers if p in measured}
+            for key in ("tier", "rules", "failed_rules"):
+                if key in source:
+                    entry[key] = source[key]
+            merged[version] = entry
         elif isinstance(filled.get(version), dict):
-            merged[version] = {"providers": sorted(filled[version].get("providers") or [])}
+            merged[version] = {
+                "providers": sorted(filled[version].get("providers") or []),
+                "boxes": filled[version].get("boxes") or {},
+            }
     return merged
 
 
@@ -727,7 +793,8 @@ def backfill_versions(
     previous: dict | None,
     cache: dict,
 ) -> dict[str, dict]:
-    """Provider data for recorded versions that have no entry yet.
+    """Provider and box data for recorded versions that have no entry yet, or
+    whose entry has no ``boxes``.
 
     Each such version's archive is fetched once through ``fetch_bytes``, its
     packaged manifest's fields and Hosts.template.yml rendered and checked
@@ -739,7 +806,10 @@ def backfill_versions(
     carried = ((previous or {}).get("versions") or {}) if isinstance(previous, dict) else {}
     filled: dict[str, dict] = {}
     for version in versions:
-        if version == latest_version or isinstance(carried.get(version), dict):
+        entry = carried.get(version)
+        if version == latest_version or (
+            isinstance(entry, dict) and isinstance(entry.get("boxes"), dict)
+        ):
             continue
         data = fetch_bytes(version)
         if data is None:
@@ -750,11 +820,10 @@ def backfill_versions(
         except yaml.YAMLError:
             manifest = None
         fields = collect_config_fields(manifest if isinstance(manifest, dict) else {})
-        providers, complete = version_providers(
-            verify_providers(data, family, version, fields, cache), None
-        )
+        verified, boxes = verify_providers(data, family, version, fields, cache)
+        providers, kept, complete = version_providers(verified, boxes, None)
         if complete:
-            filled[version] = {"providers": providers}
+            filled[version] = {"providers": providers, "boxes": kept}
     return filled
 
 

@@ -40,7 +40,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - Same URL with a valid Bearer token for a member org → that org's catalog.json.
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
-- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `config` is `[]` because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `footer` the footer, `health` the heart in it):
+- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `config` is `[]` because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `search` the navbar search over the catalog's collections, answered in the browser, `footer` the footer, `health` the heart in it):
 
   ```json
   {
@@ -56,7 +56,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
     "idp": {
       "issuer": "https://dev-auth.startcloud.com",
       "client_id": "provisioner-catalog",
-      "scopes": "openid profile email organizations notifications:read entitlements",
+      "scopes": "openid profile email organizations integrations notifications:read entitlements",
       "storage_prefix": "catalog"
     },
     "collections": ["provisioners"],
@@ -67,6 +67,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
       "deploy",
       "rebuild",
       "notifications",
+      "search",
       "health",
       "footer"
     ],

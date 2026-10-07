@@ -138,7 +138,7 @@ The catalog web UI at the domain root renders private catalogs beside the public
 ### Sign-in
 
 - **OIDC authorization-code + PKCE (S256)** against the STARTcloud IdP, as a public client (`client_id` `provisioner-catalog`, no secret).
-- **Scopes requested**: `openid profile email organizations notifications:read entitlements`.
+- **Scopes requested**: `openid profile email organizations integrations notifications:read entitlements`.
 - **Redirect URI**: `<origin>/callback`, registered exact-match for `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`.
 - The PKCE state and verifier are kept in `localStorage` rather than `sessionStorage`, so a magic-link sign-in that completes in a new tab still finds them.
 - The callback page exchanges the code, applies the account's theme and language preferences, and returns to `/`.

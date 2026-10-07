@@ -219,6 +219,7 @@ Bearer verification, where required, means: RS256 signature against the issuer's
 | `GET /health` | `GET /api/health` | None | `ISSUER`, `STORE_REPO`, `GITHUB_PAT`, `/catalog.json` on this host | `200` the health document, cached for 60 seconds |
 | `GET /config` | `GET /api/config` | None | `HYPERWEAVER_URL` | `200 {"hyperweaver":{"url"}}`, an empty string when unset |
 | `GET /api/status` | | None | `ISSUER`, `AUDIENCE`, the published `version.txt` on this host | `200` with the status document below, cached for 60 seconds; `version` is empty when `version.txt` cannot be read |
+| `GET /opensearch.xml` | | None | | `200` an OpenSearch 1.1 description, `ShortName` `Provisioner Catalog`, the brand mark as its `Image` and the `text/html` template `<origin>/search?q={searchTerms}` |
 | `OPTIONS *` | | None | `ALLOWED_ORIGINS` | `204` with CORS headers |
 
 An alias is the same handler with the same auth and responses; the old path keeps answering. Any other path under those prefixes, `/api/` included, returns `404`, the Universal Config Contract's `GET /api/config/<name>`, `/schema`, `PUT`, `restart-status`, `restart` and `/api/setup` paths among them, because the Worker has no configuration files and `status.config` is `[]`; paths outside them are proxied to GitHub Pages, and `/notification-sw.js` is passed through with `Cache-Control: no-cache` and `Service-Worker-Allowed: /push/` added. Worker responses carry `Cache-Control: private, no-store`; every `400`, `401`, `403`, `404`, `405`, `422`, `502` and `503` is `application/problem+json` with a `type` under `https://auth.startcloud.com/probs/` (`method-not-allowed`, `bad-gateway` and `not-configured` for the last three).
@@ -233,10 +234,10 @@ An alias is the same handler with the same auth and responses; the old path keep
   "version": "0.0.64",
   "brand": { "name": "Provisioner Catalog", "logoUrl": "/brand/startcloud/mark.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
   "auth": ["idp"],
-  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications:read entitlements", "storagePrefix": "catalog" },
+  "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations integrations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
   "config": [],
-  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "health", "footer"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "search", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
 }
@@ -254,7 +255,7 @@ An alias is the same handler with the same auth and responses; the old path keep
 | `links` | `docs` and `contact` |
 | `ticket` | Support ticket constants; BoxVault answers `null` and serves them at `/api/config/ticket` |
 
-Feature tokens and what each gates; the catalog answers the seven marked:
+Feature tokens and what each gates; the catalog answers the eight marked:
 
 | Token | Surface | Catalog |
 | --- | --- | --- |
@@ -271,6 +272,7 @@ Feature tokens and what each gates; the catalog answers the seven marked:
 | `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
 | `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
 | `notifications` | the Notifications menu row (still needs the scope) | yes |
+| `search` | the navbar search, its panel and `/search`; the catalog names no `search` member, so the UI searches its collections in the browser, and the Worker serves `/opensearch.xml` | yes |
 | `health` | the footer health heart from `/api/health` (still needs `footer`) | yes |
 | `footer` | the footer itself | yes |
 
@@ -299,7 +301,7 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 | `/health`, `/config` (`/api/health`, `/api/config`) | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
 | `/push/*`, `/watches`, `/admin/*` (`/api/push/*`, `/api/watches`, `/api/admin/*`) | Toasts, watches and the admin rebuild |
 
-The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations notifications:read entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
+The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations integrations notifications:read entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.
 
 ---
 

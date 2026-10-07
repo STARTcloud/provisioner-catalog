@@ -534,7 +534,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
 {
   "role": "catalog",
   "version": "0.0.64",
-  "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
+  "brand": { "name": "Provisioner Catalog", "logoUrl": "/brand/startcloud/mark.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
   "auth": ["idp"],
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
@@ -548,7 +548,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
 | Field | Meaning |
 | --- | --- |
 | `role`, `version` | The app name and this repository's released version |
-| `brand` | `name`, `logoUrl` (a path this host serves; `/startcloud.svg` ships in the UI artifact) and `repo` |
+| `brand` | `name`, `logoUrl` (a path this host serves; `/brand/startcloud/mark.svg` ships in the UI artifact) and `repo` |
 | `auth` | Session methods the UI may create, first entry wins: `idp` is browser OIDC against `idp.issuer`; BoxVault answers `backend`, its own session |
 | `idp` | Present only when `auth` contains `idp`: `issuer` and `clientId` are the Worker's `ISSUER` and `AUDIENCE` vars, `scopes` the authorization request's scope string, `storagePrefix` the prefix of the UI's token storage keys |
 | `collections` | Collection registry entries the UI mounts, in order; the first is implicit (no route segment). Data, never a gate |

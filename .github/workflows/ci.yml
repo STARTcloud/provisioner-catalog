@@ -128,7 +128,7 @@ jobs:
             --no-enforce-https \
             --allow-hash-href \
             --swap-urls "^/docs:" \
-            --ignore-urls "/startcloud.svg"
+            --ignore-urls "/brand/startcloud/mark.svg"
 
   codeql-analysis:
     name: CodeQL

@@ -956,9 +956,9 @@ const handleStatus = async (request, env, cors) => {
         version: await publishedVersion(request),
         brand: {
           name: 'Provisioner Catalog',
-          logo_url: '/startcloud.svg',
+          logo_url: '/brand/startcloud/mark.svg',
           repo: 'https://github.com/STARTcloud/provisioner-catalog',
-          pack: { name: 'startcloud', css: '/themes/startcloud/startcloud.css' },
+          theme: { name: 'startcloud', css: '/themes/startcloud/startcloud.css' },
         },
         auth: ['idp'],
         idp: {

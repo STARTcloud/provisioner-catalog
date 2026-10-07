@@ -8,7 +8,7 @@ permalink: pretty
 
 includes_dir: '.'
 
-favicon_ico: '/startcloud.svg'
+favicon_ico: '/brand/startcloud/mark.svg'
 
 defaults:
   - scope:

@@ -231,7 +231,7 @@ An alias is the same handler with the same auth and responses; the old path keep
 {
   "role": "catalog",
   "version": "0.0.64",
-  "brand": { "name": "Provisioner Catalog", "logoUrl": "/startcloud.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
+  "brand": { "name": "Provisioner Catalog", "logoUrl": "/brand/startcloud/mark.svg", "repo": "https://github.com/STARTcloud/provisioner-catalog" },
   "auth": ["idp"],
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],

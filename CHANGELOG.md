@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.100](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.99...provisioner-catalog-v0.0.100) (2026-10-07)
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.54.0 ([#163](https://github.com/STARTcloud/provisioner-catalog/issues/163)) ([d2f8181](https://github.com/STARTcloud/provisioner-catalog/commit/d2f818153bb5fdc7e054ef4b6fe7008e84d3f259))
+* treat zones and zone as one provider and admit the standalone, VoltMX Go and Windows provisioners ([8f9dc54](https://github.com/STARTcloud/provisioner-catalog/commit/8f9dc54b57815970faa8a629ee9ed35317d9e24a))
+* treat zones and zone as one provider in tree validation ([5c3c50c](https://github.com/STARTcloud/provisioner-catalog/commit/5c3c50c11788c4fbc1ae98148bee405fff16575b))
+
 ## [0.0.99](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.98...provisioner-catalog-v0.0.99) (2026-09-27)
 
 

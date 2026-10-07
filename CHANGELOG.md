@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.102](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.101...provisioner-catalog-v0.0.102) (2026-10-07)
+
+
+### Bug Fixes
+
+* logo ([8352f88](https://github.com/STARTcloud/provisioner-catalog/commit/8352f8899a7cb032e545f9595634375e5995cae2))
+
 ## [0.0.101](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.100...provisioner-catalog-v0.0.101) (2026-10-07)
 
 

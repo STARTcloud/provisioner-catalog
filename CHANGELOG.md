@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.103](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.102...provisioner-catalog-v0.0.103) (2026-10-07)
+
+
+### Features
+
+* the status lists search, the UI searching the catalog's collections in the browser, and the Worker serving /opensearch.xml as an OpenSearch 1.1 description; the integrations scope requested so a person's deploy target reaches the catalog; each version of health.json recording its tier, rules and failed rules while it is the latest and carrying them forward, and the box each verified provider was verified against with a link to its version and provider page on BoxVault, a published version without boxes re-measured once from its archive; the health schema's additive members, a Health section with the Artifacts and Sidecars anchors, the API, configuration, publishing and Worker docs following, and the three markdownlint dependencies pinned past their advisories through overrides ([9e1d423](https://github.com/STARTcloud/provisioner-catalog/commit/9e1d423f577bae5c7f42fccc38b4da3213637416))
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.55.0 ([#170](https://github.com/STARTcloud/provisioner-catalog/issues/170)) ([5b25e39](https://github.com/STARTcloud/provisioner-catalog/commit/5b25e397530cf58bf30d86e1748fd1f9ed784e5d))
+
 ## [0.0.102](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.101...provisioner-catalog-v0.0.102) (2026-10-07)
 
 

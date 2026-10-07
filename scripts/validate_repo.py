@@ -490,8 +490,9 @@ def validate_tree(path: str, rep: Reporter) -> None:
         with open(template_path, "r", encoding="utf-8") as handle:
             template_text = handle.read(quality.MAX_TEMPLATE_BYTES)
         cache: dict = {}
-        for provider in sorted(quality.listed_providers(fields)):
-            hosts = quality.render_hosts(template_text, fields, provider)
+        for listed in sorted(quality.listed_providers(fields)):
+            provider = quality._provider_name(listed)
+            hosts = quality.render_hosts(template_text, fields, listed)
             box = quality.rendered_box(hosts) if hosts else None
             if box is None:
                 rep.info(f"{path}: provider {provider}: template does not render a box for it")

@@ -79,6 +79,12 @@ RENDER_SETTINGS = {
     "memory": 4096,
 }
 
+PROVIDER_ALIASES = {"zones": "zone"}
+
+
+def _provider_name(provider: str) -> str:
+    return PROVIDER_ALIASES.get(provider, provider)
+
 
 def archive_member_names(data: bytes) -> list[str]:
     """Member paths of an already-safety-scanned archive (names only)."""
@@ -228,7 +234,7 @@ def booted_providers(repo: str, tag: str, token: str | None) -> dict[str, bool] 
             match = BOOT_CHECK_RE.match(str(run.get("name", "")))
             if not match:
                 continue
-            provider = match.group("provider").lower()
+            provider = _provider_name(match.group("provider").lower())
             booted[provider] = booted.get(provider, True) and run.get("conclusion") == "success"
         if booted:
             return booted
@@ -479,13 +485,16 @@ def verify_providers(
         data, f"{family}/{version}/templates/Hosts.template.yml", MAX_TEMPLATE_BYTES
     )
     verified: dict[str, bool | None] = {}
-    for provider in sorted(listed_providers(fields)):
+    for listed in sorted(listed_providers(fields)):
+        provider = _provider_name(listed)
         if template is None:
             verified[provider] = False
             continue
-        hosts = render_hosts(template, fields, provider)
+        hosts = render_hosts(template, fields, listed)
         box = rendered_box(hosts) if hosts else None
-        if box is None or (box["provider_type"] and box["provider_type"] != provider):
+        if box is None or (
+            box["provider_type"] and _provider_name(box["provider_type"]) != provider
+        ):
             verified[provider] = False
             continue
         metadata = fetch_box_metadata(box["box_url"], box["box"], cache)

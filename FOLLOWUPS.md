@@ -17,10 +17,6 @@ UI, so the remaining difference is the data plumbing.
 
 - Decide whether BoxVault consumes `catalog.json` as a source or hosts the
   provisioner metadata itself before any code moves.
-- Armor belongs in the same picture: as an organization-level artifact
-  repository and file share it could be consumed the same way — a source
-  BoxVault reads, or a store the merged app serves — so any merge decision
-  covers all three.
 - The merged surface is the packaged-file estate: templates (boxes),
   artifacts, installers and archives, OS package servers, and the ISOs the
   templates are built from — one place per organization.

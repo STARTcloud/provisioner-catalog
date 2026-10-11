@@ -229,7 +229,7 @@ const verifyJwt = async (token, env) => {
     throw new Error('wrong issuer');
   }
   const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (!audiences.includes(env.AUDIENCE)) {
+  if (!audiences.includes(env.RESOURCE) && !audiences.includes(env.AUDIENCE)) {
     throw new Error('wrong audience');
   }
   if (typeof payload.exp !== 'number' || payload.exp + LEEWAY_SECONDS < now) {
@@ -357,6 +357,30 @@ const fetchOrgFile = async (uuid, file, env) => {
   });
 };
 
+const PROTECTED_RESOURCE_PATH = '/.well-known/oauth-protected-resource';
+
+const resourceMetadataUrl = env => `${env.RESOURCE}${PROTECTED_RESOURCE_PATH}`;
+
+const handleProtectedResource = (env, cors) =>
+  new Response(
+    JSON.stringify({
+      resource: env.RESOURCE,
+      authorization_servers: [env.ISSUER],
+      bearer_methods_supported: ['header'],
+      scopes_supported: ['openid', 'profile', 'email', 'organizations'],
+      resource_name: 'Provisioner Catalog',
+      resource_documentation: `${env.RESOURCE}/docs/`,
+    }),
+    {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=3600',
+        ...cors,
+      },
+    }
+  );
+
 const handlePrivate = async (request, env, cors, match) => {
   const uuid = match.groups.uuid.toLowerCase();
   const file = match.groups.file.toLowerCase();
@@ -367,11 +391,14 @@ const handlePrivate = async (request, env, cors, match) => {
   } catch (verifyError) {
     return authenticationProblem(`invalid token: ${verifyError.message}`, {
       ...cors,
-      'WWW-Authenticate': 'Bearer error="invalid_token"',
+      'WWW-Authenticate': `Bearer error="invalid_token", resource_metadata="${resourceMetadataUrl(env)}"`,
     });
   }
   if (!payload) {
-    return authenticationProblem('missing bearer token', { ...cors, 'WWW-Authenticate': 'Bearer' });
+    return authenticationProblem('missing bearer token', {
+      ...cors,
+      'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataUrl(env)}"`,
+    });
   }
 
   const organizations = Array.isArray(payload.organizations) ? payload.organizations : [];
@@ -974,6 +1001,7 @@ const handleStatus = async (request, env, cors) => {
           'watches',
           'deploy',
           'rebuild',
+          'favorites',
           'notifications',
           'search',
           'health',
@@ -1131,7 +1159,14 @@ const handleWatchers = async (request, env, cors) => {
   return jsonResponse(200, { uuids: await listWatchers(env, item) }, cors);
 };
 
-const WORKER_PREFIXES = ['/private/', '/push/', '/admin/', '/watches/', `${API_PREFIX}/`];
+const WORKER_PREFIXES = [
+  '/private/',
+  '/push/',
+  '/admin/',
+  '/watches/',
+  '/.well-known/',
+  `${API_PREFIX}/`,
+];
 
 const routeOf = pathname =>
   pathname.startsWith(`${API_PREFIX}/`) ? pathname.slice(API_PREFIX.length) : pathname;
@@ -1178,6 +1213,9 @@ export default {
     }
     if (pathname === '/opensearch.xml' && request.method === 'GET') {
       return handleOpenSearch(request);
+    }
+    if (pathname === PROTECTED_RESOURCE_PATH && request.method === 'GET') {
+      return handleProtectedResource(env, cors);
     }
     if (pathname === '/api/catalog' && request.method === 'GET') {
       return handlePublic(request, 'catalog', cors);

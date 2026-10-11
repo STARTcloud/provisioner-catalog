@@ -303,7 +303,7 @@ Organizations on the STARTcloud IdP can share private provisioners with their me
 | `/private/{org-uuid}/catalog.json` | `/api/private/{org-uuid}/catalog` | GET | Bearer JWT, member of `{org-uuid}` |
 | `/private/{org-uuid}/health.json` | `/api/private/{org-uuid}/health` | GET | Bearer JWT, member of `{org-uuid}` |
 
-`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). The alias is the same handler, auth and responses, with the `.json` suffix dropped. Any other path under `/private/`, `/push/`, `/admin/`, `/watches/` or `/api/` returns `404`; `/health` answers the Worker's health document, `/config` the estate settings and `/api/status` the app identity; other paths outside those are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
+`{org-uuid}` must be a UUID (`8-4-4-4-12` hex, matched case-insensitively). The alias is the same handler, auth and responses, with the `.json` suffix dropped. Any other path under `/private/`, `/push/`, `/admin/`, `/watches/`, `/.well-known/` or `/api/` returns `404`; `/health` answers the Worker's health document, `/config` the estate settings and `/api/status` the app identity; other paths outside those are proxied to GitHub Pages, and a page request Pages answers with `404` gets `index.html` so the web UI's deep links load; a matching path with any method other than `GET` returns `405`.
 
 ### Bearer token requirements
 
@@ -317,27 +317,42 @@ The Worker authorizes with nothing but the caller's `Authorization` header and, 
 | `alg` | `RS256` only |
 | Signature | Verified against the key whose `kid` matches in the IdP's JWKS, discovered from `<ISSUER>/.well-known/openid-configuration` → `jwks_uri`. The JWKS is cached per isolate for one hour and refetched once on an unknown `kid` (key rotation) |
 | `iss` | Exactly the configured `ISSUER` (`https://dev-auth.startcloud.com`) |
-| `aud` | String or array; must contain the configured `AUDIENCE` (`provisioner-catalog`) |
+| `aud` | String or array; must contain the configured `RESOURCE` (`https://provisioner-catalog.startcloud.com`, the catalog's resource identifier) or the configured `AUDIENCE` (`provisioner-catalog`, the browser client id) |
 | `exp` | Required number; expired when `exp + 60s < now` |
 | `nbf` | Optional; not yet valid when `nbf - 60s > now` |
 | `organizations` | Array of `{ "uuid": "…" }` objects; the requested org uuid must appear (case-insensitive). Membership is read access; nothing else grants it |
 
-Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations integrations notifications:read entitlements`). Any client holding a token that satisfies the table above can call the endpoints.
+Tokens for the web UI come from the IdP's authorization-code + PKCE flow (public client `provisioner-catalog`, scopes `openid profile email organizations integrations notifications:read entitlements`). A Hyperweaver agent or server reading a private catalog as a catalog source exchanges the person's token at the IdP for one whose `aud` carries the resource identifier. Any client holding a token that satisfies the table above can call the endpoints.
+
+### Protected resource metadata
+
+`GET /.well-known/oauth-protected-resource`, no auth, answers the catalog's resource metadata with `Content-Type: application/json` and `Cache-Control: public, max-age=3600`; a consumer uses it only while `resource` equals the origin it fetched under and `authorization_servers` names its issuer.
+
+```json
+{
+  "resource": "https://provisioner-catalog.startcloud.com",
+  "authorization_servers": ["https://dev-auth.startcloud.com"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["openid", "profile", "email", "organizations"],
+  "resource_name": "Provisioner Catalog",
+  "resource_documentation": "https://provisioner-catalog.startcloud.com/docs/"
+}
+```
 
 ### Responses
 
 | Status | Body | When |
 | --- | --- | --- |
 | `200` | The org's `catalog.json` / `health.json` verbatim | Member of the org and the file exists in the store |
-| `401` | `authentication` problem, detail `missing bearer token`, + `WWW-Authenticate: Bearer` | No `Authorization: Bearer` header |
-| `401` | `authentication` problem, detail `invalid token: <reason>`, + `WWW-Authenticate: Bearer error="invalid_token"` | Verification failed. Reasons: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
+| `401` | `authentication` problem, detail `missing bearer token`, + `WWW-Authenticate: Bearer resource_metadata="https://provisioner-catalog.startcloud.com/.well-known/oauth-protected-resource"` | No `Authorization: Bearer` header |
+| `401` | `authentication` problem, detail `invalid token: <reason>`, + `WWW-Authenticate: Bearer error="invalid_token", resource_metadata="https://provisioner-catalog.startcloud.com/.well-known/oauth-protected-resource"` | Verification failed. Reasons: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
 | `403` | `forbidden` problem, detail `not a member of this organization` | Valid token, org uuid absent from `organizations` |
 | `404` | `not-found` problem, detail `no catalog published for this organization` / `no health published for this organization` | Member, but the store has no file for the org yet |
 | `404` | `not-found` problem, detail `not found` | Path does not match a Worker route |
 | `405` | `method-not-allowed` problem, detail `method not allowed` | `/private/…` or `/api/private/…` path with a non-GET method |
 | `502` | `bad-gateway` problem, detail `store fetch failed (<status>)` | The private store returned a non-2xx, non-404 status |
 
-A problem is `application/problem+json` (RFC 9457): `{ "type": "https://auth.startcloud.com/probs/<type>", "title": "…", "status": <status>, "detail": "…" }`, the `detail` being the sentence the table names. Every other response carries `Content-Type: application/json; charset=utf-8`; all of them carry `Cache-Control: private, no-store`. Errors never redirect.
+A problem is `application/problem+json` (RFC 9457): `{ "type": "https://auth.startcloud.com/probs/<type>", "title": "…", "status": <status>, "detail": "…" }`, the `detail` being the sentence the table names. Every other response carries `Content-Type: application/json; charset=utf-8`; all of them carry `Cache-Control: private, no-store`, the protected resource metadata alone `public, max-age=3600`. Errors never redirect.
 
 Artifact URLs inside a private catalog point at private release assets. Consumers need their own GitHub access to download them, exactly as they need it to clone the repositories.
 
@@ -565,7 +580,7 @@ No auth. The estate settings the web UI needs at runtime, the same role BoxVault
 { "hyperweaver": { "url": "https://hyperweaver.example.com" } }
 ```
 
-The UI's Deploy controls, for a signed-in viewer whose token carries a Hyperweaver entry in the `entitlements` claim, open `{hyperweaver.url}/?create=machine&provisioner={owner/name}&provisioner_version={version}&provisioner_url={artifact URL}`, the provisioner deep link Hyperweaver's machine wizard reads beside its `box*` parameters.
+The UI's Deploy control on every provisioner row and card is one split control: the Hyperweaver glyph is the `create=machine` link, and a chevron at its right opens the menu "Send {version} to my Hyperweaver" with Deploy a machine, Install on my agent (`create=provisioner`) and Add this catalog as a source (`create=source` with `provisioner_catalog` alone), each a link to the person's deploy target carrying the version's `artifacts` URL as `provisioner_url` and the verified boxes as `box_<provider>`.
 
 This name-less route is the catalog's recorded public subset under the Universal Config Contract. The Worker has no configuration files and answers `config: []` in `/api/status`, so the contract's editor routes do not exist here: `GET /api/config/<name>`, `GET /api/config/<name>/schema`, `PUT /api/config/<name>`, `GET /api/config/restart-status`, `POST /api/config/restart`, `POST /api/config/<name>/upload` and every `/api/setup` path answer the `404` `not-found` problem.
 
@@ -582,7 +597,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations integrations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
   "config": [],
-  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "search", "health", "footer"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "favorites", "notifications", "search", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
 }
@@ -600,7 +615,7 @@ No auth. The app identity and capabilities every host of the STARTcloud UI answe
 | `links` | `docs` and `contact` for the footer and menus |
 | `ticket` | The support ticket constants (`baseUrl`, `reqType`, `fallbackCustomerId`); BoxVault answers `null` because it serves them at `/api/config/ticket` |
 
-Feature tokens across every host and what each gates; the catalog answers the eight marked:
+Feature tokens across every host and what each gates; the catalog answers the nine marked:
 
 | Token | Surface | Catalog |
 | --- | --- | --- |
@@ -613,9 +628,9 @@ Feature tokens across every host and what each gates; the catalog answers the ei
 | `uploads` | ISO upload zone, box file upload, the `uploads` slots | |
 | `private-catalogs` | fetch `/api/private/<uuid>/...` per membership, the access-denied banner | yes |
 | `watches` | watch stars and the Watched filter | yes |
-| `deploy` | Deploy button and glyph (still needs the hyperweaver entitlement and a configured URL) | yes |
+| `deploy` | the split Deploy control on every row and card: the glyph the `create=machine` link, the chevron the menu with Deploy a machine, Install on my agent and Add this catalog as a source | yes |
 | `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
-| `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
+| `favorites` | the user menu's Favorites header and the Add to Favorites toggle on About, both over the identity provider's `GET` and `PUT /api/user/favorites`; no `/api/favorites` route exists on any host | yes |
 | `notifications` | the Notifications menu row (still needs the scope) | yes |
 | `search` | the navbar search, its panel and `/search`; the catalog names no `search` member, so the UI searches its collections in the browser, and `GET /opensearch.xml` answers the OpenSearch 1.1 description with the template `<origin>/search?q={searchTerms}` | yes |
 | `health` | the footer health heart from `/api/health` (still needs `footer`) | yes |

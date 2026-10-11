@@ -37,10 +37,23 @@ in Cloudflare; `.wrangler/` stays gitignored.
 
 - `curl https://provisioner-catalog.startcloud.com/private/00000000-0000-0000-0000-000000000000/catalog.json`
   → `401 {"type":"https://auth.startcloud.com/probs/authentication","title":"The request was not authenticated.","status":401,"detail":"missing bearer token"}` means the route + Worker are live.
-- Same URL with a valid Bearer token for a member org → that org's catalog.json.
+- Same URL with a valid Bearer token for a member org → that org's catalog.json. The token a consumer presents at `/api/private/<uuid>/catalog` and `/api/private/<uuid>/health` is issued by `ISSUER`, carries `RESOURCE` (`https://provisioner-catalog.startcloud.com`, the catalog's resource identifier) or `AUDIENCE` in `aud`, and lists the uuid in `organizations[]`; every `401` on those paths carries `WWW-Authenticate: Bearer resource_metadata="https://provisioner-catalog.startcloud.com/.well-known/oauth-protected-resource"`.
+- `curl https://provisioner-catalog.startcloud.com/.well-known/oauth-protected-resource` → the protected resource metadata, `Content-Type: application/json`, `Cache-Control: public, max-age=3600`:
+
+  ```json
+  {
+    "resource": "https://provisioner-catalog.startcloud.com",
+    "authorization_servers": ["https://dev-auth.startcloud.com"],
+    "bearer_methods_supported": ["header"],
+    "scopes_supported": ["openid", "profile", "email", "organizations"],
+    "resource_name": "Provisioner Catalog",
+    "resource_documentation": "https://provisioner-catalog.startcloud.com/docs/"
+  }
+  ```
+
 - `curl https://provisioner-catalog.startcloud.com/catalog.json` must still
   return the public catalog straight from Pages (Worker untouched).
-- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `config` is `[]` because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the Deploy button, `rebuild` the Rebuild catalog data row, `notifications` the Notifications row, `search` the navbar search over the catalog's collections, answered in the browser, `footer` the footer, `health` the heart in it):
+- `curl https://provisioner-catalog.startcloud.com/api/status` → the app identity and capabilities the STARTcloud UI probes before it renders (`idp` comes from `ISSUER` and `AUDIENCE`; `config` is `[]` because the Worker has no configuration files, so the UI draws no Configuration row and no config or setup page; `features` gates the UI: `private-catalogs` the per-org `/api/private/<uuid>/...` fetches and the access-denied banner, `watches` the watch stars and Watched filter, `deploy` the split Deploy control on every row and card, the glyph the `create=machine` link and the chevron the menu with Deploy a machine, Install on my agent and Add this catalog as a source, `rebuild` the Rebuild catalog data row, `favorites` the user menu's Favorites header and the Add to Favorites toggle on About, both over the identity provider's `GET` and `PUT /api/user/favorites`, `notifications` the Notifications row, `search` the navbar search over the catalog's collections, answered in the browser, `footer` the footer, `health` the heart in it):
 
   ```json
   {
@@ -66,6 +79,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
       "watches",
       "deploy",
       "rebuild",
+      "favorites",
       "notifications",
       "search",
       "health",
@@ -99,7 +113,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
 
 ## Config changes
 
-Vars (`ISSUER`, `AUDIENCE`, `STORE_REPO`, `ALLOWED_ORIGINS`, `VAPID_PUBLIC_KEY`,
+Vars (`ISSUER`, `AUDIENCE`, `RESOURCE`, `STORE_REPO`, `ALLOWED_ORIGINS`, `VAPID_PUBLIC_KEY`,
 `VAPID_SUBJECT`, `DISPATCH_REPO`, `DISPATCH_WORKFLOW`, `HYPERWEAVER_URL`) live in
 `wrangler.toml` — edit and `wrangler deploy` again. When the prod IdP host
 replaces dev-auth, change `ISSUER` here (it must match the `iss` claim in

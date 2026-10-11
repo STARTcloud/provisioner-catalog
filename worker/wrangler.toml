@@ -27,6 +27,7 @@ id = "953c8691ec124338892a73599cc3043b"
 ISSUER = "https://dev-auth.startcloud.com"
 # The registered audience of the provisioner-catalog client.
 AUDIENCE = "provisioner-catalog"
+RESOURCE = "https://provisioner-catalog.startcloud.com"
 # The single private store repo the read-only PAT is scoped to.
 STORE_REPO = "STARTcloud/provisioner-catalogs-private"
 # Origins allowed to call cross-origin (the SPA's dev server; prod is

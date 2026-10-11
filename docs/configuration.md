@@ -162,6 +162,7 @@ One route on zone `startcloud.com`, `provisioner-catalog.startcloud.com/*`; the 
 | `/watches` | The caller's watched provisioners |
 | `/api/status` | The app identity and capabilities the STARTcloud UI probes before it renders |
 | `/health`, `/config` | The Worker's health document and the estate settings |
+| `/.well-known/oauth-protected-resource` | The catalog's protected resource metadata; any other `/.well-known/*` path is the Worker's JSON `404` |
 | `/api/*` | The one API surface the STARTcloud UI calls on every host: every route above again under `/api/` with the same handler (`/api/private/<uuid>/catalog` and `/health` without `.json`, `/api/push/*`, `/api/admin/*`, `/api/watches`, `/api/health`, `/api/config`), plus `/api/catalog` and `/api/catalog/health` proxying `/catalog.json` and `/health.json` from Pages; any other `/api/*` path is the Worker's JSON `404`, never the `index.html` fallback |
 
 ### KV binding
@@ -177,14 +178,15 @@ Plain-text values under `[vars]`; edit and redeploy to change.
 | Var | Meaning |
 | --- | --- |
 | `ISSUER` | OIDC issuer, matched exactly against the token's `iss` claim and used for discovery (`/.well-known/openid-configuration`) and the JWKS |
-| `AUDIENCE` | Required member of the token's `aud` claim; the registered client id `provisioner-catalog` |
+| `AUDIENCE` | The registered client id `provisioner-catalog`, answered as `idp.client_id` and accepted in the token's `aud` claim |
+| `RESOURCE` | The catalog's resource identifier, `https://provisioner-catalog.startcloud.com`, its https origin with no path, query or fragment; accepted in the token's `aud` claim, answered as `resource` by `/.well-known/oauth-protected-resource` and named in every private-path `401`'s `WWW-Authenticate` |
 | `STORE_REPO` | The private store repository (`STARTcloud/provisioner-catalogs-private`) whose `orgs/<uuid>/<file>.json` is proxied through the GitHub contents API |
 | `ALLOWED_ORIGINS` | Comma-separated origins granted CORS (`GET, POST, DELETE, OPTIONS`; headers `Authorization, Content-Type, DPoP`); the production host and `http://localhost:8080` |
 | `VAPID_PUBLIC_KEY` | The application server key returned by `/push/vapid-key` and sent in the `vapid` authorization header |
 | `VAPID_SUBJECT` | The `mailto:` subject claim of the VAPID JWT |
 | `DISPATCH_REPO` | Repository whose workflow `/admin/rebuild` dispatches (`STARTcloud/provisioner-catalog`) |
 | `DISPATCH_WORKFLOW` | The workflow file dispatched (`generate-catalog-data.yml`) |
-| `HYPERWEAVER_URL` | The Hyperweaver origin `/config` answers as `hyperweaver.url`; the UI draws no Deploy control while it is empty |
+| `HYPERWEAVER_URL` | The Hyperweaver origin `/config` answers as `hyperweaver.url` |
 
 ### Secrets
 
@@ -200,11 +202,12 @@ Set with `wrangler secret put <NAME>` from `worker/`; they live only in Cloudfla
 
 ### Endpoints
 
-Bearer verification, where required, means: RS256 signature against the issuer's JWKS (cached per isolate for an hour, refetched on an unknown `kid`), `iss === ISSUER`, `aud` contains `AUDIENCE`, `exp` and `nbf` with 60 seconds of leeway. A token carrying `cnf.jkt` is accepted only under the `DPoP` scheme with a `DPoP` proof header bound to that key, the request method and URL, the token hash and an unseen `jti`.
+Bearer verification, where required, means: RS256 signature against the issuer's JWKS (cached per isolate for an hour, refetched on an unknown `kid`), `iss === ISSUER`, `aud` contains `RESOURCE` or `AUDIENCE`, `exp` and `nbf` with 60 seconds of leeway. A token carrying `cnf.jkt` is accepted only under the `DPoP` scheme with a `DPoP` proof header bound to that key, the request method and URL, the token hash and an unseen `jti`.
 
 | Method and path | Alias | Auth | Needs | Responses |
 | --- | --- | --- | --- | --- |
-| `GET /private/<uuid>/catalog.json`, `GET /private/<uuid>/health.json` | `GET /api/private/<uuid>/catalog`, `GET /api/private/<uuid>/health` | Bearer; `uuid` must appear in the token's `organizations[]` | `ISSUER`, `AUDIENCE`, `STORE_REPO`, `GITHUB_PAT` | `200` file, `401` missing or invalid token, `403` not a member, `404` nothing published for that org, `502` store fetch failed, `405` non-GET |
+| `GET /private/<uuid>/catalog.json`, `GET /private/<uuid>/health.json` | `GET /api/private/<uuid>/catalog`, `GET /api/private/<uuid>/health` | Bearer; `uuid` must appear in the token's `organizations[]` | `ISSUER`, `AUDIENCE`, `RESOURCE`, `STORE_REPO`, `GITHUB_PAT` | `200` file, `401` missing or invalid token with `WWW-Authenticate: Bearer resource_metadata="<RESOURCE>/.well-known/oauth-protected-resource"`, `403` not a member, `404` nothing published for that org, `502` store fetch failed, `405` non-GET |
+| `GET /.well-known/oauth-protected-resource` | | None | `ISSUER`, `RESOURCE` | `200 {"resource","authorization_servers","bearer_methods_supported","scopes_supported","resource_name","resource_documentation"}`, `Content-Type: application/json`, `Cache-Control: public, max-age=3600` |
 | `GET /api/catalog`, `GET /api/catalog/health` | | None | `/catalog.json` and `/health.json` published on this host | `200` the Pages document verbatim with the Worker's JSON headers; `404` when Pages has none; `502` on any other Pages failure |
 | `POST /admin/rebuild` | `POST /api/admin/rebuild` | Bearer with `ROLE_ADMIN` in `authorities` | `DISPATCH_PAT`, `DISPATCH_REPO`, `DISPATCH_WORKFLOW` | `202 {"status":"queued"}`, `403` no admin role, `503` when `DISPATCH_PAT` is unset, `502` when GitHub does not return 204 |
 | `GET /admin/rebuild/status` | `GET /api/admin/rebuild/status` | Same | Same | `200 {"status","conclusion"}` of the latest run of `DISPATCH_WORKFLOW`; `503` and `502` as above |
@@ -237,7 +240,7 @@ An alias is the same handler with the same auth and responses; the old path keep
   "idp": { "issuer": "https://dev-auth.startcloud.com", "clientId": "provisioner-catalog", "scopes": "openid profile email organizations integrations notifications:read entitlements", "storagePrefix": "catalog" },
   "collections": ["provisioners"],
   "config": [],
-  "features": ["private-catalogs", "watches", "deploy", "rebuild", "notifications", "search", "health", "footer"],
+  "features": ["private-catalogs", "watches", "deploy", "rebuild", "favorites", "notifications", "search", "health", "footer"],
   "links": { "docs": "/docs/", "contact": "https://startcloud.com/#contact" },
   "ticket": { "baseUrl": "https://xd.prominic.net/app/apprequest.nsf/router?openagent", "reqType": "sso", "fallbackCustomerId": "A55DF1" }
 }
@@ -255,7 +258,7 @@ An alias is the same handler with the same auth and responses; the old path keep
 | `links` | `docs` and `contact` |
 | `ticket` | Support ticket constants; BoxVault answers `null` and serves them at `/api/config/ticket` |
 
-Feature tokens and what each gates; the catalog answers the eight marked:
+Feature tokens and what each gates; the catalog answers the nine marked:
 
 | Token | Surface | Catalog |
 | --- | --- | --- |
@@ -268,9 +271,9 @@ Feature tokens and what each gates; the catalog answers the eight marked:
 | `uploads` | ISO upload zone, box file upload, the `uploads` slots | |
 | `private-catalogs` | fetch `/api/private/<uuid>/...` per membership, the access-denied banner | yes |
 | `watches` | watch stars and the Watched filter | yes |
-| `deploy` | Deploy button and glyph (still needs the hyperweaver entitlement and a configured URL) | yes |
+| `deploy` | the split Deploy control on every row and card: the glyph the `create=machine` link, the chevron the menu with Deploy a machine, Install on my agent and Add this catalog as a source | yes |
 | `rebuild` | the Rebuild catalog data menu row (still needs `ROLE_ADMIN`) | yes |
-| `favorites` | the Add to Favorites toggle on About (needs `/api/favorites`) | |
+| `favorites` | the user menu's Favorites header and the Add to Favorites toggle on About, both over the identity provider's `GET` and `PUT /api/user/favorites`; no `/api/favorites` route exists on any host | yes |
 | `notifications` | the Notifications menu row (still needs the scope) | yes |
 | `search` | the navbar search, its panel and `/search`; the catalog names no `search` member, so the UI searches its collections in the browser, and the Worker serves `/opensearch.xml` | yes |
 | `health` | the footer health heart from `/api/health` (still needs `footer`) | yes |
@@ -298,7 +301,7 @@ The web UI is not built here. It is the [STARTcloud UI](https://github.com/START
 | `/api/status` | `role`, `version`, `brand`, `auth`, `idp`, `collections`, `features`, `links` and `ticket`, before anything renders; the version is the footer's and the About page's, `features` decides which surfaces exist |
 | `/catalog.json`, `/health.json` (`/api/catalog`, `/api/catalog/health`) | The public catalog and its health companion |
 | `/private/<uuid>/catalog.json`, `/private/<uuid>/health.json` (`/api/private/<uuid>/catalog`, `/api/private/<uuid>/health`) | The private catalogs of the signed-in user's organizations |
-| `/health`, `/config` (`/api/health`, `/api/config`) | The footer's health heart and the Hyperweaver origin behind the Deploy controls |
+| `/health`, `/config` (`/api/health`, `/api/config`) | The footer's health heart and the Hyperweaver origin |
 | `/push/*`, `/watches`, `/admin/*` (`/api/push/*`, `/api/watches`, `/api/admin/*`) | Toasts, watches and the admin rebuild |
 
 The catalog's own constants (issuer `https://dev-auth.startcloud.com`, public client `provisioner-catalog`, scopes `openid profile email organizations integrations notifications:read entitlements`, the `catalog` storage prefix, the ticket constants) are answered by the Worker in `/api/status` as `idp` and `ticket`; the `/callback` redirect is the UI's. Registered redirect URIs stay exact-match: `https://provisioner-catalog.startcloud.com/callback` and `http://localhost:8080/callback`, the latter for the UI repository's dev server pointed at this host.

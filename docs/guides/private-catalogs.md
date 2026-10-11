@@ -86,7 +86,7 @@ The same download path is what lets a private repository run the validation acti
 
 ## Membership and the gate
 
-The Cloudflare Worker `provisioner-catalog-gate` is routed on `provisioner-catalog.startcloud.com/*`. It answers `/private/*`, `/push/*`, `/admin/*`, `/watches`, `/health`, `/config`, `/api/status` and every route again under `/api/*` itself and proxies every other request to GitHub Pages, so the public `catalog.json` is never touched; a page request (a `GET` for `text/html` with no file extension) that Pages answers with `404` gets `index.html` instead, so a deep link into the web UI loads. The DNS record must be **proxied** in Cloudflare, or the route never fires.
+The Cloudflare Worker `provisioner-catalog-gate` is routed on `provisioner-catalog.startcloud.com/*`. It answers `/private/*`, `/push/*`, `/admin/*`, `/watches`, `/health`, `/config`, `/api/status`, `/.well-known/oauth-protected-resource` and every route again under `/api/*` itself and proxies every other request to GitHub Pages, so the public `catalog.json` is never touched; a page request (a `GET` for `text/html` with no file extension) that Pages answers with `404` gets `index.html` instead, so a deep link into the web UI loads. The DNS record must be **proxied** in Cloudflare, or the route never fires.
 
 ### Route
 
@@ -95,7 +95,7 @@ GET /private/<org-uuid>/catalog.json
 GET /private/<org-uuid>/health.json
 ```
 
-The uuid is matched case-insensitively and lowercased. Any other path under `/private/`, `/push/`, `/admin/`, `/watches/` or `/api/` answers `404`; any method other than `GET` on a matching path answers `405`; `OPTIONS` answers `204` with CORS headers for origins listed in `ALLOWED_ORIGINS`.
+The uuid is matched case-insensitively and lowercased. Any other path under `/private/`, `/push/`, `/admin/`, `/watches/`, `/.well-known/` or `/api/` answers `404`; any method other than `GET` on a matching path answers `405`; `OPTIONS` answers `204` with CORS headers for origins listed in `ALLOWED_ORIGINS`.
 
 ### Token verification
 
@@ -105,7 +105,7 @@ The request must carry `Authorization: Bearer <access token>`, or `Authorization
 2. The key with the token's `kid` is found in the IdP's JWKS, discovered from `ISSUER/.well-known/openid-configuration`. The JWKS is cached per isolate for one hour and refetched once on an unknown `kid`, which covers key rotation.
 3. The signature verifies (RSASSA-PKCS1-v1_5, SHA-256).
 4. `iss` equals `ISSUER` exactly.
-5. `aud` contains `AUDIENCE`.
+5. `aud` contains `RESOURCE`, the catalog's resource identifier `https://provisioner-catalog.startcloud.com`, or `AUDIENCE`, the browser client id.
 6. `exp` and `nbf` hold, with 60 seconds of leeway.
 
 ### Membership
@@ -117,15 +117,32 @@ The token's `organizations` claim is an array of objects with a `uuid`. The requ
 | Status | Body | Extra headers | Meaning |
 | --- | --- | --- | --- |
 | `200` | the org's `catalog.json` or `health.json` | `Cache-Control: private, no-store` | member, file published |
-| `401` | `authentication` problem, detail `missing bearer token` | `WWW-Authenticate: Bearer` | no `Bearer` authorization header |
-| `401` | `authentication` problem, detail `invalid token: <reason>` | `WWW-Authenticate: Bearer error="invalid_token"` | one of: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
+| `401` | `authentication` problem, detail `missing bearer token` | `WWW-Authenticate: Bearer resource_metadata="https://provisioner-catalog.startcloud.com/.well-known/oauth-protected-resource"` | no `Bearer` authorization header |
+| `401` | `authentication` problem, detail `invalid token: <reason>` | `WWW-Authenticate: Bearer error="invalid_token", resource_metadata="https://provisioner-catalog.startcloud.com/.well-known/oauth-protected-resource"` | one of: `malformed token`, `unsupported alg '<alg>'`, `no matching JWKS key`, `bad signature`, `wrong issuer`, `wrong audience`, `token expired`, `token not yet valid`, `key-bound token presented as Bearer`, `token is not key-bound`, `DPoP proof required`, `malformed DPoP proof`, `unsupported DPoP proof`, `bad DPoP proof key`, `bad DPoP proof signature`, `DPoP htm mismatch`, `DPoP htu mismatch`, `DPoP proof expired`, `DPoP ath mismatch`, `DPoP key does not match the token binding`, `DPoP jti required`, `DPoP proof replayed` |
 | `403` | `forbidden` problem, detail `not a member of this organization` | | valid token, org uuid not in `organizations` |
 | `404` | `not-found` problem, detail `no catalog published for this organization` (or `no health …`) | | the store has no `orgs/<uuid>/<file>.json` |
 | `404` | `not-found` problem, detail `not found` | | path does not match the route shape |
 | `405` | `method-not-allowed` problem, detail `method not allowed` | | non-`GET` on a catalog path |
 | `502` | `bad-gateway` problem, detail `store fetch failed (<status>)` | | the store read returned something other than `200`/`404` |
 
-A problem is `application/problem+json` (RFC 9457): `{"type":"https://auth.startcloud.com/probs/<type>","title":"…","status":<status>,"detail":"…"}`. Every response is `Cache-Control: private, no-store`.
+A problem is `application/problem+json` (RFC 9457): `{"type":"https://auth.startcloud.com/probs/<type>","title":"…","status":<status>,"detail":"…"}`. Every response is `Cache-Control: private, no-store`, the protected resource metadata alone `public, max-age=3600`.
+
+### Protected resource metadata
+
+`GET /.well-known/oauth-protected-resource`, no auth, answers `Content-Type: application/json` with `Cache-Control: public, max-age=3600`:
+
+```json
+{
+  "resource": "https://provisioner-catalog.startcloud.com",
+  "authorization_servers": ["https://dev-auth.startcloud.com"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["openid", "profile", "email", "organizations"],
+  "resource_name": "Provisioner Catalog",
+  "resource_documentation": "https://provisioner-catalog.startcloud.com/docs/"
+}
+```
+
+A Hyperweaver agent or server holding an organization's private catalog as an `oidc` catalog source reads this document, uses it only while `resource` equals the origin it fetched under and `authorization_servers` names its issuer, and exchanges the person's token at the issuer for one whose `aud` carries `resource`.
 
 ### The store token
 
@@ -204,6 +221,7 @@ Configuration lives in `worker/wrangler.toml`:
 | --- | --- |
 | `ISSUER` | Must equal the `iss` claim in tokens exactly. Change it and redeploy when the production IdP replaces the current one. |
 | `AUDIENCE` | The registered audience of the `provisioner-catalog` client. |
+| `RESOURCE` | The catalog's resource identifier, `https://provisioner-catalog.startcloud.com`; accepted in `aud` beside `AUDIENCE`, answered by `/.well-known/oauth-protected-resource` and named in every private-path `401`. |
 | `STORE_REPO` | The single private store repository the read-only PAT is scoped to. |
 | `ALLOWED_ORIGINS` | Comma-separated origins allowed cross-origin (production is same-origin; the dev server is listed). |
 | `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` | Web push application server identity. |
@@ -254,7 +272,7 @@ Signed-in users whose token carries `ROLE_ADMIN` in `authorities` get a **Rebuil
 | Symptom | Meaning | Check |
 | --- | --- | --- |
 | `401 missing bearer token` | No `Authorization: Bearer` header reached the Worker | The client is signed in and sending the access token |
-| `401 invalid token: wrong issuer` / `wrong audience` | Token minted by a different IdP host or for a different client | `ISSUER` and `AUDIENCE` in `wrangler.toml` against the token's `iss` and `aud` |
+| `401 invalid token: wrong issuer` / `wrong audience` | Token minted by a different IdP host, or its `aud` carries neither the resource identifier nor the client id | `ISSUER`, `RESOURCE` and `AUDIENCE` in `wrangler.toml` against the token's `iss` and `aud` |
 | `401 invalid token: token expired` | Access token older than its `exp` plus 60 s | The UI refreshes automatically; other clients must refresh or sign in again |
 | `401 invalid token: no matching JWKS key` | The token's `kid` is not in the IdP's JWKS even after a refetch | The IdP's key set and the `ISSUER` discovery URL |
 | `403 not a member of this organization` | The uuid in the path is not in the token's `organizations` claim | Org membership on the IdP; a fresh token after membership changes |

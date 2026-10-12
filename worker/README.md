@@ -99,7 +99,7 @@ in Cloudflare; `.wrangler/` stays gitignored.
 - `curl https://provisioner-catalog.startcloud.com/watches` → the same `401` `authentication` problem (the route answers; the UI calls it with the user's token)
   with `worker`, `idp`, `pages` and `store` all `ok`; the footer heart reads it.
 - Every Worker route also answers under `/api/`, the paths the STARTcloud UI calls on every host; the old paths keep answering unchanged:
-  - `curl https://provisioner-catalog.startcloud.com/api/catalog` → the public `catalog.json`, proxied from Pages with the Worker's JSON headers; `/api/catalog/health` the same for `health.json`
+  - `curl https://provisioner-catalog.startcloud.com/api/catalog` → the public `catalog.json`, proxied from Pages with the Worker's JSON headers; `/api/catalog/health` the same for `health.json`; the same URL with a Bearer token the private gate accepts → the public document with every organization of the token's `organizations` claim folded in, each private entry carrying `organization`
   - `curl https://provisioner-catalog.startcloud.com/api/private/00000000-0000-0000-0000-000000000000/catalog` → the same `401` `authentication` problem, the same gate as `/private/<uuid>/catalog.json`; `/api/private/<uuid>/health` likewise
   - `curl https://provisioner-catalog.startcloud.com/api/health` → the same document as `/health`; `/api/config` the same as `/config`
   - `curl https://provisioner-catalog.startcloud.com/api/watches` → the same `401` `authentication` problem; `/api/push/vapid-key`, `/api/push/subscriptions`, `/api/push/test-toast`, `/api/push/test-channel`, `/api/admin/rebuild` and `/api/admin/rebuild/status` answer as their unprefixed routes do

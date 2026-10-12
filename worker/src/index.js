@@ -428,7 +428,78 @@ const handlePrivate = async (request, env, cors, match) => {
   });
 };
 
-const handlePublic = async (request, file, cors) => {
+const documentResponse = (body, cors) =>
+  new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'private, no-store',
+      ...cors,
+    },
+  });
+
+const parseDocument = text => {
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const organizationsOf = payload =>
+  (Array.isArray(payload.organizations) ? payload.organizations : [])
+    .filter(org => typeof org.uuid === 'string' && org.uuid)
+    .map(org => ({ uuid: org.uuid.toLowerCase(), name: String(org.name || '') }));
+
+const organizationDocument = async (organization, file, env) => {
+  const upstream = await fetchOrgFile(organization.uuid, file, env);
+  if (!upstream.ok) {
+    return null;
+  }
+  return parseDocument(await upstream.text());
+};
+
+const withOrganization = (entry, organization) => ({ ...entry, organization });
+
+const foldCatalog = (base, documents) => ({
+  ...base,
+  provisioners: [
+    ...(Array.isArray(base.provisioners) ? base.provisioners : []),
+    ...documents.flatMap(({ organization, document }) =>
+      (Array.isArray(document.provisioners) ? document.provisioners : []).map(entry =>
+        withOrganization(entry, organization)
+      )
+    ),
+  ],
+});
+
+const foldHealth = (base, documents) => ({
+  ...base,
+  provisioners: Object.assign(
+    {},
+    base.provisioners && typeof base.provisioners === 'object' ? base.provisioners : {},
+    ...documents.map(({ organization, document }) =>
+      Object.fromEntries(
+        Object.entries(
+          document.provisioners && typeof document.provisioners === 'object'
+            ? document.provisioners
+            : {}
+        ).map(([name, entry]) => [name, withOrganization(entry, organization)])
+      )
+    )
+  ),
+});
+
+const readerOf = async (request, env) => {
+  try {
+    return await authPayload(request, env);
+  } catch {
+    return null;
+  }
+};
+
+const handleCatalogRead = async (request, env, cors, file) => {
   const upstream = await fetch(new URL(`/${file}.json`, request.url), {
     headers: { Accept: 'application/json' },
   });
@@ -438,15 +509,23 @@ const handlePublic = async (request, file, cors) => {
   if (!upstream.ok) {
     return badGatewayProblem(`pages fetch failed (${upstream.status})`, cors);
   }
-  const document = await upstream.text();
-  return new Response(document, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'private, no-store',
-      ...cors,
-    },
-  });
+  const text = await upstream.text();
+  const payload = await readerOf(request, env);
+  const organizations = payload ? organizationsOf(payload) : [];
+  const base = organizations.length > 0 ? parseDocument(text) : null;
+  if (!base) {
+    return documentResponse(text, cors);
+  }
+  const documents = (
+    await Promise.all(
+      organizations.map(async organization => ({
+        organization,
+        document: await organizationDocument(organization, file, env),
+      }))
+    )
+  ).filter(entry => entry.document);
+  const folded = file === 'catalog' ? foldCatalog(base, documents) : foldHealth(base, documents);
+  return documentResponse(JSON.stringify(folded), cors);
 };
 
 const handleRebuild = async (request, env, cors) => {
@@ -1218,10 +1297,10 @@ export default {
       return handleProtectedResource(env, cors);
     }
     if (pathname === '/api/catalog' && request.method === 'GET') {
-      return handlePublic(request, 'catalog', cors);
+      return handleCatalogRead(request, env, cors, 'catalog');
     }
     if (pathname === '/api/catalog/health' && request.method === 'GET') {
-      return handlePublic(request, 'health', cors);
+      return handleCatalogRead(request, env, cors, 'health');
     }
     if (route === '/health' && request.method === 'GET') {
       return handleHealth(request, env, cors);

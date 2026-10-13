@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.107](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.106...provisioner-catalog-v0.0.107) (2026-10-13)
+
+
+### Bug Fixes
+
+* bump startcloud-ui to v0.59.0 ([#178](https://github.com/STARTcloud/provisioner-catalog/issues/178)) ([53ce222](https://github.com/STARTcloud/provisioner-catalog/commit/53ce2228e726a907fdaa974a9295de1c97067bdd))
+* Enabling private consumption of the catalogs ([b65c09b](https://github.com/STARTcloud/provisioner-catalog/commit/b65c09b8d7ec480b967ed72da147951e28d2e620))
+* publish the protected resource metadata and list favorites ([4deb725](https://github.com/STARTcloud/provisioner-catalog/commit/4deb725ddaa4ad0ecf5656ead8bf1c3aa852cbfa))
+
 ## [0.0.106](https://github.com/STARTcloud/provisioner-catalog/compare/provisioner-catalog-v0.0.105...provisioner-catalog-v0.0.106) (2026-10-11)
 
 
